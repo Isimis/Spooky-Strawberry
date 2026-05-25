@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ policy.title }} | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell policy-page">
+    <div class="page-heading">
+        <p class="eyebrow">Warunki i polityki</p>
+        <h1>{{ policy.title }}</h1>
+        <p>{{ policy.intro }}</p>
+    </div>
+
+    <div class="policy-note">
+        <p>
+            Treść prawna powinna zostać uzupełniona i sprawdzona przed uruchomieniem
+            sprzedaży. Na tym etapie trzymamy strukturę i linkowanie strony.
+        </p>
+    </div>
+</section>
+{% endblock %}

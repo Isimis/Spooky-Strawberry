@@ -1,0 +1,60 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Panel | Spooky Strawberry{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20260525-stats">
+</head>
+<body class="dashboard-body">
+    <header class="dashboard-topbar">
+        <a href="{% url 'dashboard:home' %}" class="dashboard-brand">
+            <span>Spooky</span>
+            <strong>Admin</strong>
+        </a>
+        <nav class="dashboard-topbar__nav" aria-label="Szybkie linki panelu">
+            <a href="{% url 'core:home' %}">Sklep</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'dashboard:logout' %}">Wyloguj</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <div class="dashboard-shell">
+        {% if sections %}
+            <aside class="dashboard-sidebar">
+                <nav class="dashboard-sidebar__nav" aria-label="Modele panelu">
+                    <a href="{% url 'dashboard:home' %}" class="dashboard-sidebar__home {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">
+                        Dashboard
+                    </a>
+                    {% for section, configs in sections.items %}
+                        <section>
+                            <h2>{{ section }}</h2>
+                            {% for item in configs %}
+                                {% url 'dashboard:model_list' item.slug as item_url %}
+                                <a href="{{ item_url }}" class="{% if request.path == item_url %}is-active{% endif %}">
+                                    <span>{{ item.label }}</span>
+                                </a>
+                            {% endfor %}
+                        </section>
+                    {% endfor %}
+                </nav>
+            </aside>
+        {% endif %}
+
+        <main class="dashboard-main">
+            {% if messages %}
+                <div class="message-list" aria-live="polite">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

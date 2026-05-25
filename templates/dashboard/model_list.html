@@ -1,0 +1,100 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ config.label }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">{{ config.section }}</p>
+        <h1>{{ config.label }}</h1>
+    </div>
+    <div class="dashboard-heading__actions">
+        {% if config.slug == "products" %}
+            <form method="post" action="{% url 'dashboard:refresh_quality' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="button button--secondary">Odśwież jakość danych</button>
+            </form>
+        {% endif %}
+        <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj</a>
+    </div>
+</section>
+
+<form method="get" class="dashboard-search">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj">
+    {% if config.slug == "products" %}
+        <select name="status">
+            <option value="">Każdy status</option>
+            {% for value, label in product_statuses %}
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="stock">
+            <option value="">Każda dostępność</option>
+            <option value="available" {% if selected_stock == "available" %}selected{% endif %}>Dostępne</option>
+            <option value="sold_out" {% if selected_stock == "sold_out" %}selected{% endif %}>Wyprzedane</option>
+        </select>
+        <select name="quality">
+            <option value="">Wszystkie dane</option>
+            <option value="issues" {% if selected_quality == "issues" %}selected{% endif %}>Z problemami</option>
+        </select>
+    {% endif %}
+    <button type="submit">Szukaj</button>
+    {% if query %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<div class="dashboard-table-wrap">
+    <table class="dashboard-table">
+        <thead>
+            <tr>
+                <th>Obiekt</th>
+                {% for field in config.list_fields %}
+                    <th>{{ field }}</th>
+                {% endfor %}
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.object }}</td>
+                    {% for cell in row.cells %}
+                        <td>{{ cell }}</td>
+                    {% endfor %}
+                    <td>
+                        <a href="{{ row.admin_url }}">{% if config.slug == "products" %}Otwórz produkt{% else %}Edytuj{% endif %}</a>
+                        <a href="{% url 'dashboard:model_delete' config.slug row.object.pk %}">Usuń</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="{{ config.list_fields|length|add:2 }}">Brak danych.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

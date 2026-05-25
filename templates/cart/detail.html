@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Koszyk | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell cart-page">
+    <div class="page-heading">
+        <p class="eyebrow">Koszyk</p>
+        <h1>Twój koszyk</h1>
+        <p>To koszyk roboczy bez checkoutu i bez płatności. Sprzedaż uruchomimy dopiero później.</p>
+    </div>
+
+    {% if adjustments %}
+        <div class="cart-alerts">
+            {% for adjustment in adjustments %}
+                <p>{{ adjustment }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if items %}
+        <div class="cart-layout">
+            <div class="cart-items">
+                {% for item in items %}
+                    <article class="cart-item">
+                        <a href="{{ item.product.get_absolute_url }}" class="cart-item__image">
+                            {% if item.image %}
+                                <img src="{{ item.image.image.url }}" alt="{{ item.image.alt_text }}">
+                            {% else %}
+                                <span>Spooky Strawberry</span>
+                            {% endif %}
+                        </a>
+                        <div class="cart-item__body">
+                            <h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></h2>
+                            <p>
+                                {% if item.variant.color %}{{ item.variant.color.name }}{% endif %}
+                                {% if item.variant.size %} / {{ item.variant.size.name }}{% endif %}
+                            </p>
+                            <p>{{ item.unit_price|money }} za sztukę</p>
+                            <p class="cart-stock-note">W magazynie: {{ item.stock_quantity }} szt.</p>
+
+                            <form method="post" action="{% url 'cart:update' item.variant.id %}" class="cart-quantity-form">
+                                {% csrf_token %}
+                                <label>
+                                    <span>Ilość</span>
+                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="{{ item.stock_quantity }}" aria-label="Ilość">
+                                </label>
+                                <button type="submit">Aktualizuj</button>
+                            </form>
+
+                            <form method="post" action="{% url 'cart:remove' item.variant.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="link-button">Usuń</button>
+                            </form>
+                        </div>
+                        <strong>{{ item.line_total|money }}</strong>
+                    </article>
+                {% endfor %}
+            </div>
+
+            <aside class="cart-summary">
+                <h2>Podsumowanie</h2>
+                <div>
+                    <span>Produkty</span>
+                    <strong>{{ quantity }}</strong>
+                </div>
+                <div>
+                    <span>Suma</span>
+                    <strong>{{ subtotal|money }}</strong>
+                </div>
+                <p>Checkout i płatności są celowo wyłączone na tym etapie.</p>
+                <a href="{% url 'catalog:product_list' %}" class="button button--wide">Kontynuuj zakupy</a>
+                <form method="post" action="{% url 'cart:clear' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button button--wide button--light">Wyczyść koszyk</button>
+                </form>
+            </aside>
+        </div>
+    {% else %}
+        <div class="empty-page">
+            <h1>Twój koszyk jest pusty</h1>
+            <p>Dodaj coś z katalogu, żeby przetestować koszyk bez checkoutu.</p>
+            <a href="{% url 'catalog:product_list' %}" class="button">Kontynuuj zakupy</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

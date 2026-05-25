@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Poradniki | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">Poradniki</p>
+        <h1>Styl, klimat i detale</h1>
+        <p>Artykuły SEO powiązane z produktami, estetykami i gotowymi kreacjami.</p>
+    </div>
+
+    {% if categories %}
+        <div class="active-filters">
+            <a href="{% url 'blog:list' %}">Wszystkie</a>
+            {% for category in categories %}
+                <a href="{% url 'blog:list' %}?category={{ category.slug }}">{{ category.name }}</a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="content-grid">
+        {% for article in articles %}
+            {% include "blog/includes/article_card.html" with article=article %}
+        {% empty %}
+            <p class="empty-state">Pierwsze poradniki pojawią się tutaj po dodaniu treści.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

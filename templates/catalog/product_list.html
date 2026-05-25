@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Sklep | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="catalog-hero">
+    <p class="eyebrow">Katalog</p>
+    <h1>Produkty</h1>
+    <p>Akcesoria, rajstopy, skarpetki i dodatki do alt stylizacji.</p>
+</section>
+
+<section class="catalog-layout">
+    <form class="filter-panel" method="get">
+        <div class="filter-panel__head">
+            <h2>Filtry</h2>
+            <a href="{% url 'catalog:product_list' %}">Wyczyść</a>
+        </div>
+
+        <label>
+            Typ produktu
+            <select name="category">
+                <option value="">Wszystkie</option>
+                {% for category in categories %}
+                    <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Estetyka
+            <select name="aesthetic">
+                <option value="">Wszystkie</option>
+                {% for aesthetic in aesthetics %}
+                    <option value="{{ aesthetic.slug }}" {% if selected_aesthetic == aesthetic.slug %}selected{% endif %}>{{ aesthetic.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Kolor
+            <select name="color">
+                <option value="">Wszystkie</option>
+                {% for color in colors %}
+                    <option value="{{ color.slug }}" {% if selected_color == color.slug %}selected{% endif %}>{{ color.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Rozmiar
+            <select name="size">
+                <option value="">Wszystkie</option>
+                {% for size in sizes %}
+                    <option value="{{ size.slug }}" {% if selected_size == size.slug %}selected{% endif %}>{{ size.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <div class="price-fields">
+            <label>
+                Cena od
+                <input type="number" name="min_price" min="0" step="1" value="{{ min_price }}" placeholder="{{ price_range.min_price|default:'' }}">
+            </label>
+            <label>
+                Cena do
+                <input type="number" name="max_price" min="0" step="1" value="{{ max_price }}" placeholder="{{ price_range.max_price|default:'' }}">
+            </label>
+        </div>
+
+        <label>
+            Dostępność
+            <select name="availability">
+                {% for value, label in availability_options.items %}
+                    <option value="{{ value }}" {% if availability == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>
+            Sortuj
+            <select name="sort">
+                {% for value, option in sort_options.items %}
+                    <option value="{{ value }}" {% if selected_sort == value %}selected{% endif %}>{{ option.0 }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <button type="submit" class="button button--wide">Zobacz produkty</button>
+    </form>
+
+    <div class="catalog-results" id="produkty">
+        <div class="catalog-results__bar">
+            <p>{{ product_count }} produktów</p>
+            <p>Sortuj: {{ selected_sort_label }}</p>
+        </div>
+
+        {% if selected_filters %}
+            <div class="active-filters">
+                {% for filter in selected_filters %}
+                    <span>{{ filter }}</span>
+                {% endfor %}
+                <a href="{% url 'catalog:product_list' %}">Wyczyść wszystko</a>
+            </div>
+        {% endif %}
+
+        <div class="product-grid">
+            {% for product in products %}
+                {% include "catalog/includes/product_card.html" with product=product %}
+            {% empty %}
+                <div class="empty-state">
+                    <h2>Nie znaleziono produktów</h2>
+                    <p>Zmień filtry albo wróć do pełnego katalogu.</p>
+                    <a href="{% url 'catalog:product_list' %}" class="button">Pokaż wszystko</a>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+            <nav class="pagination" aria-label="Paginacja katalogu">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+                {% endif %}
+                <span>Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

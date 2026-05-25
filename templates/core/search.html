@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Wyszukiwanie | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">Wyszukiwanie</p>
+        <h1>Szukaj</h1>
+    </div>
+
+    <form class="search-page-form" action="{% url 'core:search' %}" method="get">
+        <input type="search" name="q" value="{{ query }}" placeholder="Nazwa produktu, klimat, dodatek..." aria-label="Szukaj produktów">
+        <button class="button" type="submit">Szukaj</button>
+    </form>
+
+    {% if query %}
+        <div class="catalog-results__bar">
+            <p>Wyniki dla: {{ query }}</p>
+        </div>
+        <div class="product-grid">
+            {% for product in products %}
+                {% include "catalog/includes/product_card.html" with product=product %}
+            {% empty %}
+                <p class="empty-state">Nie znaleziono produktów.</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

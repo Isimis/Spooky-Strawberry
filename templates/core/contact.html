@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Kontakt | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell contact-page">
+    <div class="page-heading">
+        <p class="eyebrow">Kontakt</p>
+        <h1>Kontakt</h1>
+        <p>Napisz do nas w sprawie produktu, zamówienia testowego albo współpracy.</p>
+    </div>
+
+    <form class="contact-form">
+        <label>
+            Imię i nazwisko
+            <input type="text" name="name" autocomplete="name">
+        </label>
+        <label>
+            E-mail*
+            <input type="email" name="email" autocomplete="email" required>
+        </label>
+        <label>
+            Telefon
+            <input type="tel" name="phone" autocomplete="tel">
+        </label>
+        <label>
+            Komentarz
+            <textarea name="message" rows="7"></textarea>
+        </label>
+        <button type="submit" class="button">Wyślij</button>
+    </form>
+</section>
+{% endblock %}

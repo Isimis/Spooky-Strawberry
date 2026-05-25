@@ -1,0 +1,13 @@
+<section class="newsletter-band">
+    <div>
+        <p class="eyebrow">Newsletter</p>
+        <h2>Nowe dropy i soczyste promocje</h2>
+    </div>
+    <form class="newsletter-form" action="{% url 'core:newsletter_subscribe' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="source" value="footer">
+        <input type="email" name="email" placeholder="E-mail" aria-label="E-mail" required>
+        <button type="submit">Dołącz</button>
+    </form>
+</section>

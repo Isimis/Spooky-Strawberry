@@ -1,11 +1,42 @@
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
 
+def unique_slug_for(instance, value):
+    base_slug = slugify(value) or "item"
+    slug = base_slug
+    counter = 2
+    model = instance.__class__
+
+    queryset = model.objects.filter(slug=slug)
+    if instance.pk:
+        queryset = queryset.exclude(pk=instance.pk)
+
+    while queryset.exists():
+        slug = f"{base_slug}-{counter}"
+        queryset = model.objects.filter(slug=slug)
+        if instance.pk:
+            queryset = queryset.exclude(pk=instance.pk)
+        counter += 1
+
+    return slug
+
+
 class Category(models.Model):
     name = models.CharField(max_length=120)
-    slug = models.SlugField(max_length=140, unique=True)
+    slug = models.SlugField(max_length=140, unique=True, blank=True)
+    description = models.TextField(blank=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        related_name="children",
+        null=True,
+        blank=True,
+    )
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Category"
@@ -15,24 +46,38 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug_for(self, self.name)
+        super().save(*args, **kwargs)
 
-class StyleTag(models.Model):
+
+class Aesthetic(models.Model):
     name = models.CharField(max_length=120)
-    slug = models.SlugField(max_length=140, unique=True)
+    slug = models.SlugField(max_length=140, unique=True, blank=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        verbose_name = "Style tag"
-        verbose_name_plural = "Style tags"
-        ordering = ["name"]
+        verbose_name = "Aesthetic"
+        verbose_name_plural = "Aesthetics"
+        ordering = ["sort_order", "name"]
 
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug_for(self, self.name)
+        super().save(*args, **kwargs)
+
 
 class Color(models.Model):
     name = models.CharField(max_length=80)
-    slug = models.SlugField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
     hex_code = models.CharField(max_length=7, blank=True)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Color"
@@ -42,18 +87,30 @@ class Color(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug_for(self, self.name)
+        super().save(*args, **kwargs)
+
 
 class Size(models.Model):
     name = models.CharField(max_length=50)
-    slug = models.SlugField(max_length=70, unique=True)
+    slug = models.SlugField(max_length=70, unique=True, blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Size"
         verbose_name_plural = "Sizes"
-        ordering = ["name"]
+        ordering = ["sort_order", "name"]
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug_for(self, self.name)
+        super().save(*args, **kwargs)
 
 
 class Product(models.Model):
@@ -74,8 +131,8 @@ class Product(models.Model):
         on_delete=models.PROTECT,
         related_name="products",
     )
-    style_tags = models.ManyToManyField(
-        StyleTag,
+    aesthetics = models.ManyToManyField(
+        Aesthetic,
         related_name="products",
         blank=True,
     )
@@ -85,9 +142,21 @@ class Product(models.Model):
     details = models.TextField(blank=True)
     styling_tips = models.TextField(blank=True)
 
-    base_price = models.DecimalField(max_digits=10, decimal_places=2)
+    base_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+    )
+    compare_at_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        null=True,
+        blank=True,
+    )
     is_featured = models.BooleanField(default=False)
     is_new_drop = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
 
     seo_title = models.CharField(max_length=180, blank=True)
     seo_description = models.CharField(max_length=255, blank=True)
@@ -102,7 +171,12 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["sort_order", "-created_at"]
+        indexes = [
+            models.Index(fields=["status", "created_at"], name="cat_product_status_idx"),
+            models.Index(fields=["is_featured"], name="cat_product_featured_idx"),
+            models.Index(fields=["is_new_drop"], name="cat_product_new_drop_idx"),
+        ]
 
     def __str__(self):
         return self.name
@@ -112,8 +186,33 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = unique_slug_for(self, self.name)
         super().save(*args, **kwargs)
+
+    @property
+    def is_available(self):
+        if self.status != self.STATUS_ACTIVE:
+            return False
+        return self.variants.filter(is_active=True, stock_quantity__gt=0).exists()
+
+    @property
+    def main_image(self):
+        images = list(self.images.all())
+        for image in images:
+            if image.is_main:
+                return image
+        return images[0] if images else None
+
+    @property
+    def default_variant(self):
+        variants = list(self.variants.all())
+        for variant in variants:
+            if variant.is_in_stock:
+                return variant
+        for variant in variants:
+            if variant.is_active:
+                return variant
+        return variants[0] if variants else None
 
 
 class ProductVariant(models.Model):
@@ -136,18 +235,42 @@ class ProductVariant(models.Model):
         null=True,
         blank=True,
     )
-    sku = models.CharField(max_length=80, unique=True, blank=True)
+    sku = models.CharField(max_length=80, unique=True, null=True, blank=True)
     price_override = models.DecimalField(
         max_digits=10,
         decimal_places=2,
+        validators=[MinValueValidator(0)],
         null=True,
         blank=True,
     )
     stock_quantity = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ["product__name"]
+        ordering = ["product__name", "sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "color", "size"],
+                condition=models.Q(color__isnull=False, size__isnull=False),
+                name="uniq_variant_color_size",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "color"],
+                condition=models.Q(color__isnull=False, size__isnull=True),
+                name="uniq_variant_color_only",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "size"],
+                condition=models.Q(color__isnull=True, size__isnull=False),
+                name="uniq_variant_size_only",
+            ),
+            models.UniqueConstraint(
+                fields=["product"],
+                condition=models.Q(color__isnull=True, size__isnull=True),
+                name="uniq_variant_default",
+            ),
+        ]
 
     def __str__(self):
         parts = [self.product.name]
@@ -160,6 +283,10 @@ class ProductVariant(models.Model):
     @property
     def price(self):
         return self.price_override or self.product.base_price
+
+    @property
+    def is_in_stock(self):
+        return self.is_active and self.stock_quantity > 0
 
 
 class ProductImage(models.Model):
@@ -177,11 +304,23 @@ class ProductImage(models.Model):
     )
     image = models.ImageField(upload_to="products/")
     alt_text = models.CharField(max_length=180, blank=True)
+    caption = models.CharField(max_length=180, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
     is_main = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["sort_order", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product"],
+                condition=models.Q(is_main=True),
+                name="unique_main_image_per_product",
+            ),
+        ]
 
     def __str__(self):
         return f"Image for {self.product.name}"
+
+    def clean(self):
+        if self.variant and self.variant.product_id != self.product_id:
+            raise ValidationError("Variant must belong to the selected product.")

@@ -1,0 +1,229 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Statystyki | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="stats-header">
+    <div>
+        <p class="eyebrow">Dashboard</p>
+        <h1>Statystyki</h1>
+    </div>
+    <p>Ostatnia aktualizacja: {{ analytics.updated_at|date:"Y-m-d H:i" }}</p>
+</section>
+
+<section class="stats-period-grid" aria-label="Podsumowanie okresów">
+    {% for card in analytics.summary_cards %}
+        <article class="stats-period-card">
+            <div class="stats-period-card__head">
+                <h2>{{ card.label }}</h2>
+                <span>Top: {{ card.top_path }} / {{ card.top_count }}</span>
+            </div>
+            <strong>{{ card.unique_visitors }}</strong>
+            <p>unikalnych odwiedzających</p>
+            <dl>
+                <div>
+                    <dt>Sesje</dt>
+                    <dd>{{ card.sessions }}</dd>
+                </div>
+                <div>
+                    <dt>Pageviews</dt>
+                    <dd>{{ card.page_views }}</dd>
+                </div>
+                <div>
+                    <dt>Produkty</dt>
+                    <dd>{{ card.product_views }}</dd>
+                </div>
+                <div>
+                    <dt>Koszyk</dt>
+                    <dd>{{ card.add_to_cart }}</dd>
+                </div>
+                <div>
+                    <dt>Zamówienia</dt>
+                    <dd>{{ card.orders }}</dd>
+                </div>
+                <div>
+                    <dt>Przychód</dt>
+                    <dd>{{ card.revenue }}</dd>
+                </div>
+            </dl>
+        </article>
+    {% endfor %}
+</section>
+
+<section class="stats-chart-grid">
+    <article class="stats-card stats-card--large">
+        <div class="stats-card__head">
+            <div>
+                <h2>Ruch godzinowy</h2>
+                <p>Ostatnie 24 godziny, pageviews kontra unikalne sesje z page view.</p>
+            </div>
+            <div class="stats-legend">
+                <span class="legend-pageviews">Pageviews</span>
+                <span class="legend-unique">Unikalni</span>
+            </div>
+        </div>
+
+        <div class="stats-line-chart">
+            <div class="stats-line-chart__axis">
+                {% for tick in analytics.hourly_chart.y_ticks %}
+                    <span style="--tick-y: {{ tick.y }}%">{{ tick.value }}</span>
+                {% endfor %}
+            </div>
+            <div class="stats-line-chart__plot">
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Ruch godzinowy">
+                    {% for tick in analytics.hourly_chart.y_ticks %}
+                        <line class="chart-grid-line" x1="0" x2="100" y1="{{ tick.y }}" y2="{{ tick.y }}"></line>
+                    {% endfor %}
+                    <polyline class="chart-line chart-line--pageviews" points="{{ analytics.hourly_chart.pageviews_points }}"></polyline>
+                    <polyline class="chart-line chart-line--unique" points="{{ analytics.hourly_chart.unique_points }}"></polyline>
+                    {% for row in analytics.hourly_chart.rows %}
+                        <circle class="chart-dot chart-dot--pageviews" cx="{{ row.x }}" cy="{{ row.primary_y }}" r="1.2"></circle>
+                        <circle class="chart-dot chart-dot--unique" cx="{{ row.x }}" cy="{{ row.secondary_y }}" r="1"></circle>
+                    {% endfor %}
+                </svg>
+                <div class="stats-line-chart__labels">
+                    {% for label in analytics.hourly_chart.x_labels %}
+                        <span style="left: {{ label.x }}%">{{ label.label }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-chart-table">
+            {% for row in analytics.hourly_chart.rows|slice:"-6:" %}
+                <div>
+                    <span>{{ row.label }}</span>
+                    <strong>{{ row.pageviews }}</strong>
+                    <small>{{ row.unique }} unikalnych</small>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="stats-card stats-card--large">
+        <div class="stats-card__head">
+            <div>
+                <h2>Ruch dzienny</h2>
+                <p>Ostatnie 14 dni, z osobnym liczeniem pageviews i unikalnych sesji.</p>
+            </div>
+            <div class="stats-legend">
+                <span class="legend-pageviews">Pageviews</span>
+                <span class="legend-unique">Unikalni</span>
+            </div>
+        </div>
+
+        <div class="stats-bar-chart">
+            <div class="stats-bar-chart__axis">
+                {% for tick in analytics.daily_chart.y_ticks %}
+                    <span style="--tick-y: {{ tick.y }}%">{{ tick.value }}</span>
+                {% endfor %}
+            </div>
+            <div class="stats-bar-chart__plot">
+                {% for row in analytics.daily_chart.rows %}
+                    <div class="stats-bar-group">
+                        <div class="stats-bars" title="{{ row.label }}: {{ row.pageviews }} pageviews, {{ row.unique }} unikalnych, {{ row.orders }} zamówień">
+                            <span class="stats-bar stats-bar--pageviews" style="--bar-height: {{ row.pageviews_percent }}%"></span>
+                            <span class="stats-bar stats-bar--unique" style="--bar-height: {{ row.unique_percent }}%"></span>
+                        </div>
+                        <span>{{ row.label }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="stats-tables-grid">
+    {% for period in analytics.top_pages_periods %}
+        <article class="stats-card">
+            <div class="stats-card__head">
+                <h2>{{ period.title }}</h2>
+            </div>
+            {% if period.rows %}
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>Wejścia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in period.rows %}
+                            <tr>
+                                <td>{{ row.path }}</td>
+                                <td>{{ row.count }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="dashboard-empty-note">Brak danych w tym okresie.</p>
+            {% endif %}
+        </article>
+    {% endfor %}
+</section>
+
+<section class="stats-bottom-grid">
+    <article class="stats-card">
+        <div class="stats-card__head">
+            <div>
+                <h2>Źródła ruchu</h2>
+                <p>Najczęstsze źródła sesji w bieżącym miesiącu.</p>
+            </div>
+        </div>
+        {% if analytics.top_sources %}
+            <div class="stats-progress-list">
+                {% for source in analytics.top_sources %}
+                    <div>
+                        <span>{{ source.source }}</span>
+                        <strong>{{ source.count }}</strong>
+                        <i style="--progress: {{ source.percent }}%"></i>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="dashboard-empty-note">Brak danych o źródłach ruchu.</p>
+        {% endif %}
+    </article>
+
+    <article class="stats-card">
+        <div class="stats-card__head">
+            <div>
+                <h2>Urządzenia</h2>
+                <p>Rozkład sesji w bieżącym miesiącu.</p>
+            </div>
+        </div>
+        {% if analytics.device_breakdown %}
+            <div class="stats-progress-list">
+                {% for item in analytics.device_breakdown %}
+                    <div>
+                        <span>{{ item.device }}</span>
+                        <strong>{{ item.count }}</strong>
+                        <i style="--progress: {{ item.percent }}%"></i>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="dashboard-empty-note">Brak danych o urządzeniach.</p>
+        {% endif %}
+    </article>
+
+    <article class="stats-card">
+        <div class="stats-card__head">
+            <div>
+                <h2>Jakość katalogu</h2>
+                <p>Kontrola braków w produktach, wariantach, zdjęciach i SEO.</p>
+            </div>
+        </div>
+        <div class="dashboard-quality-mini">
+            <strong>{{ open_quality_issues }}</strong>
+            <span>otwartych problemów</span>
+        </div>
+        <form method="post" action="{% url 'dashboard:refresh_quality' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="button button--secondary">Odśwież kontrolę</button>
+        </form>
+    </article>
+</section>
+{% endblock %}

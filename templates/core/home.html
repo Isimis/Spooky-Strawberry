@@ -1,15 +1,73 @@
 {% extends "base.html" %}
+{% load catalog_extras %}
 
 {% block title %}Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="hero">
-    <p class="eyebrow">Najnowszy drop</p>
-    <h1>Akcesoria dla dziewczyn, które lubią ciemniejszy klimat.</h1>
+    <div class="hero__content">
+        <p class="eyebrow">Najnowszy drop</p>
+        <h1>Spooky Strawberry</h1>
+        <p>
+            Czerń w oczach, róż w sercu. Chokery, rajstopy, mitenki i detale
+            w klimacie dark coquette, goth, jirai kei, grunge i y2k.
+        </p>
+        <a href="{% url 'catalog:product_list' %}" class="button">Zobacz sklep</a>
+    </div>
+
+    {% if featured_products %}
+        <div class="hero__product">
+            {% with product=featured_products.0 image=featured_products.0.main_image %}
+                <a href="{{ product.get_absolute_url }}" class="hero-product">
+                    {% if image %}
+                        <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+                    {% endif %}
+                    <span>{{ product.name }}</span>
+                    <strong>{{ product.base_price|money }}</strong>
+                </a>
+            {% endwith %}
+        </div>
+    {% endif %}
+</section>
+
+<section class="section-block">
+    <div class="section-heading">
+        <p class="eyebrow">Make Your Style Yours</p>
+        <h2>Nasz najnowszy drop</h2>
+    </div>
+
+    <div class="product-grid">
+        {% for product in new_drop_products %}
+            {% include "catalog/includes/product_card.html" with product=product %}
+        {% empty %}
+            <p class="empty-state">Produkty pojawią się tutaj po imporcie katalogu.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="section-block aesthetic-section">
+    <div class="section-heading">
+        <p class="eyebrow">Kolekcje / estetyki</p>
+        <h2>Znajdź swój klimat</h2>
+    </div>
+
+    <div class="aesthetic-grid">
+        <a href="{% url 'catalog:product_list' %}?aesthetic=dark-coquette">Dark coquette</a>
+        <a href="{% url 'catalog:product_list' %}?aesthetic=jirai-kei">Jirai kei</a>
+        <a href="{% url 'catalog:product_list' %}?aesthetic=goth">Goth</a>
+        <a href="{% url 'catalog:product_list' %}?aesthetic=grunge">Grunge</a>
+        <a href="{% url 'catalog:product_list' %}?aesthetic=y2k">Y2K</a>
+    </div>
+</section>
+
+<section class="section-block guide-preview">
+    <div class="section-heading">
+        <p class="eyebrow">Poradniki</p>
+        <h2>Stylizacje, warstwy i detale</h2>
+    </div>
     <p>
-        Chokery, rajstopy, dodatki i gotowe kreacje w klimacie alt, goth,
-        grunge, dark coquette i y2k.
+        Tu później pojawią się poradniki SEO powiązane z produktami i gotowymi
+        kreacjami. Na razie ta sekcja trzyma miejsce w docelowej strukturze strony.
     </p>
-    <a href="#" class="button">Zobacz sklep</a>
 </section>
 {% endblock %}

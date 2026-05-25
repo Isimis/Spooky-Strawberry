@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<article class="page-shell article-detail">
+    <div class="page-heading">
+        <p class="eyebrow">{% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</p>
+        <h1>{{ article.title }}</h1>
+        {% if article.intro %}
+            <p>{{ article.intro }}</p>
+        {% endif %}
+    </div>
+
+    <div class="article-body">
+        {{ article.body|linebreaks }}
+    </div>
+
+    {% if article.products.all %}
+        <section class="section-block section-block--nested">
+            <div class="section-heading">
+                <p class="eyebrow">Produkty z poradnika</p>
+                <h2>Pasujące dodatki</h2>
+            </div>
+            <div class="product-grid">
+                {% for product in article.products.all %}
+                    {% include "catalog/includes/product_card.html" with product=product %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if article.outfits.all %}
+        <section class="section-block section-block--nested">
+            <div class="section-heading">
+                <p class="eyebrow">Gotowe kreacje</p>
+                <h2>Inspiracje</h2>
+            </div>
+            <div class="content-grid">
+                {% for outfit in article.outfits.all %}
+                    {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+</article>
+
+{% if related_articles %}
+<section class="section-block">
+    <div class="section-heading">
+        <p class="eyebrow">Czytaj też</p>
+        <h2>Podobne poradniki</h2>
+    </div>
+    <div class="content-grid">
+        {% for article in related_articles %}
+            {% include "blog/includes/article_card.html" with article=article %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

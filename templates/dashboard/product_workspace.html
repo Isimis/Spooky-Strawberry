@@ -1,0 +1,184 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ product.name }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Produkt</p>
+        <h1>{{ product.name }}</h1>
+        <p>Edytuj dane produktu, warianty, zdjęcia, widoczność i SEO w jednym miejscu.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{{ product.get_absolute_url }}" class="button button--secondary">Podgląd w sklepie</a>
+        <a href="{% url 'dashboard:model_list' 'products' %}" class="button button--secondary">Lista produktów</a>
+    </div>
+</section>
+
+<section class="dashboard-product-summary">
+    <article>
+        <span>Status</span>
+        <strong>{{ product.get_status_display }}</strong>
+    </article>
+    <article>
+        <span>Warianty</span>
+        <strong>{{ product.variants.count }}</strong>
+    </article>
+    <article>
+        <span>Zdjęcia</span>
+        <strong>{{ product.images.count }}</strong>
+    </article>
+    <article>
+        <span>Jakość danych</span>
+        <strong>{{ quality_issues|length }}</strong>
+    </article>
+</section>
+
+{% if quality_issues %}
+    <section class="dashboard-quality-panel">
+        <div>
+            <p class="eyebrow">Kontrola jakości</p>
+            <h2>Rzeczy do uzupełnienia</h2>
+        </div>
+        <ul>
+            {% for issue in quality_issues %}
+                <li class="quality-{{ issue.severity }}">
+                    <strong>{{ issue.severity|upper }}</strong>
+                    <span>{{ issue.message }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+{% else %}
+    <section class="dashboard-quality-panel dashboard-quality-panel--ok">
+        <div>
+            <p class="eyebrow">Kontrola jakości</p>
+            <h2>Produkt wygląda kompletnie</h2>
+        </div>
+        <p>Nie znaleziono otwartych problemów danych dla tego produktu.</p>
+    </section>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="dashboard-product-form">
+    {% csrf_token %}
+    {{ product_form.non_field_errors }}
+
+    <div class="dashboard-product-grid">
+        <div class="dashboard-product-main">
+            {% for fieldset in fieldsets %}
+                <section class="dashboard-form-panel">
+                    <div class="dashboard-form-panel__heading">
+                        <h2>{{ fieldset.title }}</h2>
+                        <p>{{ fieldset.description }}</p>
+                    </div>
+                    <div class="dashboard-form-fields">
+                        {% for field in fieldset.fields %}
+                            <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox{% endif %}">
+                                <span>{{ field.label }}</span>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small>{{ field.help_text }}</small>
+                                {% endif %}
+                                {{ field.errors }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+
+        <aside class="dashboard-product-side">
+            <section class="dashboard-form-panel">
+                <div class="dashboard-form-panel__heading">
+                    <h2>Szybkie statusy</h2>
+                    <p>Te pola najmocniej wpływają na widoczność w sklepie.</p>
+                </div>
+                <dl class="dashboard-status-list">
+                    <div>
+                        <dt>Aktywny w sklepie</dt>
+                        <dd>{% if product.status == "active" %}Tak{% else %}Nie{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Dostępność</dt>
+                        <dd>{% if product.is_available %}W magazynie{% else %}Brak{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Nowy drop</dt>
+                        <dd>{% if product.is_new_drop %}Tak{% else %}Nie{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Polecany</dt>
+                        <dd>{% if product.is_featured %}Tak{% else %}Nie{% endif %}</dd>
+                    </div>
+                </dl>
+            </section>
+        </aside>
+    </div>
+
+    <section class="dashboard-form-panel">
+        <div class="dashboard-form-panel__heading dashboard-heading--row">
+            <div>
+                <h2>Warianty</h2>
+                <p>Kolor, rozmiar, SKU, cena wariantu i stan magazynowy.</p>
+            </div>
+        </div>
+        {{ variant_formset.management_form }}
+        {{ variant_formset.non_form_errors }}
+        <div class="dashboard-inline-list">
+            {% for form in variant_formset %}
+                <article class="dashboard-inline-card">
+                    {{ form.id }}
+                    <div class="dashboard-inline-card__title">
+                        <strong>Wariant {{ forloop.counter }}</strong>
+                        {% if form.instance.pk %}
+                            <span>{{ form.instance }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="dashboard-inline-fields">
+                        {% for field in form.visible_fields %}
+                            <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox{% endif %}">
+                                <span>{{ field.label }}</span>
+                                {{ field }}
+                                {{ field.errors }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="dashboard-form-panel">
+        <div class="dashboard-form-panel__heading">
+            <h2>Zdjęcia produktu</h2>
+            <p>Dodawaj zdjęcia, ustaw zdjęcie główne i przypisuj zdjęcia do wariantów, jeśli ma to sens.</p>
+        </div>
+        {{ image_formset.management_form }}
+        {{ image_formset.non_form_errors }}
+        <div class="dashboard-inline-list dashboard-inline-list--images">
+            {% for form in image_formset %}
+                <article class="dashboard-inline-card">
+                    {{ form.id }}
+                    {% if form.instance.image %}
+                        <img src="{{ form.instance.image.url }}" alt="{{ form.instance.alt_text }}" class="dashboard-product-image-preview">
+                    {% endif %}
+                    <div class="dashboard-inline-fields">
+                        {% for field in form.visible_fields %}
+                            <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox{% endif %}">
+                                <span>{{ field.label }}</span>
+                                {{ field }}
+                                {{ field.errors }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="dashboard-save-bar">
+        <button type="submit" class="button">Zapisz produkt</button>
+        <a href="{% url 'dashboard:model_delete' 'products' product.pk %}">Usuń produkt</a>
+    </div>
+</form>
+{% endblock %}

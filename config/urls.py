@@ -4,7 +4,12 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("admin/", include("dashboard.urls")),
+    path("django-admin/", admin.site.urls),
+    path("", include("catalog.urls")),
+    path("", include("cart.urls")),
+    path("", include("outfits.urls")),
+    path("", include("blog.urls")),
     path("", include("core.urls")),
 ]
 

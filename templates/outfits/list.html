@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Gotowe kreacje | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+    <div class="page-heading">
+        <p class="eyebrow">Gotowe kreacje</p>
+        <h1>Stylizacje do złożenia</h1>
+        <p>Zestawy produktów dobrane pod konkretny klimat. Na razie bez zakupu całego zestawu jednym kliknięciem.</p>
+    </div>
+
+    <div class="content-grid">
+        {% for outfit in outfits %}
+            {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
+        {% empty %}
+            <p class="empty-state">Kreacje pojawią się tutaj po dodaniu pierwszych zestawów.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+<article class="content-card">
+    <div class="content-card__body">
+        <div class="product-card__meta">
+            {% if article.category %}
+                <span>{{ article.category.name }}</span>
+            {% endif %}
+            {% for aesthetic in article.aesthetics.all|slice:":1" %}
+                <span>{{ aesthetic.name }}</span>
+            {% endfor %}
+        </div>
+        <h3><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h3>
+        {% if article.intro %}
+            <p>{{ article.intro }}</p>
+        {% endif %}
+        <a href="{{ article.get_absolute_url }}">Czytaj dalej</a>
+    </div>
+</article>

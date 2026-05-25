@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{{ outfit.name }} | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<article class="page-shell outfit-detail">
+    <div class="page-heading">
+        <p class="eyebrow">Gotowa kreacja</p>
+        <h1>{{ outfit.name }}</h1>
+        {% if outfit.short_description %}
+            <p>{{ outfit.short_description }}</p>
+        {% endif %}
+    </div>
+
+    <section class="outfit-layout">
+        <div class="product-gallery">
+            {% for image in outfit.images.all %}
+                <figure class="product-gallery__item">
+                    <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+                </figure>
+            {% empty %}
+                <div class="product-gallery__fallback">Spooky Strawberry</div>
+            {% endfor %}
+        </div>
+
+        <div class="outfit-panel">
+            <div class="product-tags">
+                {% for aesthetic in outfit.aesthetics.all %}
+                    <span>{{ aesthetic.name }}</span>
+                {% endfor %}
+            </div>
+
+            {% if outfit.mood_description %}
+                <div class="product-copy">
+                    <h2>Opis kreacji</h2>
+                    <p>{{ outfit.mood_description|linebreaksbr }}</p>
+                </div>
+            {% endif %}
+
+            <div class="product-copy">
+                <h2>Produkty w zestawie</h2>
+                <div class="outfit-items">
+                    {% for item in outfit.items.all %}
+                        <article>
+                            <a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a>
+                            <span>{{ item.quantity }} x {{ item.unit_price|money }}</span>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="cart-summary">
+                <div>
+                    <span>Cena produktów osobno</span>
+                    <strong>{{ outfit.products_total|money }}</strong>
+                </div>
+                {% if outfit.bundle_price %}
+                    <div>
+                        <span>Cena zestawu</span>
+                        <strong>{{ outfit.bundle_price|money }}</strong>
+                    </div>
+                {% endif %}
+                <p>Dodawanie całego zestawu jednym kliknięciem dodamy później, po dopracowaniu koszyka.</p>
+            </div>
+        </div>
+    </section>
+</article>
+
+{% if related_outfits %}
+<section class="section-block">
+    <div class="section-heading">
+        <p class="eyebrow">Więcej inspiracji</p>
+        <h2>Podobne kreacje</h2>
+    </div>
+    <div class="content-grid">
+        {% for outfit in related_outfits %}
+            {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

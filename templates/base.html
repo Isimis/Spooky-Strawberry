@@ -10,25 +10,75 @@
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>
 <body>
+    <div class="announcement-bar">
+        Darmowa dostawa od 50 zł! Zamów już teraz.
+    </div>
+
     <header class="site-header">
+        <nav class="site-nav site-nav--primary" aria-label="Główna nawigacja">
+            <a href="{% url 'core:home' %}">Strona główna</a>
+            <a href="{% url 'catalog:product_list' %}">Katalog</a>
+            <a href="{% url 'outfits:list' %}">Gotowe kreacje</a>
+            <a href="{% url 'blog:list' %}">Poradniki</a>
+            <a href="{% url 'core:contact' %}">Kontakt</a>
+        </nav>
+
         <a href="{% url 'core:home' %}" class="site-logo">
             Spooky Strawberry
         </a>
 
-        <nav class="site-nav">
-            <a href="#">Sklep</a>
-            <a href="#">Gotowe kreacje</a>
-            <a href="#">Poradniki</a>
-            <a href="#">Koszyk</a>
+        <nav class="site-nav site-nav--utility" aria-label="Narzędzia">
+            <a href="{% url 'core:search' %}">Wyszukiwanie</a>
+            <a href="{% url 'core:account' %}">Konto</a>
+            <a href="{% url 'cart:detail' %}">Koszyk{% if cart_item_count %} ({{ cart_item_count }}){% endif %}</a>
+            {% if request.user.is_staff %}
+                <a href="{% url 'dashboard:home' %}">Panel</a>
+            {% endif %}
         </nav>
+
+        <form class="header-search" action="{% url 'core:search' %}" method="get">
+            <input type="search" name="q" placeholder="Szukaj" aria-label="Szukaj produktów">
+        </form>
     </header>
 
+    <div class="desktop-subnav">
+        <nav aria-label="Kategorie sklepu">
+            <a href="{% url 'outfits:list' %}">Gotowe kreacje</a>
+            <a href="{% url 'blog:list' %}">Poradniki</a>
+            <a href="{% url 'catalog:product_list' %}?aesthetic=dark-coquette">Dark coquette</a>
+            <a href="{% url 'catalog:product_list' %}?aesthetic=jirai-kei">Jirai kei</a>
+            <a href="{% url 'catalog:product_list' %}?aesthetic=grunge">Grunge</a>
+        </nav>
+    </div>
+
     <main>
+        {% if messages %}
+            <div class="message-list" aria-live="polite">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
+    {% include "core/includes/newsletter.html" %}
+
     <footer class="site-footer">
-        <p>Spooky Strawberry</p>
+        <div>
+            <p class="site-footer__brand">Spooky Strawberry</p>
+            <p>Dark coquette, goth, jirai kei i małe akcesoria z charakterem.</p>
+        </div>
+
+        <nav class="footer-links" aria-label="Warunki i polityki">
+            <a href="{% url 'core:policy' 'polityka-prywatnosci' %}">Polityka prywatności</a>
+            <a href="{% url 'core:policy' 'polityka-zwrotow' %}">Polityka zwrotów</a>
+            <a href="{% url 'core:policy' 'regulamin' %}">Regulamin</a>
+            <a href="{% url 'core:policy' 'polityka-wysylki' %}">Polityka wysyłki</a>
+            <a href="{% url 'core:policy' 'dane-kontaktowe' %}">Dane kontaktowe</a>
+            <a href="{% url 'core:policy' 'nota-prawna' %}">Nota prawna</a>
+            <a href="{% url 'core:policy' 'preferencje-cookie' %}">Preferencje cookie</a>
+        </nav>
     </footer>
 </body>
 </html>

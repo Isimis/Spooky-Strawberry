@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Koszyk | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="page-shell empty-page">
+    <p class="eyebrow">Koszyk</p>
+    <h1>Twój koszyk jest pusty</h1>
+    <p>Dodawanie produktów do koszyka zrobimy osobno, bez checkoutu i bez płatności.</p>
+    <a href="{% url 'catalog:product_list' %}" class="button">Kontynuuj zakupy</a>
+</section>
+{% endblock %}

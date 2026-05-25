@@ -1,0 +1,26 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Logowanie | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-login">
+    <div>
+        <p class="eyebrow">Panel administracyjny</p>
+        <h1>Spooky Admin</h1>
+        <p>Zaloguj się kontem staff, żeby zarządzać sklepem.</p>
+    </div>
+
+    <form method="post" class="dashboard-form dashboard-form--login">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+            <label>
+                {{ field.label }}
+                {{ field }}
+                {{ field.errors }}
+            </label>
+        {% endfor %}
+        <button type="submit" class="button button--wide">Zaloguj</button>
+    </form>
+</section>
+{% endblock %}

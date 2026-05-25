@@ -1,0 +1,19 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Usuń {{ object }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+    <p class="eyebrow">{{ config.section }}</p>
+    <h1>Usuń obiekt</h1>
+    <p>Na pewno chcesz usunąć: <strong>{{ object }}</strong>?</p>
+</section>
+
+<form method="post" class="dashboard-form dashboard-form--compact">
+    {% csrf_token %}
+    <div class="dashboard-actions">
+        <button type="submit" class="button">Usuń</button>
+        <a href="{% url 'dashboard:model_list' config.slug %}">Anuluj</a>
+    </div>
+</form>
+{% endblock %}

@@ -27,7 +27,7 @@ Custom e-commerce platform for Spooky Strawberry.
 - JavaScript
 
 
-
+## Docelowa struktura serwisu
 Spooky Strawberry
 │
 ├── Strona główna

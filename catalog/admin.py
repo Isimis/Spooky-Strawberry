@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Color, Product, ProductImage, ProductVariant, Size, StyleTag
+from .models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
 
 
 class ProductImageInline(admin.TabularInline):
@@ -26,7 +26,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = [
         "status",
         "category",
-        "style_tags",
+        "aesthetics",
         "is_featured",
         "is_new_drop",
     ]
@@ -36,6 +36,6 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Category)
-admin.site.register(StyleTag)
+admin.site.register(Aesthetic)
 admin.site.register(Color)
 admin.site.register(Size)

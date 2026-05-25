@@ -1,0 +1,31 @@
+{% load catalog_extras %}
+
+{% with image=outfit.images.all.0 %}
+<article class="content-card">
+    <a href="{{ outfit.get_absolute_url }}" class="content-card__image">
+        {% if image %}
+            <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+        {% else %}
+            <span>Spooky Strawberry</span>
+        {% endif %}
+    </a>
+    <div class="content-card__body">
+        <div class="product-card__meta">
+            {% for aesthetic in outfit.aesthetics.all|slice:":2" %}
+                <span>{{ aesthetic.name }}</span>
+            {% endfor %}
+        </div>
+        <h3><a href="{{ outfit.get_absolute_url }}">{{ outfit.name }}</a></h3>
+        {% if outfit.short_description %}
+            <p>{{ outfit.short_description }}</p>
+        {% endif %}
+        <strong>
+            {% if outfit.bundle_price %}
+                Cena zestawu: {{ outfit.bundle_price|money }}
+            {% else %}
+                Produkty osobno: {{ outfit.products_total|money }}
+            {% endif %}
+        </strong>
+    </div>
+</article>
+{% endwith %}
