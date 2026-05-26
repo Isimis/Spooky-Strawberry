@@ -5,6 +5,7 @@ from django.urls import reverse
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from catalog.models import Category, Color, Product, ProductVariant
 from dashboard.models import DataQualityIssue
+from dashboard.services import get_dashboard_analytics
 
 
 class DashboardAccessTests(TestCase):
@@ -43,6 +44,7 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(home_response.status_code, 200)
         self.assertContains(home_response, "Statystyki")
         self.assertContains(home_response, "Ruch godzinowy")
+        self.assertContains(home_response, "Ostatni miesiąc")
         self.assertEqual(list_response.status_code, 200)
 
     def test_dashboard_shows_analytics_summary(self):
@@ -50,6 +52,7 @@ class DashboardAccessTests(TestCase):
             session_key="test-session",
             referrer="https://www.instagram.com/spookystrawberry",
             device_type="desktop",
+            user_agent="Mozilla/5.0 Local Browser",
         )
         AnalyticsEvent.objects.create(
             session=session,
@@ -63,7 +66,27 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "/sklep/")
         self.assertContains(response, "instagram.com")
-        self.assertContains(response, "desktop")
+        self.assertContains(response, "Komputer")
+
+    def test_dashboard_groups_legacy_sessions_by_browser_for_unique_users(self):
+        user_agent = "Local Test Browser"
+        for session_key in ("legacy-session-1", "legacy-session-2"):
+            session = AnalyticsSession.objects.create(
+                session_key=session_key,
+                user_agent=user_agent,
+                device_type="desktop",
+            )
+            AnalyticsEvent.objects.create(
+                session=session,
+                event_type=AnalyticsEvent.EVENT_PAGE_VIEW,
+                path="/",
+            )
+
+        analytics = get_dashboard_analytics()
+        today = analytics["summary_cards"][0]
+
+        self.assertEqual(today["sessions"], 2)
+        self.assertEqual(today["unique_visitors"], 1)
 
     def test_staff_user_can_create_model_entry(self):
         self.client.login(username="staff", password="pass")

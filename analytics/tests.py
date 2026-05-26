@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import AnalyticsEvent
+from .models import AnalyticsEvent, AnalyticsSession
+from .services import VISITOR_COOKIE_NAME
 
 
 class AnalyticsMiddlewareTests(TestCase):
@@ -14,4 +16,22 @@ class AnalyticsMiddlewareTests(TestCase):
                 event_type=AnalyticsEvent.EVENT_PAGE_VIEW,
                 path="/",
             ).exists()
+        )
+
+    def test_visitor_cookie_is_reused_across_django_sessions(self):
+        first_response = self.client.get(reverse("core:home"))
+        visitor_id = first_response.cookies[VISITOR_COOKIE_NAME].value
+
+        if settings.SESSION_COOKIE_NAME in self.client.cookies:
+            del self.client.cookies[settings.SESSION_COOKIE_NAME]
+        second_response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(second_response.status_code, 200)
+        self.assertEqual(
+            AnalyticsSession.objects.values("visitor_id").distinct().count(),
+            1,
+        )
+        self.assertEqual(
+            AnalyticsSession.objects.values_list("visitor_id", flat=True).first(),
+            visitor_id,
         )

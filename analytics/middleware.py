@@ -1,4 +1,4 @@
-from .services import track_event
+from .services import persist_visitor_cookie, track_event
 
 
 class AnalyticsMiddleware:
@@ -9,4 +9,5 @@ class AnalyticsMiddleware:
         response = self.get_response(request)
         if request.method == "GET" and response.status_code < 400:
             track_event(request, "page_view")
+        persist_visitor_cookie(request, response)
         return response

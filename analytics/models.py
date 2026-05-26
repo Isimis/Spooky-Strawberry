@@ -3,6 +3,7 @@ from django.db import models
 
 class AnalyticsSession(models.Model):
     session_key = models.CharField(max_length=80, unique=True)
+    visitor_id = models.CharField(max_length=64, blank=True, db_index=True)
     first_seen_at = models.DateTimeField(auto_now_add=True)
     last_seen_at = models.DateTimeField(auto_now=True)
     device_type = models.CharField(max_length=30, blank=True)
