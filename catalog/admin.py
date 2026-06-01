@@ -17,10 +17,10 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "category",
-        "base_price",
+        "regular_price",
+        "sale_price",
         "status",
         "is_featured",
-        "is_new_drop",
         "created_at",
     ]
     list_filter = [
@@ -28,9 +28,8 @@ class ProductAdmin(admin.ModelAdmin):
         "category",
         "aesthetics",
         "is_featured",
-        "is_new_drop",
     ]
-    search_fields = ["name", "short_description", "mood_description"]
+    search_fields = ["name", "description"]
     prepopulated_fields = {"slug": ("name",)}
     inlines = [ProductVariantInline, ProductImageInline]
 

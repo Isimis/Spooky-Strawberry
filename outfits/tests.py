@@ -12,7 +12,7 @@ class OutfitViewTests(TestCase):
             name="Test Product",
             slug="test-product",
             category=category,
-            base_price="20.00",
+            regular_price="20.00",
             status=Product.STATUS_ACTIVE,
         )
         self.outfit = Outfit.objects.create(

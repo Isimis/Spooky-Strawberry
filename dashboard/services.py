@@ -61,27 +61,15 @@ PRODUCT_QUALITY_CHECKS = [
         "test": lambda product: product.status == Product.STATUS_ACTIVE and not product.is_available,
     },
     {
-        "type": "missing_short_description",
-        "severity": DataQualityIssue.SEVERITY_MEDIUM,
-        "message": "Produkt nie ma krótkiego opisu.",
-        "test": lambda product: not product.short_description.strip(),
-    },
-    {
-        "type": "missing_mood_description",
+        "type": "missing_description",
         "severity": DataQualityIssue.SEVERITY_LOW,
-        "message": "Produkt nie ma opisu klimatycznego.",
-        "test": lambda product: not product.mood_description.strip(),
-    },
-    {
-        "type": "missing_details",
-        "severity": DataQualityIssue.SEVERITY_LOW,
-        "message": "Produkt nie ma szczegółów produktu.",
-        "test": lambda product: not product.details.strip(),
+        "message": "Produkt nie ma opisu.",
+        "test": lambda product: not product.description.strip(),
     },
     {
         "type": "missing_styling_tips",
         "severity": DataQualityIssue.SEVERITY_LOW,
-        "message": "Produkt nie ma sekcji jak stylizować.",
+        "message": "Produkt nie ma porad dotyczących stylizacji.",
         "test": lambda product: not product.styling_tips.strip(),
     },
     {

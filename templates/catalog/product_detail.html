@@ -26,10 +26,10 @@
                 {% if selected_variant.price %}
                     {{ selected_variant.price|money }}
                 {% else %}
-                    {{ product.base_price|money }}
+                    {{ product.current_price|money }}
                 {% endif %}
-                {% if product.compare_at_price %}
-                    <span>{{ product.compare_at_price|money }}</span>
+                {% if product.has_sale_price %}
+                    <span>{{ product.regular_price|money }}</span>
                 {% endif %}
             </p>
 
@@ -38,10 +38,6 @@
                     <span>{{ aesthetic.name }}</span>
                 {% endfor %}
             </div>
-
-            {% if product.short_description %}
-                <p class="product-lead">{{ product.short_description }}</p>
-            {% endif %}
 
             <p class="tax-note">Z wliczonymi podatkami. Checkout i płatności są jeszcze wyłączone na tym etapie projektu.</p>
 
@@ -120,24 +116,17 @@
                 </div>
             </div>
 
-            {% if product.mood_description %}
+            {% if product.description %}
                 <div class="product-copy">
                     <h2>Opis</h2>
-                    <p>{{ product.mood_description|linebreaksbr }}</p>
-                </div>
-            {% endif %}
-
-            {% if product.details %}
-                <div class="product-copy">
-                    <h2>Szczegóły produktu</h2>
-                    <p>{{ product.details|linebreaksbr }}</p>
+                    {{ product.description|formatted_text }}
                 </div>
             {% endif %}
 
             {% if product.styling_tips %}
                 <div class="product-copy">
                     <h2>Jak stylizować</h2>
-                    <p>{{ product.styling_tips|linebreaksbr }}</p>
+                    {{ product.styling_tips|formatted_text }}
                 </div>
             {% endif %}
 

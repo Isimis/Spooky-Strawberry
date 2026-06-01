@@ -119,9 +119,9 @@ class Product(models.Model):
     STATUS_ARCHIVED = "archived"
 
     STATUS_CHOICES = [
-        (STATUS_DRAFT, "Draft"),
-        (STATUS_ACTIVE, "Active"),
-        (STATUS_ARCHIVED, "Archived"),
+        (STATUS_DRAFT, "Szkic"),
+        (STATUS_ACTIVE, "Aktywny"),
+        (STATUS_ARCHIVED, "Archiwalny"),
     ]
 
     name = models.CharField(max_length=180)
@@ -137,17 +137,15 @@ class Product(models.Model):
         blank=True,
     )
 
-    short_description = models.CharField(max_length=255, blank=True)
-    mood_description = models.TextField(blank=True)
-    details = models.TextField(blank=True)
+    description = models.TextField(blank=True)
     styling_tips = models.TextField(blank=True)
 
-    base_price = models.DecimalField(
+    regular_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
     )
-    compare_at_price = models.DecimalField(
+    sale_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
@@ -155,7 +153,6 @@ class Product(models.Model):
         blank=True,
     )
     is_featured = models.BooleanField(default=False)
-    is_new_drop = models.BooleanField(default=False)
     sort_order = models.PositiveIntegerField(default=0)
 
     seo_title = models.CharField(max_length=180, blank=True)
@@ -175,7 +172,6 @@ class Product(models.Model):
         indexes = [
             models.Index(fields=["status", "created_at"], name="cat_product_status_idx"),
             models.Index(fields=["is_featured"], name="cat_product_featured_idx"),
-            models.Index(fields=["is_new_drop"], name="cat_product_new_drop_idx"),
         ]
 
     def __str__(self):
@@ -213,6 +209,16 @@ class Product(models.Model):
             if variant.is_active:
                 return variant
         return variants[0] if variants else None
+
+    @property
+    def has_sale_price(self):
+        return self.sale_price is not None and self.sale_price < self.regular_price
+
+    @property
+    def current_price(self):
+        if self.has_sale_price:
+            return self.sale_price
+        return self.regular_price
 
 
 class ProductVariant(models.Model):
@@ -282,7 +288,7 @@ class ProductVariant(models.Model):
 
     @property
     def price(self):
-        return self.price_override or self.product.base_price
+        return self.price_override or self.product.current_price
 
     @property
     def is_in_stock(self):

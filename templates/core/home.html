@@ -23,7 +23,7 @@
                         <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
                     {% endif %}
                     <span>{{ product.name }}</span>
-                    <strong>{{ product.base_price|money }}</strong>
+                    <strong>{{ product.current_price|money }}</strong>
                 </a>
             {% endwith %}
         </div>

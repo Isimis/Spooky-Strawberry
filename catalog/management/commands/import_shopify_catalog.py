@@ -98,7 +98,7 @@ class Command(BaseCommand):
         title = item["title"].strip()
         handle = item["handle"].strip()
         variants = item.get("variants", [])
-        base_price = Decimal(variants[0]["price"]) if variants else Decimal("0.00")
+        regular_price = Decimal(variants[0]["price"]) if variants else Decimal("0.00")
         body_text = html_to_text(item.get("body_html") or "")
         category = self.get_category(title, tags)
 
@@ -107,17 +107,14 @@ class Command(BaseCommand):
             defaults={
                 "name": title,
                 "category": category,
-                "short_description": make_short_description(body_text),
-                "mood_description": make_mood_description(body_text),
-                "details": make_details(body_text),
+                "description": make_description(body_text),
                 "styling_tips": make_styling_tips(title, tags),
-                "base_price": base_price,
-                "compare_at_price": None,
+                "regular_price": regular_price,
+                "sale_price": None,
                 "is_featured": index < 4,
-                "is_new_drop": True,
                 "sort_order": index,
                 "seo_title": title,
-                "seo_description": make_short_description(body_text),
+                "seo_description": make_seo_description(body_text),
                 "status": Product.STATUS_ACTIVE if any(variant.get("available") for variant in variants) else Product.STATUS_DRAFT,
             },
         )
@@ -132,7 +129,7 @@ class Command(BaseCommand):
                 color=color,
                 size=one_size,
                 sku=variant.get("sku") or None,
-                price_override=price if price != base_price else None,
+                price_override=price if price != regular_price else None,
                 stock_quantity=25 if variant.get("available") else 0,
                 is_active=bool(variant.get("available")),
                 sort_order=variant_index,
@@ -243,23 +240,17 @@ def html_to_text(html):
     return parser.get_text()
 
 
-def make_short_description(text):
+def make_seo_description(text):
     if not text:
         return ""
     first_sentence = re.split(r"(?<=[.!?])\s+", text)[0]
     return first_sentence[:255]
 
 
-def make_mood_description(text):
+def make_description(text):
     if "Szczegóły produktu:" in text:
         return text.split("Szczegóły produktu:", 1)[0].strip()
     return text
-
-
-def make_details(text):
-    if "Szczegóły produktu:" in text:
-        return "Szczegóły produktu:" + text.split("Szczegóły produktu:", 1)[1].strip()
-    return ""
 
 
 def make_styling_tips(title, tags):

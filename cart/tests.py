@@ -11,7 +11,7 @@ class SessionCartTests(TestCase):
             name="Test Choker",
             slug="test-choker",
             category=category,
-            base_price="29.00",
+            regular_price="29.00",
             status=Product.STATUS_ACTIVE,
         )
         self.variant = ProductVariant.objects.create(

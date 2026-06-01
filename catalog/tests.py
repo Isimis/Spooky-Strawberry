@@ -11,7 +11,7 @@ class CatalogViewTests(TestCase):
             name="Available Choker",
             slug="available-choker",
             category=self.category,
-            base_price="29.00",
+            regular_price="29.00",
             status=Product.STATUS_ACTIVE,
         )
         ProductVariant.objects.create(
@@ -23,7 +23,7 @@ class CatalogViewTests(TestCase):
             name="Sold Out Choker",
             slug="sold-out-choker",
             category=self.category,
-            base_price="31.00",
+            regular_price="31.00",
             status=Product.STATUS_ACTIVE,
         )
         ProductVariant.objects.create(
@@ -35,7 +35,7 @@ class CatalogViewTests(TestCase):
             name="Draft Choker",
             slug="draft-choker",
             category=self.category,
-            base_price="31.00",
+            regular_price="31.00",
             status=Product.STATUS_DRAFT,
         )
 
@@ -58,3 +58,20 @@ class CatalogViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Dodaj do koszyka")
+
+    def test_product_detail_renders_formatted_description(self):
+        self.available_product.description = (
+            "## Gotowy opis\n\n"
+            "**Mocny detal**\n\n"
+            "- Do czarnych butów\n\n"
+            "1. Załóż do chokera\n"
+            "2. Dodaj cięższe buty"
+        )
+        self.available_product.save(update_fields=["description"])
+
+        response = self.client.get(self.available_product.get_absolute_url())
+
+        self.assertContains(response, "<h2>Gotowy opis</h2>")
+        self.assertContains(response, "<strong>Mocny detal</strong>")
+        self.assertContains(response, "<li>Do czarnych butów</li>")
+        self.assertContains(response, "<ol><li>Załóż do chokera</li><li>Dodaj cięższe buty</li></ol>")

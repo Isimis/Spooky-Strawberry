@@ -1,0 +1,124 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ config.label }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-taxonomy-heading">
+    <div>
+        <p class="eyebrow">{{ config.section }}</p>
+        <h1>{{ config.label }}</h1>
+        <p>{{ taxonomy.description }}</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_create' config.slug %}" class="button">{{ taxonomy.add_label }}</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie">
+    <article>
+        <span>Wszystkie</span>
+        <strong>{{ taxonomy.total_count }}</strong>
+        <small>{{ taxonomy.plural }} w panelu</small>
+    </article>
+    <article>
+        <span>Widoczne</span>
+        <strong>{{ taxonomy.active_count }}</strong>
+        <small>{{ taxonomy.hidden_count }} ukryte</small>
+    </article>
+    <article>
+        <span>Produkty</span>
+        <strong>{{ taxonomy.assigned_product_count }}</strong>
+        <small>{{ taxonomy.active_product_count }} aktywne</small>
+    </article>
+    <article>
+        <span>{{ taxonomy.extra_label }}</span>
+        <strong>{{ taxonomy.extra_count }}</strong>
+        <small>Dane pomocnicze</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--taxonomy">
+    <input type="search" name="q" value="{{ query }}" placeholder="{{ taxonomy.search_placeholder }}">
+    <select name="visibility">
+        <option value="">Każda widoczność</option>
+        <option value="active" {% if selected_visibility == "active" %}selected{% endif %}>Widoczne</option>
+        <option value="hidden" {% if selected_visibility == "hidden" %}selected{% endif %}>Ukryte</option>
+    </select>
+    <button type="submit">Szukaj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-taxonomy-grid" aria-label="{{ config.label }}">
+    {% for row in rows %}
+        <article class="dashboard-taxonomy-card">
+            <div class="dashboard-taxonomy-card__head">
+                <div>
+                    <p class="eyebrow">{{ row.eyebrow }}</p>
+                    <h2>
+                        {% if row.color_hex %}
+                            <span class="dashboard-color-swatch" style="background: {{ row.color_hex }};"></span>
+                        {% endif %}
+                        {{ row.name }}
+                    </h2>
+                </div>
+                <span class="dashboard-status-pill {% if row.is_active %}dashboard-status-pill--active{% else %}dashboard-status-pill--draft{% endif %}">
+                    {% if row.is_active %}Widoczna{% else %}Ukryta{% endif %}
+                </span>
+            </div>
+
+            <p class="dashboard-taxonomy-card__description">
+                {% if row.description %}{{ row.description }}{% else %}Brak opisu. Warto dodać krótki tekst roboczy albo SEO.{% endif %}
+            </p>
+
+            <dl class="dashboard-taxonomy-facts">
+                {% for fact in row.facts %}
+                    <div>
+                        <dt>{{ fact.label }}</dt>
+                        <dd>{{ fact.value }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+
+            <div class="dashboard-taxonomy-slug">
+                <span>URL</span>
+                <code>{{ row.slug }}</code>
+            </div>
+
+            <div class="dashboard-taxonomy-actions">
+                <a href="{{ row.admin_url }}">Edytuj</a>
+                <a href="{{ row.preview_url }}">Podgląd</a>
+                <a href="{{ row.delete_url }}">Usuń</a>
+            </div>
+        </article>
+    {% empty %}
+        <article class="dashboard-empty-card">
+            <h2>Brak danych</h2>
+            <p>Dodaj pierwszą pozycję albo zmień filtr wyszukiwania.</p>
+            <a href="{% url 'dashboard:model_create' config.slug %}" class="button">{{ taxonomy.add_label }}</a>
+        </article>
+    {% endfor %}
+</section>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

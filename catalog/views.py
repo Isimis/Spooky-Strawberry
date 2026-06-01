@@ -13,8 +13,8 @@ from .models import Aesthetic, Category, Color, Product, Size
 SORT_OPTIONS = {
     "featured": ("Polecane", ["sort_order", "-created_at"]),
     "newest": ("Najnowsze", ["-created_at"]),
-    "price_asc": ("Cena rosnąco", ["base_price", "name"]),
-    "price_desc": ("Cena malejąco", ["-base_price", "name"]),
+    "price_asc": ("Cena rosnąco", ["regular_price", "name"]),
+    "price_desc": ("Cena malejąco", ["-regular_price", "name"]),
     "name_asc": ("Alfabetycznie", ["name"]),
 }
 
@@ -56,9 +56,9 @@ def product_list(request):
     elif availability == "sold_out":
         products = products.exclude(variants__is_active=True, variants__stock_quantity__gt=0)
     if min_price is not None:
-        products = products.filter(base_price__gte=min_price)
+        products = products.filter(regular_price__gte=min_price)
     if max_price is not None:
-        products = products.filter(base_price__lte=max_price)
+        products = products.filter(regular_price__lte=max_price)
 
     products = products.distinct().order_by(*SORT_OPTIONS.get(selected_sort, SORT_OPTIONS["featured"])[1])
     selected_filters = build_selected_filters(
@@ -90,8 +90,8 @@ def product_list(request):
     query_params = request.GET.copy()
     query_params.pop("page", None)
     price_range = Product.objects.filter(status=Product.STATUS_ACTIVE).aggregate(
-        min_price=Min("base_price"),
-        max_price=Max("base_price"),
+        min_price=Min("regular_price"),
+        max_price=Max("regular_price"),
     )
 
     return render(

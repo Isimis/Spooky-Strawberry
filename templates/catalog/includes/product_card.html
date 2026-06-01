@@ -14,15 +14,17 @@
     </a>
     <div class="product-card__body">
         <div class="product-card__meta">
-            {% if product.is_new_drop %}
-                <span>Nowy drop</span>
-            {% endif %}
             {% for aesthetic in product.aesthetics.all|slice:":1" %}
                 <span>{{ aesthetic.name }}</span>
             {% endfor %}
         </div>
         <h3><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></h3>
-        <p>{{ product.base_price|money }}</p>
+        <p>
+            {{ product.current_price|money }}
+            {% if product.has_sale_price %}
+                <span>{{ product.regular_price|money }}</span>
+            {% endif %}
+        </p>
         <div class="product-card__swatches" aria-label="Dostępne kolory">
             {% for item in product.variants.all %}
                 {% if item.color %}

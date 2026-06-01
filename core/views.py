@@ -43,7 +43,7 @@ POLICIES = {
 
 def home_view(request):
     new_drop_products = (
-        Product.objects.filter(status=Product.STATUS_ACTIVE, is_new_drop=True)
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
         .prefetch_related("images", "aesthetics", "variants__color")
         .order_by("sort_order", "-created_at")[:8]
     )
@@ -76,8 +76,7 @@ def search_view(request):
             Product.objects.filter(status=Product.STATUS_ACTIVE)
             .filter(
                 Q(name__icontains=query)
-                | Q(short_description__icontains=query)
-                | Q(mood_description__icontains=query)
+                | Q(description__icontains=query)
                 | Q(category__name__icontains=query)
                 | Q(aesthetics__name__icontains=query)
             )

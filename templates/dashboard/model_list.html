@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load catalog_extras %}
 
 {% block title %}{{ config.label }} | Spooky Admin{% endblock %}
 
@@ -8,15 +9,20 @@
         <p class="eyebrow">{{ config.section }}</p>
         <h1>{{ config.label }}</h1>
     </div>
+</section>
+
+<section class="dashboard-list-toolbar" aria-label="Akcje listy">
     <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_create' config.slug %}" class="button">
+            {% if config.slug == "products" %}Dodaj produkt{% else %}Dodaj{% endif %}
+        </a>
         {% if config.slug == "products" %}
             <form method="post" action="{% url 'dashboard:refresh_quality' %}">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" class="button button--secondary">Odśwież jakość danych</button>
+                <button type="submit" class="button button--secondary">Sprawdź braki danych</button>
             </form>
         {% endif %}
-        <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj</a>
     </div>
 </section>
 
@@ -40,7 +46,7 @@
         </select>
     {% endif %}
     <button type="submit">Szukaj</button>
-    {% if query %}
+    {% if query or active_filters %}
         <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
     {% endif %}
 </form>
@@ -54,37 +60,150 @@
     </div>
 {% endif %}
 
-<div class="dashboard-table-wrap">
-    <table class="dashboard-table">
-        <thead>
-            <tr>
-                <th>Obiekt</th>
-                {% for field in config.list_fields %}
-                    <th>{{ field }}</th>
+{% if config.slug == "products" %}
+    <div class="dashboard-table-wrap dashboard-table-wrap--products">
+        <table class="dashboard-table dashboard-product-table">
+            <colgroup>
+                <col class="dashboard-product-col dashboard-product-col--product">
+                <col class="dashboard-product-col dashboard-product-col--category">
+                <col class="dashboard-product-col dashboard-product-col--price">
+                <col class="dashboard-product-col dashboard-product-col--sale">
+                <col class="dashboard-product-col dashboard-product-col--stock">
+                <col class="dashboard-product-col dashboard-product-col--status">
+                <col class="dashboard-product-col dashboard-product-col--featured">
+                <col class="dashboard-product-col dashboard-product-col--actions">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.product.is_active %}is-active{% endif %}" href="{{ product_sort_headers.product.url }}">
+                            Produkt <span>{{ product_sort_headers.product.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.category.is_active %}is-active{% endif %}" href="{{ product_sort_headers.category.url }}">
+                            Kategoria <span>{{ product_sort_headers.category.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.regular_price.is_active %}is-active{% endif %}" href="{{ product_sort_headers.regular_price.url }}">
+                            Cena regularna <span>{{ product_sort_headers.regular_price.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.sale_price.is_active %}is-active{% endif %}" href="{{ product_sort_headers.sale_price.url }}">
+                            Cena promocyjna <span>{{ product_sort_headers.sale_price.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.stock.is_active %}is-active{% endif %}" href="{{ product_sort_headers.stock.url }}">
+                            Ilość <span>{{ product_sort_headers.stock.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.status.is_active %}is-active{% endif %}" href="{{ product_sort_headers.status.url }}">
+                            Status <span>{{ product_sort_headers.status.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <a class="dashboard-sort-link {% if product_sort_headers.featured.is_active %}is-active{% endif %}" href="{{ product_sort_headers.featured.url }}">
+                            Polecany <span>{{ product_sort_headers.featured.marker }}</span>
+                        </a>
+                    </th>
+                    <th>
+                        <span class="dashboard-column-label">Akcje</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>
+                            <div class="dashboard-product-cell">
+                                <a href="{{ row.admin_url }}" class="dashboard-product-thumb">
+                                    {% if row.image_url %}
+                                        <img src="{{ row.image_url }}" alt="{{ row.image_alt }}">
+                                    {% else %}
+                                        <span>SS</span>
+                                    {% endif %}
+                                </a>
+                                <div>
+                                    <a href="{{ row.admin_url }}" class="dashboard-product-name">{{ row.name }}</a>
+                                    <small>{{ row.variant_count }} wariantów</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.regular_price|money }}</td>
+                        <td>
+                            {% if row.sale_price %}
+                                <strong class="dashboard-sale-price">{{ row.sale_price|money }}</strong>
+                            {% else %}
+                                <span class="dashboard-muted">Brak</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="dashboard-stock-pill {% if not row.is_available %}is-empty{% endif %}">
+                                {{ row.stock_quantity }} szt.
+                            </span>
+                        </td>
+                        <td>
+                            <span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">
+                                {{ row.status_label }}
+                            </span>
+                        </td>
+                        <td>{% if row.is_featured %}Tak{% else %}Nie{% endif %}</td>
+                        <td>
+                            <div class="dashboard-row-actions">
+                                <a href="{{ row.admin_url }}">Otwórz</a>
+                                <a href="{{ row.object.get_absolute_url }}">Podgląd</a>
+                                <a href="{% url 'dashboard:model_delete' config.slug row.object.pk %}">Usuń</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8">Brak produktów.</td>
+                    </tr>
                 {% endfor %}
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="dashboard-table-wrap">
+        <table class="dashboard-table">
+            <thead>
                 <tr>
-                    <td>{{ row.object }}</td>
-                    {% for cell in row.cells %}
-                        <td>{{ cell }}</td>
+                    <th>Obiekt</th>
+                    {% for field in config.list_fields %}
+                        <th>{{ field }}</th>
                     {% endfor %}
-                    <td>
-                        <a href="{{ row.admin_url }}">{% if config.slug == "products" %}Otwórz produkt{% else %}Edytuj{% endif %}</a>
-                        <a href="{% url 'dashboard:model_delete' config.slug row.object.pk %}">Usuń</a>
-                    </td>
+                    <th>Akcje</th>
                 </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="{{ config.list_fields|length|add:2 }}">Brak danych.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td>{{ row.object }}</td>
+                        {% for cell in row.cells %}
+                            <td>{{ cell }}</td>
+                        {% endfor %}
+                        <td>
+                            <div class="dashboard-row-actions">
+                                <a href="{{ row.admin_url }}">Edytuj</a>
+                                <a href="{% url 'dashboard:model_delete' config.slug row.object.pk %}">Usuń</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="{{ config.list_fields|length|add:2 }}">Brak danych.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
 
 {% if page.paginator.num_pages > 1 %}
     <nav class="dashboard-pagination">

@@ -110,7 +110,7 @@ class OutfitItem(models.Model):
     def unit_price(self):
         if self.variant:
             return self.variant.price
-        return self.product.base_price
+        return self.product.current_price
 
 
 class OutfitImage(models.Model):

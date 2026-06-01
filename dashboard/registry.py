@@ -4,7 +4,7 @@ from accounts.models import CustomerAddress, CustomerProfile, FavoriteProduct
 from ai_tools.models import AIContentSuggestion, AIJob
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
-from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
+from catalog.models import Aesthetic, Category, Color, Product, Size
 from checkout.models import CheckoutDraft
 from core.models import HomepageSection, NewsletterSubscriber, SitePage
 from dashboard.models import DashboardTask, DataQualityIssue
@@ -24,9 +24,7 @@ class AdminModelConfig:
 
 
 MODEL_REGISTRY = [
-    AdminModelConfig("products", "Produkty", Product, "Katalog", ("name", "category", "base_price", "status", "is_featured", "is_new_drop"), ("name", "short_description", "mood_description")),
-    AdminModelConfig("product-variants", "Warianty produktów", ProductVariant, "Katalog", ("product", "color", "size", "sku", "stock_quantity", "is_active"), ("product__name", "sku")),
-    AdminModelConfig("product-images", "Zdjęcia produktów", ProductImage, "Katalog", ("product", "variant", "image", "is_main", "sort_order"), ("product__name", "alt_text")),
+    AdminModelConfig("products", "Produkty", Product, "Katalog", ("name", "category", "regular_price", "sale_price", "status", "is_featured"), ("name", "description")),
     AdminModelConfig("categories", "Kategorie", Category, "Katalog", ("name", "parent", "is_active"), ("name", "description")),
     AdminModelConfig("aesthetics", "Estetyki", Aesthetic, "Katalog", ("name", "is_active", "sort_order"), ("name", "description")),
     AdminModelConfig("colors", "Kolory", Color, "Katalog", ("name", "hex_code", "is_active"), ("name", "hex_code")),

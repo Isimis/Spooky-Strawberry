@@ -144,8 +144,7 @@ def select_products(products, keywords, limit):
         search = " ".join(
             [
                 product.name,
-                product.short_description,
-                product.mood_description,
+                product.description,
                 product.category.name,
                 " ".join(aesthetic.name for aesthetic in product.aesthetics.all()),
             ]
@@ -162,7 +161,7 @@ def get_aesthetics(names):
 
 
 def calculate_bundle_price(products):
-    total = sum((product.base_price for product in products), Decimal("0.00"))
+    total = sum((product.current_price for product in products), Decimal("0.00"))
     if total <= 0:
         return None
     return (total * Decimal("0.90")).quantize(Decimal("0.01"))

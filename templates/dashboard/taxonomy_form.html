@@ -1,0 +1,115 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if object %}{{ object }}{% else %}Nowa pozycja{% endif %} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-taxonomy-heading">
+    <div>
+        <p class="eyebrow">{{ config.section }}</p>
+        <h1>{% if object %}{{ object }}{% else %}Nowa {{ taxonomy.singular }}{% endif %}</h1>
+        <p>Slug tworzy się automatycznie z nazwy. Tutaj ustawiasz nazwę, opis i widoczność w sklepie.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        {% if object and taxonomy.preview_url %}
+            <a href="{{ taxonomy.preview_url }}" class="button button--secondary">Podgląd w sklepie</a>
+        {% endif %}
+        <a href="{% url 'dashboard:model_list' config.slug %}" class="button button--secondary">Wróć do listy</a>
+    </div>
+</section>
+
+{% if object %}
+    <section class="dashboard-taxonomy-summary" aria-label="Podsumowanie">
+        <article>
+            <span>Produkty</span>
+            <strong>{{ taxonomy.product_count }}</strong>
+            <small>{{ taxonomy.active_product_count }} aktywne</small>
+        </article>
+        <article>
+            <span>Status</span>
+            <strong>{% if taxonomy.is_active %}Tak{% else %}Nie{% endif %}</strong>
+            <small>Widoczna w sklepie</small>
+        </article>
+        <article>
+            <span>URL</span>
+            <strong class="dashboard-taxonomy-summary__slug">{{ taxonomy.slug }}</strong>
+            <small>Generowany automatycznie</small>
+        </article>
+        <article>
+            <span>{{ taxonomy.detail_stat_label }}</span>
+            <strong>{{ taxonomy.detail_stat_value }}</strong>
+            <small>{{ taxonomy.detail_stat_help }}</small>
+        </article>
+    </section>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="dashboard-taxonomy-editor">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <section class="dashboard-form-panel dashboard-taxonomy-editor__main">
+        <div class="dashboard-form-panel__heading">
+            <h2>Podstawy</h2>
+            <p>To są dane, które wpływają na filtrowanie katalogu i późniejsze strony kolekcji.</p>
+        </div>
+
+        <div class="dashboard-form-fields dashboard-form-fields--taxonomy">
+            {% for field in form %}
+                <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox dashboard-field--compact-checkbox{% endif %}" data-field-name="{{ field.name }}">
+                    <span>{{ field.label }}</span>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small>{{ field.help_text }}</small>
+                    {% endif %}
+                    {{ field.errors }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <div class="dashboard-actions dashboard-actions--taxonomy">
+            <button type="submit" class="button">{{ taxonomy.save_label }}</button>
+            {% if object %}
+                <a href="{% url 'dashboard:model_delete' config.slug object.pk %}">{{ taxonomy.delete_label }}</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <aside class="dashboard-form-panel dashboard-taxonomy-preview">
+        <div class="dashboard-form-panel__heading">
+            <h2>Podgląd roboczy</h2>
+            <p>Krótki kontekst, żeby od razu było widać, czy ta pozycja ma sens w katalogu.</p>
+        </div>
+
+        <article class="dashboard-taxonomy-preview-card">
+            <span>{{ taxonomy.preview_label }}</span>
+            <h3>
+                {% if taxonomy.color_hex %}
+                    <span class="dashboard-color-swatch" style="background: {{ taxonomy.color_hex }};"></span>
+                {% endif %}
+                {% if object %}{{ object }}{% else %}Nazwa pojawi się po zapisaniu{% endif %}
+            </h3>
+            <p>{{ taxonomy.description }}</p>
+            {% if object %}
+                <code>{{ taxonomy.slug }}</code>
+            {% endif %}
+        </article>
+
+        {% if object %}
+            <div class="dashboard-taxonomy-related">
+                <h3>Powiązane produkty</h3>
+                {% if taxonomy.related_products %}
+                    <ul>
+                        {% for product in taxonomy.related_products %}
+                            <li>
+                                <span>{{ product.name }}</span>
+                                <small>{{ product.get_status_display }}</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Na razie nic nie jest przypisane.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </aside>
+</form>
+{% endblock %}
