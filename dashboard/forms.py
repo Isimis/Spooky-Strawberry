@@ -4,7 +4,9 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.forms import modelform_factory
 
+from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size, unique_slug_for
+from outfits.models import Outfit, OutfitImage, OutfitItem
 
 
 def build_model_form(model):
@@ -16,6 +18,12 @@ def build_model_form(model):
         return ColorDashboardForm
     if model is Size:
         return SizeDashboardForm
+    if model is Outfit:
+        return OutfitDashboardForm
+    if model is Article:
+        return ArticleDashboardForm
+    if model is BlogCategory:
+        return BlogCategoryDashboardForm
 
     form_class = modelform_factory(model, fields="__all__")
     for field in form_class.base_fields.values():
@@ -174,6 +182,32 @@ class SizeDashboardForm(AutoSlugDashboardForm):
         self.apply_dashboard_widgets()
 
 
+class BlogCategoryDashboardForm(AutoSlugDashboardForm):
+    class Meta:
+        model = BlogCategory
+        fields = ["name", "description", "sort_order", "is_active"]
+        labels = {
+            "name": "Nazwa kategorii poradników",
+            "description": "Opis kategorii",
+            "sort_order": "Kolejność wyświetlania",
+            "is_active": "Widoczna w sklepie",
+        }
+        help_texts = {
+            "name": "Krótka nazwa widoczna przy poradnikach i w filtrach treści.",
+            "description": "Opis roboczy kategorii. Przyda się później do SEO i stron poradnikowych.",
+            "sort_order": "Niższa liczba oznacza wcześniejsze miejsce na listach.",
+            "is_active": "Wyłącz, jeśli kategoria ma zostać w panelu, ale nie ma być pokazywana klientkom.",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 6, "placeholder": "Np. stylizacje, estetyki, poradniki produktowe..."}),
+            "sort_order": forms.NumberInput(attrs={"min": 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+
+
 class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
     class Meta:
         model = Product
@@ -245,6 +279,110 @@ class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
         return product
 
 
+class OutfitDashboardForm(AutoSlugDashboardForm):
+    class Meta:
+        model = Outfit
+        fields = [
+            "name",
+            "short_description",
+            "mood_description",
+            "styling_tips",
+            "aesthetics",
+            "bundle_price",
+            "status",
+            "is_featured",
+            "seo_title",
+            "seo_description",
+        ]
+        labels = {
+            "name": "Nazwa kreacji",
+            "short_description": "Krótki opis",
+            "mood_description": "Opis klimatu",
+            "styling_tips": "Porady stylizacyjne",
+            "aesthetics": "Estetyki",
+            "bundle_price": "Cena promocyjna zestawu",
+            "status": "Status kreacji",
+            "is_featured": "Polecana kreacja",
+            "seo_title": "Tytuł SEO",
+            "seo_description": "Opis SEO",
+        }
+        help_texts = {
+            "short_description": "Jedno krótkie zdanie widoczne na karcie kreacji.",
+            "mood_description": "Główny opis nastroju i stylu zestawu.",
+            "styling_tips": "Jak nosić tę kreację i z czym ją łączyć.",
+            "bundle_price": "Cena promocyjna za cały zestaw. Zostaw puste, jeśli nie ma rabatu.",
+            "seo_title": "Opcjonalny tytuł do wyszukiwarki.",
+            "seo_description": "Opcjonalny opis do wyszukiwarki.",
+        }
+        widgets = {
+            "aesthetics": forms.CheckboxSelectMultiple(attrs={"class": "dashboard-choice-list"}),
+            "mood_description": forms.Textarea(attrs={"rows": 6}),
+            "styling_tips": forms.Textarea(attrs={"rows": 4}),
+            "seo_description": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["status"].choices = [
+            (Outfit.STATUS_DRAFT, "Szkic"),
+            (Outfit.STATUS_ACTIVE, "Aktywna"),
+            (Outfit.STATUS_ARCHIVED, "Archiwalna"),
+        ]
+
+
+class OutfitItemInlineForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = OutfitItem
+        fields = [
+            "product",
+            "variant",
+            "quantity",
+            "sort_order",
+        ]
+        labels = {
+            "product": "Produkt",
+            "variant": "Wariant",
+            "quantity": "Ilość",
+            "sort_order": "Kolejność",
+        }
+        help_texts = {
+            "variant": "Opcjonalnie wybierz konkretny wariant produktu.",
+            "quantity": "Liczba sztuk tego produktu w kreacji.",
+        }
+        widgets = {
+            "sort_order": forms.HiddenInput(),
+            "quantity": forms.NumberInput(attrs={"min": 1}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["product"].queryset = Product.objects.order_by("name")
+        self.fields["variant"].queryset = ProductVariant.objects.select_related("product", "color", "size").order_by(
+            "product__name",
+            "sort_order",
+            "id",
+        )
+        self.fields["variant"].empty_label = "Dowolny / domyślny"
+
+
+class OutfitImageInlineForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = OutfitImage
+        fields = ["sort_order"]
+        labels = {
+            "sort_order": "Kolejność",
+        }
+        widgets = {
+            "sort_order": forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+
+
 class ProductVariantInlineForm(DashboardFormMixin, forms.ModelForm):
     class Meta:
         model = ProductVariant
@@ -304,6 +442,74 @@ class ProductImageInlineForm(DashboardFormMixin, forms.ModelForm):
             self.fields["variant"].queryset = self.instance.product.variants.all()
 
 
+class ArticleDashboardForm(AutoSlugDashboardForm):
+    slug_source_field = "title"
+
+    class Meta:
+        model = Article
+        fields = [
+            "title",
+            "intro",
+            "body",
+            "category",
+            "cover_image",
+            "aesthetics",
+            "products",
+            "outfits",
+            "status",
+            "is_featured",
+            "published_at",
+            "seo_title",
+            "seo_description",
+        ]
+        labels = {
+            "title": "Tytuł poradnika",
+            "intro": "Zajawka",
+            "body": "Treść poradnika",
+            "category": "Kategoria",
+            "cover_image": "Okładka",
+            "aesthetics": "Estetyki",
+            "products": "Powiązane produkty",
+            "outfits": "Powiązane kreacje",
+            "status": "Status publikacji",
+            "is_featured": "Wyróżniony poradnik",
+            "published_at": "Data publikacji",
+            "seo_title": "Tytuł SEO",
+            "seo_description": "Opis SEO",
+        }
+        help_texts = {
+            "title": "Najważniejszy nagłówek poradnika.",
+            "intro": "Krótki opis pod tytułem. Najlepiej jedno albo dwa zdania.",
+            "body": "Obsługuje proste formatowanie i wklejanie sformatowanego tekstu.",
+            "cover_image": "Opcjonalna grafika widoczna na liście i karcie poradnika.",
+            "products": "Produkty, które będą pokazane pod artykułem.",
+            "outfits": "Gotowe kreacje powiązane z poradnikiem.",
+            "published_at": "Możesz zostawić puste. Przy publikacji uzupełni się automatycznie.",
+            "seo_title": "Opcjonalny tytuł do wyszukiwarki.",
+            "seo_description": "Opcjonalny opis do wyszukiwarki.",
+        }
+        widgets = {
+            "intro": forms.Textarea(attrs={"rows": 3}),
+            "body": forms.Textarea(attrs={"rows": 16, "data-rich-text-input": "article-body"}),
+            "aesthetics": forms.CheckboxSelectMultiple(attrs={"class": "dashboard-choice-list"}),
+            "products": forms.SelectMultiple(attrs={"class": "dashboard-input dashboard-multiselect"}),
+            "outfits": forms.SelectMultiple(attrs={"class": "dashboard-input dashboard-multiselect"}),
+            "published_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "seo_description": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["status"].choices = [
+            (Article.STATUS_DRAFT, "Szkic"),
+            (Article.STATUS_PUBLISHED, "Opublikowany"),
+            (Article.STATUS_ARCHIVED, "Archiwalny"),
+        ]
+        if self.instance and self.instance.published_at:
+            self.initial["published_at"] = self.instance.published_at.strftime("%Y-%m-%dT%H:%M")
+
+
 ProductVariantFormSet = inlineformset_factory(
     Product,
     ProductVariant,
@@ -316,6 +522,22 @@ ProductImageFormSet = inlineformset_factory(
     Product,
     ProductImage,
     form=ProductImageInlineForm,
+    extra=0,
+    can_delete=True,
+)
+
+OutfitItemFormSet = inlineformset_factory(
+    Outfit,
+    OutfitItem,
+    form=OutfitItemInlineForm,
+    extra=0,
+    can_delete=True,
+)
+
+OutfitImageFormSet = inlineformset_factory(
+    Outfit,
+    OutfitImage,
+    form=OutfitImageInlineForm,
     extra=0,
     can_delete=True,
 )

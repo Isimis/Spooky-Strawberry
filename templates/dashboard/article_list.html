@@ -1,0 +1,165 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Poradniki | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-article-heading">
+    <div>
+        <p class="eyebrow">Poradniki SEO</p>
+        <h1>Poradniki</h1>
+        <p>Zarządzaj artykułami, okładkami, kategoriami, SEO i powiązaniami z produktami oraz kreacjami.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:article_create_workspace' %}" class="button">Dodaj poradnik</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-article-summary" aria-label="Podsumowanie poradników">
+    <article>
+        <span>Wszystkie</span>
+        <strong>{{ article_summary.total_count }}</strong>
+        <small>poradniki w panelu</small>
+    </article>
+    <article>
+        <span>Opublikowane</span>
+        <strong>{{ article_summary.published_count }}</strong>
+        <small>widoczne w sklepie</small>
+    </article>
+    <article>
+        <span>Szkice</span>
+        <strong>{{ article_summary.draft_count }}</strong>
+        <small>do dopracowania</small>
+    </article>
+    <article>
+        <span>Z okładką</span>
+        <strong>{{ article_summary.with_cover_count }}</strong>
+        <small>mają grafikę listy</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--articles">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po tytule, zajawce lub treści">
+    <select name="status">
+        <option value="">Każdy status</option>
+        {% for value, label in article_statuses %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                {% if value == "draft" %}Szkic{% elif value == "published" %}Opublikowany{% elif value == "archived" %}Archiwalny{% else %}{{ label }}{% endif %}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="category">
+        <option value="">Każda kategoria</option>
+        {% for category in article_categories %}
+            <option value="{{ category.id }}" {% if selected_category == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+    </select>
+    <select name="featured">
+        <option value="">Wyróżnione i zwykłe</option>
+        <option value="yes" {% if selected_featured == "yes" %}selected{% endif %}>Tylko wyróżnione</option>
+        <option value="no" {% if selected_featured == "no" %}selected{% endif %}>Niewyróżnione</option>
+    </select>
+    <button type="submit">Szukaj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-article-list" aria-label="Lista poradników">
+    {% for row in rows %}
+        <article class="dashboard-article-card">
+            <a href="{{ row.admin_url }}" class="dashboard-article-card__cover">
+                {% if row.cover_url %}
+                    <img src="{{ row.cover_url }}" alt="{{ row.cover_alt }}">
+                {% else %}
+                    <span>SS</span>
+                {% endif %}
+            </a>
+            <div class="dashboard-article-card__content">
+                <div class="dashboard-article-card__head">
+                    <div>
+                        <p class="eyebrow">{% if row.category %}{{ row.category.name }}{% else %}Bez kategorii{% endif %}</p>
+                        <h2><a href="{{ row.admin_url }}">{{ row.title }}</a></h2>
+                    </div>
+                    <span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span>
+                </div>
+
+                {% if row.intro %}
+                    <p>{{ row.intro }}</p>
+                {% else %}
+                    <p class="dashboard-muted">Brak zajawki. Warto dodać krótki opis widoczny pod tytułem.</p>
+                {% endif %}
+
+                <div class="dashboard-outfit-tags">
+                    {% for aesthetic in row.aesthetics %}
+                        <span>{{ aesthetic.name }}</span>
+                    {% empty %}
+                        <span>Bez estetyki</span>
+                    {% endfor %}
+                </div>
+
+                <dl class="dashboard-article-facts">
+                    <div>
+                        <dt>Produkty</dt>
+                        <dd>{{ row.product_count }}</dd>
+                    </div>
+                    <div>
+                        <dt>Kreacje</dt>
+                        <dd>{{ row.outfit_count }}</dd>
+                    </div>
+                    <div>
+                        <dt>Okładka</dt>
+                        <dd>{% if row.has_cover %}Tak{% else %}Brak{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Aktualizacja</dt>
+                        <dd>{{ row.updated_at|date:"d.m.Y" }}</dd>
+                    </div>
+                </dl>
+
+                <div class="dashboard-article-card__footer">
+                    <span>{% if row.is_featured %}Wyróżniony{% else %}Zwykły{% endif %}</span>
+                    {% if row.published_at %}
+                        <span>Publikacja: {{ row.published_at|date:"d.m.Y H:i" }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="dashboard-taxonomy-actions">
+                    <a href="{{ row.admin_url }}">Edytuj</a>
+                    {% if row.preview_url %}
+                        <a href="{{ row.preview_url }}">Podgląd</a>
+                    {% endif %}
+                    <a href="{{ row.delete_url }}">Usuń</a>
+                </div>
+            </div>
+        </article>
+    {% empty %}
+        <article class="dashboard-empty-card">
+            <h2>Brak poradników</h2>
+            <p>Dodaj pierwszy artykuł SEO i połącz go z produktami, kreacjami oraz estetykami.</p>
+            <a href="{% url 'dashboard:article_create_workspace' %}" class="button">Dodaj poradnik</a>
+        </article>
+    {% endfor %}
+</section>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

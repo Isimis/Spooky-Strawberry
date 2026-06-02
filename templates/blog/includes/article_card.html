@@ -1,4 +1,11 @@
 <article class="content-card">
+    <a href="{{ article.get_absolute_url }}" class="content-card__image">
+        {% if article.cover_image %}
+            <img src="{{ article.cover_image.url }}" alt="{{ article.title }}">
+        {% else %}
+            <span>SS</span>
+        {% endif %}
+    </a>
     <div class="content-card__body">
         <div class="product-card__meta">
             {% if article.category %}

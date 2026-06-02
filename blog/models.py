@@ -47,6 +47,7 @@ class Article(models.Model):
     )
     intro = models.CharField(max_length=255, blank=True)
     body = models.TextField()
+    cover_image = models.ImageField(upload_to="articles/", blank=True)
     products = models.ManyToManyField("catalog.Product", related_name="articles", blank=True)
     outfits = models.ManyToManyField("outfits.Outfit", related_name="articles", blank=True)
     aesthetics = models.ManyToManyField("catalog.Aesthetic", related_name="articles", blank=True)

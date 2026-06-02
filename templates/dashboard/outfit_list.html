@@ -1,0 +1,150 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Gotowe kreacje | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-outfit-heading">
+    <div>
+        <p class="eyebrow">Kreacje</p>
+        <h1>Gotowe kreacje</h1>
+        <p>Zarządzaj stylizacjami, zdjęciami, produktami w zestawie i ceną promocyjną.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj kreację</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie kreacji">
+    <article>
+        <span>Wszystkie</span>
+        <strong>{{ outfit_summary.total_count }}</strong>
+        <small>kreacje w panelu</small>
+    </article>
+    <article>
+        <span>Aktywne</span>
+        <strong>{{ outfit_summary.active_count }}</strong>
+        <small>widoczne w sklepie</small>
+    </article>
+    <article>
+        <span>Polecane</span>
+        <strong>{{ outfit_summary.featured_count }}</strong>
+        <small>na stronie i listach</small>
+    </article>
+    <article>
+        <span>Z promocją</span>
+        <strong>{{ outfit_summary.with_promo_count }}</strong>
+        <small>mają cenę zestawu</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--outfits">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po nazwie lub opisie">
+    <select name="status">
+        <option value="">Każdy status</option>
+        {% for value, label in outfit_statuses %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                {% if value == "draft" %}Szkic{% elif value == "active" %}Aktywna{% elif value == "archived" %}Archiwalna{% else %}{{ label }}{% endif %}
+            </option>
+        {% endfor %}
+    </select>
+    <select name="featured">
+        <option value="">Polecane i zwykłe</option>
+        <option value="yes" {% if selected_featured == "yes" %}selected{% endif %}>Tylko polecane</option>
+        <option value="no" {% if selected_featured == "no" %}selected{% endif %}>Niepolecane</option>
+    </select>
+    <button type="submit">Szukaj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-outfit-grid" aria-label="Lista kreacji">
+    {% for row in rows %}
+        <article class="dashboard-outfit-card">
+            <a href="{{ row.admin_url }}" class="dashboard-outfit-card__image">
+                {% if row.image_url %}
+                    <img src="{{ row.image_url }}" alt="{{ row.image_alt }}">
+                {% else %}
+                    <span>SS</span>
+                {% endif %}
+            </a>
+            <div class="dashboard-outfit-card__body">
+                <div class="dashboard-outfit-card__head">
+                    <div>
+                        <p class="eyebrow">Kreacja</p>
+                        <h2><a href="{{ row.admin_url }}">{{ row.name }}</a></h2>
+                    </div>
+                    <span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span>
+                </div>
+
+                {% if row.short_description %}
+                    <p>{{ row.short_description }}</p>
+                {% else %}
+                    <p class="dashboard-muted">Brak krótkiego opisu. Warto uzupełnić tekst widoczny na karcie kreacji.</p>
+                {% endif %}
+
+                <div class="dashboard-outfit-tags">
+                    {% for aesthetic in row.aesthetics %}
+                        <span>{{ aesthetic.name }}</span>
+                    {% empty %}
+                        <span>Bez estetyki</span>
+                    {% endfor %}
+                </div>
+
+                <dl class="dashboard-outfit-facts">
+                    <div>
+                        <dt>Produkty</dt>
+                        <dd>{{ row.item_count }}</dd>
+                    </div>
+                    <div>
+                        <dt>Zdjęcia</dt>
+                        <dd>{{ row.image_count }}</dd>
+                    </div>
+                    <div>
+                        <dt>Osobno</dt>
+                        <dd>{{ row.products_total|money }}</dd>
+                    </div>
+                    <div>
+                        <dt>Cena promocyjna</dt>
+                        <dd>{% if row.promo_price %}{{ row.promo_price|money }}{% else %}Brak{% endif %}</dd>
+                    </div>
+                </dl>
+
+                <div class="dashboard-taxonomy-actions">
+                    <a href="{{ row.admin_url }}">Edytuj</a>
+                    <a href="{{ row.preview_url }}">Podgląd</a>
+                    <a href="{{ row.delete_url }}">Usuń</a>
+                </div>
+            </div>
+        </article>
+    {% empty %}
+        <article class="dashboard-empty-card">
+            <h2>Brak kreacji</h2>
+            <p>Dodaj pierwszą stylizację i przypisz do niej produkty oraz zdjęcia.</p>
+            <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj kreację</a>
+        </article>
+    {% endfor %}
+</section>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

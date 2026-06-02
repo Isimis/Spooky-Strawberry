@@ -19,11 +19,22 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
 
 from analytics.models import AnalyticsEvent
+from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
 from dashboard.models import DataQualityIssue
 from orders.models import Order, OrderItem
+from outfits.models import Outfit, OutfitImage, OutfitItem
 
-from .forms import ProductDashboardForm, ProductImageFormSet, ProductVariantFormSet, build_model_form
+from .forms import (
+    OutfitDashboardForm,
+    OutfitImageFormSet,
+    OutfitItemFormSet,
+    ArticleDashboardForm,
+    ProductDashboardForm,
+    ProductImageFormSet,
+    ProductVariantFormSet,
+    build_model_form,
+)
 from .registry import MODEL_REGISTRY, get_model_config, get_sections
 from .services import count_unique_visitors, get_dashboard_analytics, refresh_all_product_quality_issues, refresh_product_quality_issues
 
@@ -92,6 +103,12 @@ def model_list(request, model_slug):
     if config.model is Product:
         queryset = queryset.select_related("category").prefetch_related("images", "variants", "aesthetics")
         queryset = apply_product_admin_filters(request, queryset, active_filters)
+    elif config.model is Outfit:
+        queryset = queryset.prefetch_related("images", "items__product", "items__variant", "aesthetics")
+        queryset = apply_outfit_admin_filters(request, queryset, active_filters)
+    elif config.model is Article:
+        queryset = queryset.select_related("category").prefetch_related("aesthetics", "products", "outfits")
+        queryset = apply_article_admin_filters(request, queryset, active_filters)
     elif is_taxonomy_model(config.model):
         queryset = prepare_taxonomy_queryset(config.model, queryset)
         queryset = apply_taxonomy_filters(request, queryset, active_filters)
@@ -112,11 +129,22 @@ def model_list(request, model_slug):
     query_params.pop("page", None)
     if config.model is Product:
         rows = [build_product_row(obj) for obj in page.object_list]
+    elif config.model is Outfit:
+        rows = [build_outfit_row(obj) for obj in page.object_list]
+    elif config.model is Article:
+        rows = [build_article_row(obj) for obj in page.object_list]
     elif is_taxonomy_model(config.model):
         rows = [build_taxonomy_row(config, obj) for obj in page.object_list]
     else:
         rows = [build_row(config, obj) for obj in page.object_list]
-    template_name = "dashboard/taxonomy_list.html" if is_taxonomy_model(config.model) else "dashboard/model_list.html"
+    if config.model is Outfit:
+        template_name = "dashboard/outfit_list.html"
+    elif config.model is Article:
+        template_name = "dashboard/article_list.html"
+    elif is_taxonomy_model(config.model):
+        template_name = "dashboard/taxonomy_list.html"
+    else:
+        template_name = "dashboard/model_list.html"
     return render(
         request,
         template_name,
@@ -128,11 +156,18 @@ def model_list(request, model_slug):
             "query_string": query_params.urlencode(),
             "active_filters": active_filters,
             "product_statuses": Product.STATUS_CHOICES if config.model is Product else None,
+            "outfit_statuses": Outfit.STATUS_CHOICES if config.model is Outfit else None,
+            "article_statuses": Article.STATUS_CHOICES if config.model is Article else None,
             "selected_status": request.GET.get("status", ""),
+            "selected_featured": request.GET.get("featured", ""),
+            "selected_category": request.GET.get("category", ""),
             "selected_stock": request.GET.get("stock", ""),
             "selected_quality": request.GET.get("quality", ""),
             "selected_visibility": request.GET.get("visibility", ""),
             "product_sort_headers": build_product_sort_headers(request) if config.model is Product else None,
+            "outfit_summary": build_outfit_list_summary() if config.model is Outfit else None,
+            "article_summary": build_article_list_summary() if config.model is Article else None,
+            "article_categories": BlogCategory.objects.filter(is_active=True).order_by("sort_order", "name") if config.model is Article else None,
             "taxonomy": build_taxonomy_list_context(config) if is_taxonomy_model(config.model) else None,
             "sections": get_sections(),
         },
@@ -143,6 +178,10 @@ def model_list(request, model_slug):
 @require_http_methods(["GET", "POST"])
 def model_create(request, model_slug):
     config = get_required_config(model_slug)
+    if config.model is Outfit:
+        return redirect("dashboard:outfit_create_workspace")
+    if config.model is Article:
+        return redirect("dashboard:article_create_workspace")
     form_class = build_model_form(config.model)
     form = form_class(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
@@ -169,6 +208,10 @@ def model_create(request, model_slug):
 @require_http_methods(["GET", "POST"])
 def model_edit(request, model_slug, pk):
     config = get_required_config(model_slug)
+    if config.model is Outfit:
+        return redirect("dashboard:outfit_workspace", pk=pk)
+    if config.model is Article:
+        return redirect("dashboard:article_workspace", pk=pk)
     obj = get_object_or_404(config.model, pk=pk)
     form_class = build_model_form(config.model)
     form = form_class(request.POST or None, request.FILES or None, instance=obj)
@@ -291,6 +334,165 @@ def product_workspace(request, pk):
 
 
 @staff_required
+@require_http_methods(["GET", "POST"])
+def outfit_create_workspace(request):
+    outfit = Outfit()
+    outfit_form = OutfitDashboardForm(request.POST or None, instance=outfit, prefix="outfit")
+
+    if request.method == "POST":
+        if outfit_form.is_valid():
+            outfit = outfit_form.save()
+            messages.success(request, "Kreacja utworzona. Teraz możesz dodać produkty i zdjęcia.")
+            return redirect("dashboard:outfit_workspace", pk=outfit.pk)
+        messages.error(request, "Nie udało się utworzyć kreacji. Sprawdź błędy w formularzu.")
+
+    return render(
+        request,
+        "dashboard/outfit_workspace.html",
+        {
+            "outfit": None,
+            "outfit_form": outfit_form,
+            "item_formset": None,
+            "image_formset": None,
+            "fieldsets": build_outfit_fieldsets(outfit_form),
+            "featured_field": outfit_form["is_featured"],
+            "image_accept": PRODUCT_IMAGE_ACCEPT,
+            "outfit_summary": build_outfit_workspace_summary(outfit),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def outfit_workspace(request, pk):
+    outfit = get_object_or_404(
+        Outfit.objects.prefetch_related(
+            "aesthetics",
+            "images",
+            "items__product",
+            "items__variant",
+        ),
+        pk=pk,
+    )
+    outfit_form = OutfitDashboardForm(request.POST or None, instance=outfit, prefix="outfit")
+    item_formset = OutfitItemFormSet(
+        request.POST or None,
+        instance=outfit,
+        prefix="items",
+        queryset=OutfitItem.objects.filter(outfit=outfit).select_related("product", "variant"),
+    )
+    image_formset = OutfitImageFormSet(
+        request.POST or None,
+        request.FILES or None,
+        instance=outfit,
+        prefix="images",
+        queryset=OutfitImage.objects.filter(outfit=outfit),
+    )
+
+    if request.method == "POST":
+        new_image_files, rejected_image_names = filter_product_image_files(request.FILES.getlist("new_images"))
+        if outfit_form.is_valid() and item_formset.is_valid() and image_formset.is_valid():
+            if rejected_image_names:
+                messages.error(
+                    request,
+                    "Nie dodano części zdjęć. Dozwolone formaty: WEBP, JPG, JPEG i PNG. "
+                    f"Sprawdź pliki: {', '.join(rejected_image_names)}.",
+                )
+            else:
+                with transaction.atomic():
+                    outfit = outfit_form.save()
+                    item_formset.instance = outfit
+                    item_formset.save()
+                    image_formset.instance = outfit
+                    image_formset.save()
+                    delete_workspace_outfit_images(outfit, request.POST.get("deleted_image_ids", ""))
+                    delete_workspace_outfit_items(outfit, request.POST.get("deleted_item_ids", ""))
+                    create_outfit_images(outfit, new_image_files)
+                    sync_outfit_main_image(outfit)
+                messages.success(request, "Kreacja zapisana razem z produktami i zdjęciami.")
+                return redirect("dashboard:outfit_workspace", pk=outfit.pk)
+        messages.error(request, "Nie udało się zapisać kreacji. Sprawdź błędy w formularzu.")
+
+    return render(
+        request,
+        "dashboard/outfit_workspace.html",
+        {
+            "outfit": outfit,
+            "outfit_form": outfit_form,
+            "item_formset": item_formset,
+            "image_formset": image_formset,
+            "fieldsets": build_outfit_fieldsets(outfit_form),
+            "featured_field": outfit_form["is_featured"],
+            "image_accept": PRODUCT_IMAGE_ACCEPT,
+            "outfit_summary": build_outfit_workspace_summary(outfit),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def article_create_workspace(request):
+    article = Article()
+    article_form = ArticleDashboardForm(request.POST or None, request.FILES or None, instance=article, prefix="article")
+
+    if request.method == "POST":
+        if article_form.is_valid():
+            article = article_form.save()
+            messages.success(request, "Poradnik utworzony. Możesz teraz dopracować treść, SEO i powiązania.")
+            return redirect("dashboard:article_workspace", pk=article.pk)
+        messages.error(request, "Nie udało się utworzyć poradnika. Sprawdź błędy w formularzu.")
+
+    return render(
+        request,
+        "dashboard/article_workspace.html",
+        {
+            "article": None,
+            "article_form": article_form,
+            "fieldsets": build_article_fieldsets(article_form),
+            "publication_fields": build_article_publication_fields(article_form),
+            "cover_fields": build_article_cover_fields(article_form),
+            "seo_fields": build_article_seo_fields(article_form),
+            "article_summary": build_article_workspace_summary(article),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def article_workspace(request, pk):
+    article = get_object_or_404(
+        Article.objects.select_related("category").prefetch_related("aesthetics", "products", "outfits"),
+        pk=pk,
+    )
+    article_form = ArticleDashboardForm(request.POST or None, request.FILES or None, instance=article, prefix="article")
+
+    if request.method == "POST":
+        if article_form.is_valid():
+            article = article_form.save()
+            messages.success(request, "Poradnik zapisany.")
+            return redirect("dashboard:article_workspace", pk=article.pk)
+        messages.error(request, "Nie udało się zapisać poradnika. Sprawdź błędy w formularzu.")
+
+    return render(
+        request,
+        "dashboard/article_workspace.html",
+        {
+            "article": article,
+            "article_form": article_form,
+            "fieldsets": build_article_fieldsets(article_form),
+            "publication_fields": build_article_publication_fields(article_form),
+            "cover_fields": build_article_cover_fields(article_form),
+            "seo_fields": build_article_seo_fields(article_form),
+            "article_summary": build_article_workspace_summary(article),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
 @require_POST
 def refresh_quality(request):
     total_open = refresh_all_product_quality_issues()
@@ -327,15 +529,222 @@ def apply_product_admin_filters(request, queryset, active_filters):
     return queryset
 
 
+def apply_outfit_admin_filters(request, queryset, active_filters):
+    selected_status = request.GET.get("status", "").strip()
+    selected_featured = request.GET.get("featured", "").strip()
+
+    if selected_status:
+        queryset = queryset.filter(status=selected_status)
+        active_filters.append(f"Status: {get_outfit_status_label(selected_status)}")
+    if selected_featured == "yes":
+        queryset = queryset.filter(is_featured=True)
+        active_filters.append("Polecane")
+    elif selected_featured == "no":
+        queryset = queryset.filter(is_featured=False)
+        active_filters.append("Niepolecane")
+
+    return queryset
+
+
+def apply_article_admin_filters(request, queryset, active_filters):
+    selected_status = request.GET.get("status", "").strip()
+    selected_featured = request.GET.get("featured", "").strip()
+    selected_category = request.GET.get("category", "").strip()
+
+    if selected_status:
+        queryset = queryset.filter(status=selected_status)
+        active_filters.append(f"Status: {get_article_status_label(selected_status)}")
+    if selected_featured == "yes":
+        queryset = queryset.filter(is_featured=True)
+        active_filters.append("Wyróżnione")
+    elif selected_featured == "no":
+        queryset = queryset.filter(is_featured=False)
+        active_filters.append("Niewyróżnione")
+    if selected_category:
+        queryset = queryset.filter(category_id=selected_category)
+        category_name = BlogCategory.objects.filter(pk=selected_category).values_list("name", flat=True).first()
+        if category_name:
+            active_filters.append(f"Kategoria: {category_name}")
+
+    return queryset
+
+
 def get_product_status_label(status):
     return dict(Product.STATUS_CHOICES).get(status, status)
 
 
+def get_outfit_status_label(status):
+    return {
+        Outfit.STATUS_DRAFT: "Szkic",
+        Outfit.STATUS_ACTIVE: "Aktywna",
+        Outfit.STATUS_ARCHIVED: "Archiwalna",
+    }.get(status, status)
+
+
+def get_article_status_label(status):
+    return {
+        Article.STATUS_DRAFT: "Szkic",
+        Article.STATUS_PUBLISHED: "Opublikowany",
+        Article.STATUS_ARCHIVED: "Archiwalny",
+    }.get(status, status)
+
+
+def get_article_cover_url(article):
+    if not article or not article.cover_image:
+        return ""
+    try:
+        return article.cover_image.url
+    except ValueError:
+        return ""
+
+
+def get_outfit_main_image(outfit):
+    images = list(outfit.images.all())
+    for image in images:
+        if image.is_main:
+            return image
+    return images[0] if images else None
+
+
+def calculate_outfit_products_total(outfit):
+    if not getattr(outfit, "pk", None):
+        return 0
+    total = 0
+    for item in outfit.items.all():
+        total += item.unit_price * item.quantity
+    return total
+
+
+def calculate_outfit_discount(outfit, products_total=None):
+    products_total = calculate_outfit_products_total(outfit) if products_total is None else products_total
+    if outfit.bundle_price and products_total and outfit.bundle_price < products_total:
+        return products_total - outfit.bundle_price
+    return 0
+
+
+def build_outfit_list_summary():
+    outfits = Outfit.objects.all()
+    return {
+        "total_count": outfits.count(),
+        "active_count": outfits.filter(status=Outfit.STATUS_ACTIVE).count(),
+        "featured_count": outfits.filter(is_featured=True).count(),
+        "with_promo_count": outfits.filter(bundle_price__isnull=False).count(),
+    }
+
+
+def build_outfit_row(outfit):
+    image = get_outfit_main_image(outfit)
+    image_url = ""
+    if image and image.image:
+        try:
+            image_url = image.image.url
+        except ValueError:
+            image_url = ""
+    products_total = calculate_outfit_products_total(outfit)
+    discount = calculate_outfit_discount(outfit, products_total)
+    return {
+        "object": outfit,
+        "admin_url": reverse("dashboard:outfit_workspace", args=[outfit.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["outfits", outfit.pk]),
+        "preview_url": outfit.get_absolute_url(),
+        "image_url": image_url,
+        "image_alt": (image.alt_text or outfit.name) if image else outfit.name,
+        "name": outfit.name,
+        "short_description": outfit.short_description,
+        "status": outfit.status,
+        "status_label": get_outfit_status_label(outfit.status),
+        "is_featured": outfit.is_featured,
+        "aesthetics": list(outfit.aesthetics.all()[:3]),
+        "item_count": outfit.items.count(),
+        "image_count": outfit.images.count(),
+        "products_total": products_total,
+        "promo_price": outfit.bundle_price,
+        "discount": discount,
+    }
+
+
+def build_outfit_workspace_summary(outfit):
+    products_total = calculate_outfit_products_total(outfit)
+    discount = calculate_outfit_discount(outfit, products_total)
+    return {
+        "products_total": products_total,
+        "promo_price": getattr(outfit, "bundle_price", None),
+        "discount": discount,
+        "item_count": outfit.items.count() if getattr(outfit, "pk", None) else 0,
+        "image_count": outfit.images.count() if getattr(outfit, "pk", None) else 0,
+        "status_label": get_outfit_status_label(outfit.status) if getattr(outfit, "status", None) else "Szkic",
+        "is_featured": bool(getattr(outfit, "is_featured", False)),
+    }
+
+
+def build_article_list_summary():
+    articles = Article.objects.all()
+    return {
+        "total_count": articles.count(),
+        "published_count": articles.filter(status=Article.STATUS_PUBLISHED).count(),
+        "draft_count": articles.filter(status=Article.STATUS_DRAFT).count(),
+        "featured_count": articles.filter(is_featured=True).count(),
+        "with_cover_count": articles.exclude(cover_image="").count(),
+    }
+
+
+def build_article_row(article):
+    cover_url = get_article_cover_url(article)
+    return {
+        "object": article,
+        "admin_url": reverse("dashboard:article_workspace", args=[article.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["articles", article.pk]),
+        "preview_url": article.get_absolute_url() if article.slug else "",
+        "cover_url": cover_url,
+        "cover_alt": article.title,
+        "title": article.title,
+        "intro": article.intro,
+        "category": article.category,
+        "status": article.status,
+        "status_label": get_article_status_label(article.status),
+        "is_featured": article.is_featured,
+        "published_at": article.published_at,
+        "updated_at": article.updated_at,
+        "aesthetics": list(article.aesthetics.all()[:3]),
+        "product_count": article.products.count(),
+        "outfit_count": article.outfits.count(),
+        "has_cover": bool(cover_url),
+    }
+
+
+def build_article_workspace_summary(article):
+    return {
+        "status_label": get_article_status_label(getattr(article, "status", Article.STATUS_DRAFT)),
+        "category": getattr(article, "category", None),
+        "is_featured": bool(getattr(article, "is_featured", False)),
+        "published_at": getattr(article, "published_at", None),
+        "product_count": article.products.count() if getattr(article, "pk", None) else 0,
+        "outfit_count": article.outfits.count() if getattr(article, "pk", None) else 0,
+        "aesthetic_count": article.aesthetics.count() if getattr(article, "pk", None) else 0,
+        "cover_url": get_article_cover_url(article),
+        "slug": getattr(article, "slug", ""),
+    }
+
+
 def is_taxonomy_model(model):
-    return model in {Category, Aesthetic, Color, Size}
+    return model in {Category, Aesthetic, Color, Size, BlogCategory}
 
 
 def prepare_taxonomy_queryset(model, queryset):
+    if model is BlogCategory:
+        return queryset.annotate(
+            dashboard_article_count=Count("articles", distinct=True),
+            dashboard_published_article_count=Count(
+                "articles",
+                filter=Q(articles__status=Article.STATUS_PUBLISHED),
+                distinct=True,
+            ),
+            dashboard_featured_article_count=Count(
+                "articles",
+                filter=Q(articles__is_featured=True),
+                distinct=True,
+            ),
+        ).order_by("sort_order", "name")
     if model is Category:
         return queryset.select_related("parent").annotate(
             dashboard_product_count=Count("products", distinct=True),
@@ -388,6 +797,19 @@ def apply_taxonomy_filters(request, queryset, active_filters):
 
 
 def get_taxonomy_copy(model):
+    if model is BlogCategory:
+        return {
+            "singular": "kategoria poradników",
+            "plural": "kategorie poradników",
+            "preview_label": "Kategoria poradników",
+            "add_label": "Dodaj kategorię",
+            "save_label": "Zapisz kategorię",
+            "delete_label": "Usuń kategorię",
+            "description": "Kategorie porządkują poradniki SEO, inspiracje i treści powiązane ze sprzedażą.",
+            "empty_description": "Opis kategorii nie jest jeszcze uzupełniony.",
+            "form_description": "To dane używane przy poradnikach, filtrach treści i przyszłych stronach SEO.",
+            "preview_description": "Krótki podgląd tego, jak kategoria będzie wyglądać w panelu i linkach do poradników.",
+        }
     if model is Category:
         return {
             "singular": "kategoria",
@@ -398,6 +820,8 @@ def get_taxonomy_copy(model):
             "delete_label": "Usuń kategorię",
             "description": "Kategorie porządkują typy produktów w katalogu i filtrach.",
             "empty_description": "Opis kategorii nie jest jeszcze uzupełniony.",
+            "form_description": "To są dane, które wpływają na filtrowanie katalogu i późniejsze strony kolekcji.",
+            "preview_description": "Krótki kontekst, żeby od razu było widać, czy ta pozycja ma sens w katalogu.",
         }
     if model is Aesthetic:
         return {
@@ -409,6 +833,8 @@ def get_taxonomy_copy(model):
             "delete_label": "Usuń estetykę",
             "description": "Estetyki opisują klimat produktu i pomagają budować kolekcje oraz inspiracje.",
             "empty_description": "Opis estetyki nie jest jeszcze uzupełniony.",
+            "form_description": "To są dane, które wpływają na filtrowanie katalogu i późniejsze strony kolekcji.",
+            "preview_description": "Krótki kontekst, żeby od razu było widać, czy ta pozycja ma sens w katalogu.",
         }
     if model is Color:
         return {
@@ -420,6 +846,8 @@ def get_taxonomy_copy(model):
             "delete_label": "Usuń kolor",
             "description": "Kolory są używane w wariantach produktu, filtrach katalogu i swatchach.",
             "empty_description": "Kolor nie ma osobnego opisu, najważniejsze są nazwa i HEX.",
+            "form_description": "To są dane, które wpływają na warianty produktów i filtry katalogu.",
+            "preview_description": "Krótki kontekst, żeby od razu było widać, czy ta pozycja ma sens w katalogu.",
         }
     return {
         "singular": "rozmiar",
@@ -430,13 +858,32 @@ def get_taxonomy_copy(model):
         "delete_label": "Usuń rozmiar",
         "description": "Rozmiary są używane w wariantach produktu i filtrach katalogu.",
         "empty_description": "Rozmiar nie ma osobnego opisu, najważniejsza jest nazwa i kolejność.",
+        "form_description": "To są dane, które wpływają na warianty produktów i filtry katalogu.",
+        "preview_description": "Krótki kontekst, żeby od razu było widać, czy ta pozycja ma sens w katalogu.",
     }
 
 
 def build_taxonomy_list_context(config):
     base_queryset = config.model.objects.all()
-    product_queryset = get_taxonomy_product_queryset(config.model, base_queryset)
     copy = get_taxonomy_copy(config.model)
+    if config.model is BlogCategory:
+        article_queryset = Article.objects.filter(category__in=base_queryset).distinct()
+        published_article_count = article_queryset.filter(status=Article.STATUS_PUBLISHED).count()
+        return {
+            **copy,
+            "search_placeholder": "Szukaj po nazwie lub opisie",
+            "total_count": base_queryset.count(),
+            "active_count": base_queryset.filter(is_active=True).count(),
+            "hidden_count": base_queryset.filter(is_active=False).count(),
+            "assigned_content_label": "Poradniki",
+            "assigned_content_count": article_queryset.count(),
+            "assigned_content_help": f"{published_article_count} opublikowane",
+            "extra_label": "Wyróżnione",
+            "extra_count": article_queryset.filter(is_featured=True).count(),
+            "extra_help": "na listach i stronie",
+        }
+
+    product_queryset = get_taxonomy_product_queryset(config.model, base_queryset)
     context = {
         **copy,
         "search_placeholder": "Szukaj po nazwie lub opisie" if config.model in {Category, Aesthetic} else "Szukaj po nazwie",
@@ -445,19 +892,26 @@ def build_taxonomy_list_context(config):
         "hidden_count": base_queryset.filter(is_active=False).count(),
         "assigned_product_count": product_queryset.count(),
         "active_product_count": product_queryset.filter(status=Product.STATUS_ACTIVE).count(),
+        "assigned_content_label": "Produkty",
+        "assigned_content_count": product_queryset.count(),
+        "assigned_content_help": f"{product_queryset.filter(status=Product.STATUS_ACTIVE).count()} aktywne",
     }
     if config.model is Category:
         context["extra_label"] = "Podkategorie"
         context["extra_count"] = Category.objects.filter(parent__isnull=False).count()
+        context["extra_help"] = "Dane pomocnicze"
     elif config.model is Aesthetic:
         context["extra_label"] = "Opisane"
         context["extra_count"] = base_queryset.exclude(description="").count()
+        context["extra_help"] = "Dane pomocnicze"
     elif config.model is Color:
         context["extra_label"] = "Warianty"
         context["extra_count"] = ProductVariant.objects.filter(color__in=base_queryset).count()
+        context["extra_help"] = "Dane pomocnicze"
     else:
         context["extra_label"] = "Warianty"
         context["extra_count"] = ProductVariant.objects.filter(size__in=base_queryset).count()
+        context["extra_help"] = "Dane pomocnicze"
     return context
 
 
@@ -472,6 +926,9 @@ def get_taxonomy_product_queryset(model, taxonomy_queryset):
 
 
 def get_taxonomy_preview_url(model, obj):
+    if model is BlogCategory:
+        return f"{reverse('blog:list')}?category={obj.slug}"
+
     parameter = {
         Category: "category",
         Aesthetic: "aesthetic",
@@ -482,6 +939,32 @@ def get_taxonomy_preview_url(model, obj):
 
 
 def build_taxonomy_row(config, obj):
+    if config.model is BlogCategory:
+        article_count = getattr(obj, "dashboard_article_count", 0)
+        published_article_count = getattr(obj, "dashboard_published_article_count", 0)
+        featured_article_count = getattr(obj, "dashboard_featured_article_count", 0)
+        return {
+            "object": obj,
+            "admin_url": get_admin_object_url(config, obj),
+            "delete_url": reverse("dashboard:model_delete", args=[config.slug, obj.pk]),
+            "preview_url": get_taxonomy_preview_url(config.model, obj),
+            "eyebrow": f"Kategoria poradników #{obj.sort_order}",
+            "name": obj.name,
+            "description": obj.description.strip(),
+            "slug": obj.slug,
+            "is_active": obj.is_active,
+            "article_count": article_count,
+            "published_article_count": published_article_count,
+            "featured_article_count": featured_article_count,
+            "facts": [
+                {"label": "Poradniki", "value": article_count},
+                {"label": "Opublikowane", "value": published_article_count},
+                {"label": "Wyróżnione", "value": featured_article_count},
+                {"label": "Kolejność", "value": obj.sort_order},
+            ],
+            "color_hex": "",
+        }
+
     product_count = getattr(obj, "dashboard_product_count", 0)
     active_product_count = getattr(obj, "dashboard_active_product_count", 0)
     facts = [
@@ -548,16 +1031,59 @@ def build_taxonomy_detail_context(config, obj):
         "preview_url": "",
         "product_count": 0,
         "active_product_count": 0,
-        "related_products": [],
+        "content_label": "Produkty",
+        "content_count": 0,
+        "content_help": "0 aktywne",
+        "related_title": "Powiązane produkty",
+        "related_items": [],
+        "related_empty": "Na razie nic nie jest przypisane.",
         "detail_stat_label": "Status",
         "detail_stat_value": "-",
         "detail_stat_help": "Dane pojawią się po zapisaniu.",
         "color_hex": "",
     }
+    if config.model is BlogCategory:
+        context.update(
+            {
+                "content_label": "Poradniki",
+                "content_help": "0 opublikowane",
+                "related_title": "Poradniki w kategorii",
+                "related_empty": "Na razie żaden poradnik nie jest przypisany do tej kategorii.",
+            }
+        )
     if not obj:
         return context
 
+    if config.model is BlogCategory:
+        article_queryset = Article.objects.filter(category=obj)
+        published_article_count = article_queryset.filter(status=Article.STATUS_PUBLISHED).count()
+        context.update(
+            {
+                "description": getattr(obj, "description", "") or copy["empty_description"],
+                "slug": obj.slug,
+                "is_active": obj.is_active,
+                "preview_url": get_taxonomy_preview_url(config.model, obj),
+                "content_label": "Poradniki",
+                "content_count": article_queryset.count(),
+                "content_help": f"{published_article_count} opublikowane",
+                "related_title": "Poradniki w kategorii",
+                "related_items": [
+                    {
+                        "label": article.title,
+                        "meta": get_article_status_label(article.status),
+                    }
+                    for article in article_queryset.order_by("-published_at", "-created_at")[:6]
+                ],
+                "related_empty": "Na razie żaden poradnik nie jest przypisany do tej kategorii.",
+                "detail_stat_label": "Kolejność",
+                "detail_stat_value": obj.sort_order,
+                "detail_stat_help": "Niżej znaczy wcześniej",
+            }
+        )
+        return context
+
     product_queryset = get_taxonomy_product_queryset(config.model, config.model.objects.filter(pk=obj.pk))
+    active_product_count = product_queryset.filter(status=Product.STATUS_ACTIVE).count()
     context.update(
         {
             "description": getattr(obj, "description", "") or copy["empty_description"],
@@ -565,8 +1091,16 @@ def build_taxonomy_detail_context(config, obj):
             "is_active": obj.is_active,
             "preview_url": get_taxonomy_preview_url(config.model, obj),
             "product_count": product_queryset.count(),
-            "active_product_count": product_queryset.filter(status=Product.STATUS_ACTIVE).count(),
-            "related_products": product_queryset.order_by("name")[:6],
+            "active_product_count": active_product_count,
+            "content_count": product_queryset.count(),
+            "content_help": f"{active_product_count} aktywne",
+            "related_items": [
+                {
+                    "label": product.name,
+                    "meta": product.get_status_display(),
+                }
+                for product in product_queryset.order_by("name")[:6]
+            ],
         }
     )
     if config.model is Category:
@@ -695,6 +1229,18 @@ def delete_workspace_variants(product, raw_ids):
         ProductVariant.objects.filter(product=product, pk__in=variant_ids).delete()
 
 
+def delete_workspace_outfit_images(outfit, raw_ids):
+    image_ids = parse_id_list(raw_ids)
+    if image_ids:
+        OutfitImage.objects.filter(outfit=outfit, pk__in=image_ids).delete()
+
+
+def delete_workspace_outfit_items(outfit, raw_ids):
+    item_ids = parse_id_list(raw_ids)
+    if item_ids:
+        OutfitItem.objects.filter(outfit=outfit, pk__in=item_ids).delete()
+
+
 def parse_id_list(raw_ids):
     ids = []
     for value in (raw_ids or "").split(","):
@@ -742,6 +1288,33 @@ def sync_product_main_image(product):
     product.images.filter(is_main=True).update(is_main=False)
     if first_image:
         ProductImage.objects.filter(pk=first_image.pk).update(is_main=True)
+
+
+def create_outfit_images(outfit, image_files):
+    if not image_files:
+        return []
+
+    max_order = outfit.images.aggregate(max_order=Max("sort_order"))["max_order"]
+    next_order = 0 if max_order is None else max_order + 1
+    created_images = []
+    for index, image_file in enumerate(image_files):
+        created_images.append(
+            OutfitImage.objects.create(
+                outfit=outfit,
+                image=image_file,
+                alt_text=outfit.name,
+                sort_order=next_order + index,
+                is_main=False,
+            )
+        )
+    return created_images
+
+
+def sync_outfit_main_image(outfit):
+    first_image = outfit.images.order_by("sort_order", "id").first()
+    outfit.images.filter(is_main=True).update(is_main=False)
+    if first_image:
+        OutfitImage.objects.filter(pk=first_image.pk).update(is_main=True)
 
 
 def build_product_workspace_stats(product):
@@ -876,6 +1449,63 @@ def build_product_fieldsets(form):
     ]
 
 
+def build_outfit_fieldsets(form):
+    return [
+        {
+            "title": "Podstawy kreacji",
+            "description": "Nazwa, estetyki i widoczność w sklepie. Slug tworzy się automatycznie z nazwy.",
+            "fields": [form[name] for name in ["name", "aesthetics", "status"]],
+        },
+        {
+            "title": "Treść kreacji",
+            "description": "Opis widoczny na liście, karcie kreacji i w inspiracjach stylizacyjnych.",
+            "fields": [form[name] for name in ["short_description", "mood_description", "styling_tips"]],
+        },
+        {
+            "title": "Cena zestawu",
+            "description": "Cena osobno liczy się z produktów. Cena promocyjna jest opcjonalna.",
+            "fields": [form["bundle_price"]],
+        },
+        {
+            "title": "SEO",
+            "description": "Tytuł i opis do wyników wyszukiwania oraz późniejszej optymalizacji.",
+            "fields": [form[name] for name in ["seo_title", "seo_description"]],
+        },
+    ]
+
+
+def build_article_fieldsets(form):
+    return [
+        {
+            "title": "1. Podstawowe informacje",
+            "description": "Tytuł i zajawka budują nagłówek poradnika oraz kartę na liście.",
+            "fields": [form[name] for name in ["title", "intro"]],
+        },
+        {
+            "title": "2. Treść poradnika",
+            "description": "Możesz pisać ręcznie albo wkleić gotowy tekst z formatowaniem, np. z ChatuGPT.",
+            "fields": [form["body"]],
+        },
+        {
+            "title": "3. Powiązania",
+            "description": "Połącz poradnik z estetykami, produktami i gotowymi kreacjami.",
+            "fields": [form[name] for name in ["aesthetics", "products", "outfits"]],
+        },
+    ]
+
+
+def build_article_publication_fields(form):
+    return [form[name] for name in ["status", "is_featured", "published_at"]]
+
+
+def build_article_cover_fields(form):
+    return [form[name] for name in ["category", "cover_image"]]
+
+
+def build_article_seo_fields(form):
+    return [form[name] for name in ["seo_title", "seo_description"]]
+
+
 def build_row(config, obj):
     return {
         "object": obj,
@@ -930,6 +1560,10 @@ def format_value(value):
 def get_admin_object_url(config, obj):
     if config.model is Product:
         return reverse("dashboard:product_workspace", args=[obj.pk])
+    if config.model is Outfit:
+        return reverse("dashboard:outfit_workspace", args=[obj.pk])
+    if config.model is Article:
+        return reverse("dashboard:article_workspace", args=[obj.pk])
     return reverse("dashboard:model_edit", args=[config.slug, obj.pk])
 
 

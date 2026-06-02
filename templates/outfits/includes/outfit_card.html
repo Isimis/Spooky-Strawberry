@@ -21,7 +21,7 @@
         {% endif %}
         <strong>
             {% if outfit.bundle_price %}
-                Cena zestawu: {{ outfit.bundle_price|money }}
+                Cena promocyjna: {{ outfit.bundle_price|money }}
             {% else %}
                 Produkty osobno: {{ outfit.products_total|money }}
             {% endif %}

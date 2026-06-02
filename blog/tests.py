@@ -12,7 +12,8 @@ class ArticleViewTests(TestCase):
             slug="test-article",
             category=category,
             intro="Intro",
-            body="Body",
+            body="## Body\n\n- Point\n\n> Quote",
+            cover_image="articles/test.webp",
             status=Article.STATUS_PUBLISHED,
         )
 
@@ -23,4 +24,7 @@ class ArticleViewTests(TestCase):
         self.assertEqual(list_response.status_code, 200)
         self.assertContains(list_response, "Test Article")
         self.assertEqual(detail_response.status_code, 200)
-        self.assertContains(detail_response, "Body")
+        self.assertContains(detail_response, "articles/test.webp")
+        self.assertContains(detail_response, "<h2>Body</h2>", html=True)
+        self.assertContains(detail_response, "<li>Point</li>", html=True)
+        self.assertContains(detail_response, "<blockquote>Quote</blockquote>", html=True)

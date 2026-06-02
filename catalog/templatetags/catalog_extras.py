@@ -21,7 +21,7 @@ def formatted_text(value):
     if not value:
         return ""
 
-    escaped_lines = [html.escape(line.rstrip()) for line in str(value).splitlines()]
+    raw_lines = [line.rstrip() for line in str(value).splitlines()]
     blocks = []
     list_items = []
     list_tag = None
@@ -35,8 +35,9 @@ def formatted_text(value):
         list_items.clear()
         list_tag = None
 
-    for line in escaped_lines:
-        stripped = line.strip()
+    for line in raw_lines:
+        stripped_raw = line.strip()
+        stripped = html.escape(stripped_raw)
         if not stripped:
             flush_list()
             continue
@@ -54,7 +55,11 @@ def formatted_text(value):
             list_items.append(ordered_item.group(1).strip())
             continue
         flush_list()
-        if stripped.startswith("### "):
+        if stripped == "---":
+            blocks.append("<hr>")
+        elif stripped_raw.startswith("> "):
+            blocks.append(f"<blockquote>{format_inline(html.escape(stripped_raw[2:].strip()))}</blockquote>")
+        elif stripped.startswith("### "):
             blocks.append(f"<h3>{format_inline(stripped[4:].strip())}</h3>")
         elif stripped.startswith("## "):
             blocks.append(f"<h2>{format_inline(stripped[3:].strip())}</h2>")

@@ -9,7 +9,7 @@ from checkout.models import CheckoutDraft
 from core.models import HomepageSection, NewsletterSubscriber, SitePage
 from dashboard.models import DashboardTask, DataQualityIssue
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
-from outfits.models import Outfit, OutfitImage, OutfitItem
+from outfits.models import Outfit
 
 
 @dataclass(frozen=True)
@@ -30,8 +30,6 @@ MODEL_REGISTRY = [
     AdminModelConfig("colors", "Kolory", Color, "Katalog", ("name", "hex_code", "is_active"), ("name", "hex_code")),
     AdminModelConfig("sizes", "Rozmiary", Size, "Katalog", ("name", "sort_order", "is_active"), ("name",)),
     AdminModelConfig("outfits", "Gotowe kreacje", Outfit, "Kreacje", ("name", "status", "is_featured", "bundle_price", "sort_order"), ("name", "short_description", "mood_description")),
-    AdminModelConfig("outfit-items", "Produkty w kreacjach", OutfitItem, "Kreacje", ("outfit", "product", "variant", "quantity", "sort_order"), ("outfit__name", "product__name")),
-    AdminModelConfig("outfit-images", "Zdjęcia kreacji", OutfitImage, "Kreacje", ("outfit", "image", "is_main", "sort_order"), ("outfit__name", "alt_text")),
     AdminModelConfig("articles", "Poradniki", Article, "Poradniki SEO", ("title", "category", "status", "is_featured", "published_at"), ("title", "intro", "body")),
     AdminModelConfig("blog-categories", "Kategorie poradników", BlogCategory, "Poradniki SEO", ("name", "is_active", "sort_order"), ("name", "description")),
     AdminModelConfig("site-pages", "Strony tekstowe", SitePage, "Treści strony", ("title", "slug", "status", "sort_order"), ("title", "intro", "body")),

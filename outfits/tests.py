@@ -31,3 +31,15 @@ class OutfitViewTests(TestCase):
         self.assertContains(list_response, "Test Outfit")
         self.assertEqual(detail_response.status_code, 200)
         self.assertContains(detail_response, "Produkty w zestawie")
+
+    def test_outfit_detail_renders_formatted_copy(self):
+        self.outfit.mood_description = "## Klimat\n\n**Warstwowa baza**\n\n- Choker\n- Mitenki"
+        self.outfit.styling_tips = "1. Dodaj rajstopy\n2. Dopnij kokardy"
+        self.outfit.save(update_fields=["mood_description", "styling_tips"])
+
+        response = self.client.get(self.outfit.get_absolute_url())
+
+        self.assertContains(response, "<h2>Klimat</h2>")
+        self.assertContains(response, "<strong>Warstwowa baza</strong>")
+        self.assertContains(response, "<li>Choker</li>")
+        self.assertContains(response, "<ol><li>Dodaj rajstopy</li><li>Dopnij kokardy</li></ol>")

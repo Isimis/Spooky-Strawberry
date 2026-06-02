@@ -2,13 +2,16 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from decimal import Decimal
 
 from analytics.models import AnalyticsEvent, AnalyticsSession
+from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
 from dashboard.models import DataQualityIssue
 from dashboard.services import get_dashboard_analytics
 from dashboard.views import filter_product_image_files, sync_product_main_image
 from orders.models import Order, OrderItem
+from outfits.models import Outfit, OutfitImage, OutfitItem
 
 
 class DashboardAccessTests(TestCase):
@@ -407,6 +410,258 @@ class DashboardAccessTests(TestCase):
 
         self.assertEqual(valid_files, [webp_file, jpg_file])
         self.assertEqual(rejected_names, ["photo.gif"])
+
+    def test_outfit_list_uses_custom_layout(self):
+        outfit = Outfit.objects.create(
+            name="Dark Coquette Set",
+            slug="dark-coquette-set",
+            short_description="Gotowa stylizacja z chokerem.",
+            bundle_price="49.00",
+            status=Outfit.STATUS_ACTIVE,
+            is_featured=True,
+        )
+        product = self.create_product("Outfit Choker", "outfit-choker")
+        OutfitItem.objects.create(outfit=outfit, product=product, quantity=2)
+        OutfitImage.objects.create(outfit=outfit, image="outfits/set/main.webp", is_main=True)
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_list", args=["outfits"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/outfit_list.html")
+        self.assertContains(response, "Dark Coquette Set")
+        self.assertContains(response, "Cena promocyjna")
+        self.assertContains(response, "49,00")
+        self.assertNotContains(response, "Produkty w kreacjach")
+        self.assertNotContains(response, "Zdjęcia kreacji")
+
+    def test_staff_user_can_create_outfit_workspace(self):
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:outfit_create_workspace"),
+            {
+                "outfit-name": "New Outfit",
+                "outfit-short_description": "Krótki opis.",
+                "outfit-mood_description": "Opis klimatu.",
+                "outfit-styling_tips": "Noś z chokerem.",
+                "outfit-bundle_price": "59.00",
+                "outfit-status": Outfit.STATUS_ACTIVE,
+                "outfit-seo_title": "",
+                "outfit-seo_description": "",
+            },
+        )
+
+        outfit = Outfit.objects.get(name="New Outfit")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(outfit.slug, "new-outfit")
+        self.assertEqual(outfit.bundle_price, Decimal("59.00"))
+
+    def test_outfit_workspace_saves_items_and_promo_price(self):
+        outfit = Outfit.objects.create(name="Workspace Outfit", slug="workspace-outfit", status=Outfit.STATUS_DRAFT)
+        product = self.create_product("Workspace Choker", "workspace-choker")
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:outfit_workspace", args=[outfit.id]),
+            {
+                "deleted_item_ids": "",
+                "deleted_image_ids": "",
+                "outfit-name": "Workspace Outfit",
+                "outfit-short_description": "Krótki opis.",
+                "outfit-mood_description": "Opis klimatu.",
+                "outfit-styling_tips": "Noś z chokerem.",
+                "outfit-bundle_price": "39.00",
+                "outfit-status": Outfit.STATUS_ACTIVE,
+                "outfit-seo_title": "",
+                "outfit-seo_description": "",
+                "items-TOTAL_FORMS": "1",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "items-0-product": str(product.id),
+                "items-0-variant": "",
+                "items-0-quantity": "2",
+                "items-0-sort_order": "0",
+                "images-TOTAL_FORMS": "0",
+                "images-INITIAL_FORMS": "0",
+                "images-MIN_NUM_FORMS": "0",
+                "images-MAX_NUM_FORMS": "1000",
+            },
+        )
+
+        outfit.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(outfit.status, Outfit.STATUS_ACTIVE)
+        self.assertEqual(outfit.bundle_price, Decimal("39.00"))
+        self.assertTrue(OutfitItem.objects.filter(outfit=outfit, product=product, quantity=2).exists())
+
+    def test_outfit_workspace_deletes_image(self):
+        outfit = Outfit.objects.create(name="Image Outfit", slug="image-outfit", status=Outfit.STATUS_ACTIVE)
+        image = OutfitImage.objects.create(outfit=outfit, image="outfits/delete/main.webp", sort_order=0)
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:outfit_workspace", args=[outfit.id]),
+            {
+                "deleted_item_ids": "",
+                "deleted_image_ids": str(image.id),
+                "outfit-name": outfit.name,
+                "outfit-short_description": "",
+                "outfit-mood_description": "",
+                "outfit-styling_tips": "",
+                "outfit-bundle_price": "",
+                "outfit-status": Outfit.STATUS_ACTIVE,
+                "outfit-seo_title": "",
+                "outfit-seo_description": "",
+                "items-TOTAL_FORMS": "0",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "images-TOTAL_FORMS": "1",
+                "images-INITIAL_FORMS": "1",
+                "images-MIN_NUM_FORMS": "0",
+                "images-MAX_NUM_FORMS": "1000",
+                "images-0-id": str(image.id),
+                "images-0-sort_order": "0",
+                "images-0-DELETE": "on",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(OutfitImage.objects.filter(id=image.id).exists())
+
+    def test_article_list_uses_custom_layout(self):
+        category = BlogCategory.objects.create(name="Stylizacje", slug="stylizacje")
+        Article.objects.create(
+            title="Jak nosić chokery",
+            slug="jak-nosic-chokery",
+            category=category,
+            intro="Krótki poradnik o dodatkach.",
+            body="Body",
+            cover_image="articles/chokery.webp",
+            status=Article.STATUS_PUBLISHED,
+            is_featured=True,
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_list", args=["articles"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/article_list.html")
+        self.assertContains(response, "Jak nosić chokery")
+        self.assertContains(response, "Opublikowane")
+        self.assertContains(response, "Z okładką")
+        self.assertContains(response, "Krótki poradnik o dodatkach.")
+
+    def test_staff_user_can_create_article_workspace(self):
+        category = BlogCategory.objects.create(name="SEO", slug="seo")
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:article_create_workspace"),
+            {
+                "article-title": "Dark coquette w praktyce",
+                "article-intro": "Krótki opis poradnika.",
+                "article-body": "## Wstęp\n\nNoś chokery z koronką.",
+                "article-category": str(category.id),
+                "article-status": Article.STATUS_DRAFT,
+                "article-published_at": "",
+                "article-seo_title": "",
+                "article-seo_description": "",
+            },
+        )
+
+        article = Article.objects.get(title="Dark coquette w praktyce")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(article.slug, "dark-coquette-w-praktyce")
+        self.assertEqual(article.category, category)
+
+    def test_article_workspace_shows_rich_editor_and_preview(self):
+        article = Article.objects.create(
+            title="Rich Article",
+            slug="rich-article",
+            intro="Intro",
+            body="## Nagłówek\n\nTreść",
+            status=Article.STATUS_DRAFT,
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:article_workspace", args=[article.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/article_workspace.html")
+        self.assertContains(response, "Treść poradnika")
+        self.assertContains(response, "Podgląd końcowy")
+        self.assertContains(response, "data-rich-action=\"heading2\"")
+
+    def test_blog_category_list_uses_taxonomy_layout_with_article_copy(self):
+        category = BlogCategory.objects.create(
+            name="Stylizacje",
+            slug="stylizacje",
+            description="Poradniki o gotowych zestawach.",
+            sort_order=2,
+            is_active=True,
+        )
+        Article.objects.create(
+            title="Jak nosić chokery",
+            slug="jak-nosic-chokery",
+            category=category,
+            body="Body",
+            status=Article.STATUS_PUBLISHED,
+            is_featured=True,
+        )
+        Article.objects.create(
+            title="Szkic stylizacji",
+            slug="szkic-stylizacji",
+            category=category,
+            body="Body",
+            status=Article.STATUS_DRAFT,
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_list", args=["blog-categories"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/taxonomy_list.html")
+        self.assertContains(response, "Kategorie poradników")
+        self.assertContains(response, "Poradniki")
+        self.assertContains(response, "Opublikowane")
+        self.assertContains(response, "Wyróżnione")
+        self.assertContains(response, "Poradniki o gotowych zestawach.")
+        self.assertEqual(response.context["rows"][0]["article_count"], 2)
+        self.assertEqual(response.context["rows"][0]["published_article_count"], 1)
+
+    def test_blog_category_form_uses_article_copy_and_regenerates_slug(self):
+        category = BlogCategory.objects.create(name="Old SEO", slug="old-seo", sort_order=4)
+        Article.objects.create(
+            title="Powiązany poradnik",
+            slug="powiazany-poradnik",
+            category=category,
+            body="Body",
+            status=Article.STATUS_PUBLISHED,
+        )
+        self.client.login(username="staff", password="pass")
+
+        get_response = self.client.get(reverse("dashboard:model_edit", args=["blog-categories", category.id]))
+        post_response = self.client.post(
+            reverse("dashboard:model_edit", args=["blog-categories", category.id]),
+            {
+                "name": "Nowe poradniki SEO",
+                "description": "Kategoria dla poradników.",
+                "sort_order": "1",
+                "is_active": "on",
+            },
+        )
+
+        category.refresh_from_db()
+        self.assertEqual(get_response.status_code, 200)
+        self.assertTemplateUsed(get_response, "dashboard/taxonomy_form.html")
+        self.assertContains(get_response, "Poradniki w kategorii")
+        self.assertContains(get_response, "To dane używane przy poradnikach")
+        self.assertContains(get_response, "Powiązany poradnik")
+        self.assertEqual(post_response.status_code, 302)
+        self.assertEqual(category.slug, "nowe-poradniki-seo")
 
     def test_quality_refresh_creates_product_issue(self):
         product = self.create_product("Incomplete Product", "incomplete-product")

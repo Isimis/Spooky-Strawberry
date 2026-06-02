@@ -26,14 +26,14 @@
         <small>{{ taxonomy.hidden_count }} ukryte</small>
     </article>
     <article>
-        <span>Produkty</span>
-        <strong>{{ taxonomy.assigned_product_count }}</strong>
-        <small>{{ taxonomy.active_product_count }} aktywne</small>
+        <span>{{ taxonomy.assigned_content_label }}</span>
+        <strong>{{ taxonomy.assigned_content_count }}</strong>
+        <small>{{ taxonomy.assigned_content_help }}</small>
     </article>
     <article>
         <span>{{ taxonomy.extra_label }}</span>
         <strong>{{ taxonomy.extra_count }}</strong>
-        <small>Dane pomocnicze</small>
+        <small>{{ taxonomy.extra_help }}</small>
     </article>
 </section>
 
@@ -78,7 +78,7 @@
             </div>
 
             <p class="dashboard-taxonomy-card__description">
-                {% if row.description %}{{ row.description }}{% else %}Brak opisu. Warto dodać krótki tekst roboczy albo SEO.{% endif %}
+                {% if row.description %}{{ row.description }}{% else %}{{ taxonomy.empty_description }}{% endif %}
             </p>
 
             <dl class="dashboard-taxonomy-facts">

@@ -1,0 +1,508 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{% if article %}{{ article.title }}{% else %}Nowy poradnik{% endif %} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-article-workspace-heading">
+    <div>
+        <p class="eyebrow">Panel administracyjny · Poradniki</p>
+        <h1>{% if article %}Edytuj: {{ article.title }}{% else %}Nowy poradnik{% endif %}</h1>
+        <p>Twórz treści SEO w klimacie sklepu, łącz je z produktami i przygotuj publikację bez przeklikiwania się po kilku ekranach.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'articles' %}" class="button button--secondary">Wróć do listy</a>
+        {% if article %}
+            <a href="{{ article.get_absolute_url }}" class="button button--secondary">Podgląd w sklepie</a>
+        {% endif %}
+        <button type="submit" form="article-workspace-form" class="button">Zapisz zmiany</button>
+    </div>
+</section>
+
+<section class="dashboard-product-summary dashboard-article-workspace-summary" aria-label="Podsumowanie poradnika">
+    <article>
+        <span>Status</span>
+        <strong>{{ article_summary.status_label }}</strong>
+    </article>
+    <article>
+        <span>Produkty</span>
+        <strong>{{ article_summary.product_count }}</strong>
+    </article>
+    <article>
+        <span>Kreacje</span>
+        <strong>{{ article_summary.outfit_count }}</strong>
+    </article>
+</section>
+
+<form id="article-workspace-form" method="post" enctype="multipart/form-data" class="dashboard-product-form dashboard-article-form" data-article-form>
+    {% csrf_token %}
+    {{ article_form.non_field_errors }}
+
+    <div class="dashboard-article-layout">
+        <div class="dashboard-article-main">
+            {% for fieldset in fieldsets %}
+                <section class="dashboard-form-panel dashboard-form-panel--product dashboard-article-section">
+                    <div class="dashboard-form-panel__heading">
+                        <h2>{{ fieldset.title }}</h2>
+                        <p>{{ fieldset.description }}</p>
+                    </div>
+
+                    <div class="dashboard-form-fields">
+                        {% for field in fieldset.fields %}
+                            {% if field.name == "body" %}
+                                <div class="dashboard-field dashboard-field--rich-text dashboard-article-body-field" data-rich-text>
+                                    <span>{{ field.label }}</span>
+                                    <div class="dashboard-rich-toolbar" aria-label="Formatowanie treści poradnika">
+                                        <button type="button" data-rich-action="bold">B Pogrub</button>
+                                        <button type="button" data-rich-action="italic">I Kursywa</button>
+                                        <button type="button" data-rich-action="heading2">Nagłówek H2</button>
+                                        <button type="button" data-rich-action="heading3">Nagłówek H3</button>
+                                        <button type="button" data-rich-action="list">Lista</button>
+                                        <button type="button" data-rich-action="ordered">Lista numerowana</button>
+                                        <button type="button" data-rich-action="link">Link</button>
+                                        <button type="button" data-rich-action="quote">Cytat</button>
+                                        <button type="button" data-rich-action="tip">Wskazówka</button>
+                                        <button type="button" data-rich-action="separator">Separator</button>
+                                        <button type="button" data-rich-action="clear">Wyczyść format</button>
+                                    </div>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </div>
+                            {% elif field.name == "aesthetics" %}
+                                <div class="dashboard-field dashboard-field--choices">
+                                    <span>{{ field.label }}</span>
+                                    <div class="dashboard-choice-grid">
+                                        {{ field }}
+                                    </div>
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </div>
+                            {% elif field.name == "products" or field.name == "outfits" %}
+                                <label class="dashboard-field dashboard-field--wide" data-field-name="{{ field.name }}">
+                                    <span>{{ field.label }}</span>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </label>
+                            {% else %}
+                                <label class="dashboard-field" data-field-name="{{ field.name }}">
+                                    <span>{{ field.label }}</span>
+                                    {{ field }}
+                                    {% if field.name == "title" %}
+                                        <small><span data-count-output="article-title">0</span> / 160 znaków. Slug: {% if article_summary.slug %}<code>{{ article_summary.slug }}</code>{% else %}utworzy się automatycznie po zapisie{% endif %}</small>
+                                    {% elif field.name == "intro" %}
+                                        <small><span data-count-output="article-intro">0</span> / 255 znaków. To tekst widoczny pod tytułem i na karcie poradnika.</small>
+                                    {% elif field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+
+            <section class="dashboard-form-panel dashboard-article-preview">
+                <div class="dashboard-form-panel__heading">
+                    <p class="eyebrow">Podgląd końcowy</p>
+                    <h2>Mniej więcej tak będzie wyglądał opublikowany poradnik</h2>
+                </div>
+                <article class="dashboard-article-preview-card">
+                    <h3 data-preview-title>{{ article_form.title.value|default:"Nowy poradnik" }}</h3>
+                    <p data-preview-intro>{{ article_form.intro.value|default:"Krótka zajawka pojawi się tutaj." }}</p>
+                    <div class="dashboard-article-preview-body article-body" data-preview-body>
+                        {{ article_form.body.value|default_if_none:""|formatted_text }}
+                    </div>
+                </article>
+            </section>
+        </div>
+
+        <aside class="dashboard-article-sidebar">
+            <section class="dashboard-form-panel dashboard-form-panel--quiet">
+                <div class="dashboard-form-panel__heading">
+                    <h2>Publikacja</h2>
+                    <p>Ustaw, czy poradnik ma być widoczny w sklepie.</p>
+                </div>
+                <div class="dashboard-form-fields dashboard-form-fields--single">
+                    {% for field in publication_fields %}
+                        <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox dashboard-field--compact-checkbox{% endif %}" data-field-name="{{ field.name }}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small>{{ field.help_text }}</small>
+                            {% endif %}
+                            {{ field.errors }}
+                        </label>
+                    {% endfor %}
+                </div>
+                <button type="submit" class="button dashboard-sidebar-save">Zapisz poradnik</button>
+            </section>
+
+            <section class="dashboard-form-panel dashboard-form-panel--quiet">
+                <div class="dashboard-form-panel__heading">
+                    <h2>Kategoria i okładka</h2>
+                    <p>Okładka pokazuje się na liście poradników i na karcie artykułu.</p>
+                </div>
+                <div class="dashboard-form-fields dashboard-form-fields--single">
+                    {% for field in cover_fields %}
+                        <label class="dashboard-field" data-field-name="{{ field.name }}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <small>{{ field.help_text }}</small>
+                            {% endif %}
+                            {{ field.errors }}
+                        </label>
+                    {% endfor %}
+                </div>
+                <div class="dashboard-article-cover-preview">
+                    {% if article_summary.cover_url %}
+                        <img src="{{ article_summary.cover_url }}" alt="{% if article %}{{ article.title }}{% else %}Okładka poradnika{% endif %}">
+                    {% else %}
+                        <span>Brak okładki</span>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="dashboard-form-panel dashboard-form-panel--quiet">
+                <div class="dashboard-form-panel__heading">
+                    <h2>SEO</h2>
+                    <p>Opcjonalne pola do tytułu i opisu w wyszukiwarce.</p>
+                </div>
+                <div class="dashboard-form-fields dashboard-form-fields--single">
+                    {% for field in seo_fields %}
+                        <label class="dashboard-field" data-field-name="{{ field.name }}">
+                            <span>{{ field.label }}</span>
+                            {{ field }}
+                            {% if field.name == "seo_title" %}
+                                <small><span data-count-output="article-seo-title">0</span> / 180 znaków.</small>
+                            {% elif field.name == "seo_description" %}
+                                <small><span data-count-output="article-seo-description">0</span> / 255 znaków.</small>
+                            {% elif field.help_text %}
+                                <small>{{ field.help_text }}</small>
+                            {% endif %}
+                            {{ field.errors }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <div class="dashboard-save-bar">
+        <button type="submit" class="button">{% if article %}Zapisz poradnik{% else %}Utwórz poradnik{% endif %}</button>
+        {% if article %}
+            <a href="{% url 'dashboard:model_delete' 'articles' article.pk %}">Usuń poradnik</a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const form = document.querySelector("[data-article-form]");
+    if (!form) {
+        return;
+    }
+
+    const bodyInput = form.querySelector('textarea[name="article-body"]');
+    const titleInput = form.querySelector('input[name="article-title"]');
+    const introInput = form.querySelector('textarea[name="article-intro"]');
+    const seoTitleInput = form.querySelector('input[name="article-seo_title"]');
+    const seoDescriptionInput = form.querySelector('textarea[name="article-seo_description"]');
+    const previewTitle = form.querySelector("[data-preview-title]");
+    const previewIntro = form.querySelector("[data-preview-intro]");
+    const previewBody = form.querySelector("[data-preview-body]");
+
+    setupCounters();
+    setupRichTextToolbar();
+    updatePreview();
+
+    function setupCounters() {
+        [
+            [titleInput, "article-title"],
+            [introInput, "article-intro"],
+            [seoTitleInput, "article-seo-title"],
+            [seoDescriptionInput, "article-seo-description"],
+        ].forEach(([input, key]) => {
+            const output = form.querySelector(`[data-count-output="${key}"]`);
+            if (!input || !output) {
+                return;
+            }
+            const update = () => {
+                output.textContent = input.value.length;
+            };
+            input.addEventListener("input", update);
+            update();
+        });
+    }
+
+    function setupRichTextToolbar() {
+        form.querySelectorAll("[data-rich-text]").forEach((container) => {
+            const textarea = container.querySelector("textarea");
+            if (!textarea) {
+                return;
+            }
+            container.querySelectorAll("[data-rich-action]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    applyRichTextAction(textarea, button.dataset.richAction);
+                    updatePreview();
+                });
+            });
+            textarea.addEventListener("paste", (event) => {
+                const pastedHtml = event.clipboardData?.getData("text/html");
+                if (!pastedHtml) {
+                    return;
+                }
+                const markdown = convertHtmlToMarkdown(pastedHtml);
+                if (!markdown.trim()) {
+                    return;
+                }
+                event.preventDefault();
+                insertTextAtSelection(textarea, markdown);
+                updatePreview();
+            });
+            textarea.addEventListener("input", updatePreview);
+        });
+    }
+
+    function applyRichTextAction(textarea, action) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = textarea.value.slice(start, end);
+        const fallback = {
+            bold: "pogrubiony tekst",
+            italic: "kursywa",
+            heading2: "Nagłówek sekcji",
+            heading3: "Mniejszy nagłówek",
+            list: "punkt listy",
+            ordered: "punkt listy",
+            link: "tekst linku",
+            quote: "ważny cytat",
+            tip: "To ważne: dopisz krótką wskazówkę.",
+        }[action] || "";
+        const text = selected || fallback;
+        let replacement = text;
+
+        if (action === "bold") {
+            replacement = `**${text}**`;
+        } else if (action === "italic") {
+            replacement = `*${text}*`;
+        } else if (action === "heading2") {
+            replacement = `## ${text}`;
+        } else if (action === "heading3") {
+            replacement = `### ${text}`;
+        } else if (action === "list") {
+            replacement = selected
+                ? selected.split("\n").map((line) => `- ${line.replace(/^[-*]\s+/, "")}`).join("\n")
+                : `- ${text}`;
+        } else if (action === "ordered") {
+            replacement = selected
+                ? selected.split("\n").map((line, index) => `${index + 1}. ${line.replace(/^\d+\.\s+/, "")}`).join("\n")
+                : `1. ${text}`;
+        } else if (action === "link") {
+            replacement = `[${text}](https://)`;
+        } else if (action === "quote") {
+            replacement = selected
+                ? selected.split("\n").map((line) => `> ${line.replace(/^>\s*/, "")}`).join("\n")
+                : `> ${text}`;
+        } else if (action === "tip") {
+            replacement = `> **Wskazówka:** ${text}`;
+        } else if (action === "separator") {
+            replacement = "\n\n---\n\n";
+        } else if (action === "clear") {
+            replacement = text
+                .replace(/\*\*(.*?)\*\*/g, "$1")
+                .replace(/\*(.*?)\*/g, "$1")
+                .replace(/^#{1,3}\s+/gm, "")
+                .replace(/^[-*]\s+/gm, "")
+                .replace(/^\d+\.\s+/gm, "")
+                .replace(/^>\s+/gm, "")
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+        }
+
+        textarea.setRangeText(replacement, start, end, "select");
+        textarea.focus();
+    }
+
+    function insertTextAtSelection(textarea, text) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.setRangeText(text, start, end, "end");
+        textarea.focus();
+    }
+
+    function convertHtmlToMarkdown(pastedHtml) {
+        const template = document.createElement("template");
+        template.innerHTML = pastedHtml;
+        return normalizeMarkdown(markdownFromChildren(template.content));
+    }
+
+    function markdownFromChildren(node) {
+        return [...node.childNodes].map(markdownFromNode).join("");
+    }
+
+    function markdownFromNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent.replace(/\s+/g, " ");
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return "";
+        }
+
+        const tagName = node.tagName.toLowerCase();
+        if (tagName === "br") {
+            return "\n";
+        }
+        if (tagName === "script" || tagName === "style") {
+            return "";
+        }
+        if (tagName === "strong" || tagName === "b") {
+            return `**${inlineMarkdown(node)}**`;
+        }
+        if (tagName === "em" || tagName === "i") {
+            return `*${inlineMarkdown(node)}*`;
+        }
+        if (tagName === "a") {
+            const label = inlineMarkdown(node) || node.href;
+            const href = node.getAttribute("href") || "";
+            return href ? `[${label}](${href})` : label;
+        }
+        if (tagName === "h1" || tagName === "h2") {
+            return `\n\n## ${inlineMarkdown(node)}\n\n`;
+        }
+        if (tagName === "h3" || tagName === "h4") {
+            return `\n\n### ${inlineMarkdown(node)}\n\n`;
+        }
+        if (tagName === "blockquote") {
+            return `\n\n${inlineMarkdown(node).split("\n").map((line) => `> ${line}`).join("\n")}\n\n`;
+        }
+        if (tagName === "hr") {
+            return "\n\n---\n\n";
+        }
+        if (tagName === "ul") {
+            return `\n${[...node.children].filter((child) => child.tagName?.toLowerCase() === "li").map((child) => `- ${inlineMarkdown(child)}`).join("\n")}\n\n`;
+        }
+        if (tagName === "ol") {
+            return `\n${[...node.children].filter((child) => child.tagName?.toLowerCase() === "li").map((child, index) => `${index + 1}. ${inlineMarkdown(child)}`).join("\n")}\n\n`;
+        }
+        if (tagName === "p" || tagName === "div" || tagName === "section") {
+            const content = inlineMarkdown(node);
+            return content ? `\n\n${content}\n\n` : "";
+        }
+        if (tagName === "li") {
+            return inlineMarkdown(node);
+        }
+        return markdownFromChildren(node);
+    }
+
+    function inlineMarkdown(node) {
+        return markdownFromChildren(node).replace(/\n{2,}/g, " ").replace(/\s+/g, " ").trim();
+    }
+
+    function normalizeMarkdown(markdown) {
+        return markdown
+            .replace(/[ \t]+\n/g, "\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+    }
+
+    function updatePreview() {
+        if (previewTitle && titleInput) {
+            previewTitle.textContent = titleInput.value || "Nowy poradnik";
+        }
+        if (previewIntro && introInput) {
+            previewIntro.textContent = introInput.value || "Krótka zajawka pojawi się tutaj.";
+        }
+        if (previewBody && bodyInput) {
+            previewBody.innerHTML = renderMarkdown(bodyInput.value);
+        }
+    }
+
+    function renderMarkdown(value) {
+        const lines = value.split(/\r?\n/);
+        const blocks = [];
+        let listItems = [];
+        let listTag = "";
+
+        const flushList = () => {
+            if (!listItems.length) {
+                return;
+            }
+            blocks.push(`<${listTag}>${listItems.map((item) => `<li>${formatInline(item)}</li>`).join("")}</${listTag}>`);
+            listItems = [];
+            listTag = "";
+        };
+
+        lines.forEach((line) => {
+            const stripped = line.trim();
+            if (!stripped) {
+                flushList();
+                return;
+            }
+            if (stripped === "---") {
+                flushList();
+                blocks.push("<hr>");
+                return;
+            }
+            if (stripped.startsWith("- ") || stripped.startsWith("* ")) {
+                if (listTag !== "ul") {
+                    flushList();
+                    listTag = "ul";
+                }
+                listItems.push(stripped.slice(2).trim());
+                return;
+            }
+            const ordered = stripped.match(/^\d+\.\s+(.+)$/);
+            if (ordered) {
+                if (listTag !== "ol") {
+                    flushList();
+                    listTag = "ol";
+                }
+                listItems.push(ordered[1].trim());
+                return;
+            }
+            flushList();
+            if (stripped.startsWith("### ")) {
+                blocks.push(`<h3>${formatInline(stripped.slice(4).trim())}</h3>`);
+            } else if (stripped.startsWith("## ")) {
+                blocks.push(`<h2>${formatInline(stripped.slice(3).trim())}</h2>`);
+            } else if (stripped.startsWith("# ")) {
+                blocks.push(`<h2>${formatInline(stripped.slice(2).trim())}</h2>`);
+            } else if (stripped.startsWith("> ")) {
+                blocks.push(`<blockquote>${formatInline(stripped.slice(2).trim())}</blockquote>`);
+            } else {
+                blocks.push(`<p>${formatInline(stripped)}</p>`);
+            }
+        });
+        flushList();
+        return blocks.join("") || "<p>Treść poradnika pojawi się tutaj.</p>";
+    }
+
+    function formatInline(value) {
+        return escapeHtml(value)
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*(.+?)\*/g, "<em>$1</em>")
+            .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>');
+    }
+
+    function escapeHtml(value) {
+        return value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+})();
+</script>
+{% endblock %}

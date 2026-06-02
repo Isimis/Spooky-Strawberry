@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load catalog_extras %}
 
 {% block title %}{{ article.title }} | Spooky Strawberry{% endblock %}
 
@@ -12,8 +13,14 @@
         {% endif %}
     </div>
 
+    {% if article.cover_image %}
+        <div class="article-cover">
+            <img src="{{ article.cover_image.url }}" alt="{{ article.title }}">
+        </div>
+    {% endif %}
+
     <div class="article-body">
-        {{ article.body|linebreaks }}
+        {{ article.body|formatted_text }}
     </div>
 
     {% if article.products.all %}

@@ -20,9 +20,9 @@
 {% if object %}
     <section class="dashboard-taxonomy-summary" aria-label="Podsumowanie">
         <article>
-            <span>Produkty</span>
-            <strong>{{ taxonomy.product_count }}</strong>
-            <small>{{ taxonomy.active_product_count }} aktywne</small>
+            <span>{{ taxonomy.content_label }}</span>
+            <strong>{{ taxonomy.content_count }}</strong>
+            <small>{{ taxonomy.content_help }}</small>
         </article>
         <article>
             <span>Status</span>
@@ -49,7 +49,7 @@
     <section class="dashboard-form-panel dashboard-taxonomy-editor__main">
         <div class="dashboard-form-panel__heading">
             <h2>Podstawy</h2>
-            <p>To są dane, które wpływają na filtrowanie katalogu i późniejsze strony kolekcji.</p>
+            <p>{{ taxonomy.form_description }}</p>
         </div>
 
         <div class="dashboard-form-fields dashboard-form-fields--taxonomy">
@@ -76,7 +76,7 @@
     <aside class="dashboard-form-panel dashboard-taxonomy-preview">
         <div class="dashboard-form-panel__heading">
             <h2>Podgląd roboczy</h2>
-            <p>Krótki kontekst, żeby od razu było widać, czy ta pozycja ma sens w katalogu.</p>
+            <p>{{ taxonomy.preview_description }}</p>
         </div>
 
         <article class="dashboard-taxonomy-preview-card">
@@ -95,18 +95,18 @@
 
         {% if object %}
             <div class="dashboard-taxonomy-related">
-                <h3>Powiązane produkty</h3>
-                {% if taxonomy.related_products %}
+                <h3>{{ taxonomy.related_title }}</h3>
+                {% if taxonomy.related_items %}
                     <ul>
-                        {% for product in taxonomy.related_products %}
+                        {% for item in taxonomy.related_items %}
                             <li>
-                                <span>{{ product.name }}</span>
-                                <small>{{ product.get_status_display }}</small>
+                                <span>{{ item.label }}</span>
+                                <small>{{ item.meta }}</small>
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p>Na razie nic nie jest przypisane.</p>
+                    <p>{{ taxonomy.related_empty }}</p>
                 {% endif %}
             </div>
         {% endif %}

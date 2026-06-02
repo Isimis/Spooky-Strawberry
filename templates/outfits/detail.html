@@ -34,7 +34,14 @@
             {% if outfit.mood_description %}
                 <div class="product-copy">
                     <h2>Opis kreacji</h2>
-                    <p>{{ outfit.mood_description|linebreaksbr }}</p>
+                    {{ outfit.mood_description|formatted_text }}
+                </div>
+            {% endif %}
+
+            {% if outfit.styling_tips %}
+                <div class="product-copy">
+                    <h2>Jak stylizować</h2>
+                    {{ outfit.styling_tips|formatted_text }}
                 </div>
             {% endif %}
 
@@ -57,7 +64,7 @@
                 </div>
                 {% if outfit.bundle_price %}
                     <div>
-                        <span>Cena zestawu</span>
+                        <span>Cena promocyjna zestawu</span>
                         <strong>{{ outfit.bundle_price|money }}</strong>
                     </div>
                 {% endif %}

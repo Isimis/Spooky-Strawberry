@@ -1,0 +1,674 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{% if outfit %}{{ outfit.name }}{% else %}Nowa kreacja{% endif %} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Kreacja</p>
+        <h1>{% if outfit %}{{ outfit.name }}{% else %}Nowa gotowa kreacja{% endif %}</h1>
+        <p>Edytuj stylizację, produkty w zestawie, zdjęcia i cenę promocyjną w jednym miejscu.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        {% if outfit %}
+            <a href="{{ outfit.get_absolute_url }}" class="button button--secondary">Podgląd w sklepie</a>
+        {% endif %}
+        <a href="{% url 'dashboard:model_list' 'outfits' %}" class="button button--secondary">Lista kreacji</a>
+    </div>
+</section>
+
+<section class="dashboard-product-summary dashboard-outfit-summary" aria-label="Podsumowanie kreacji">
+    <article>
+        <span>Status</span>
+        <strong>{{ outfit_summary.status_label }}</strong>
+    </article>
+    <article>
+        <span>Produkty</span>
+        <strong>{{ outfit_summary.item_count }}</strong>
+    </article>
+    <article>
+        <span>Zdjęcia</span>
+        <strong>{{ outfit_summary.image_count }}</strong>
+    </article>
+</section>
+
+<form method="post" enctype="multipart/form-data" class="dashboard-product-form dashboard-outfit-form" data-outfit-form>
+    {% csrf_token %}
+    <input type="hidden" name="deleted_item_ids" value="" data-deleted-item-ids>
+    <input type="hidden" name="deleted_image_ids" value="" data-deleted-image-ids>
+    {{ outfit_form.non_field_errors }}
+
+    <div class="dashboard-product-grid">
+        <div class="dashboard-product-main">
+            {% for fieldset in fieldsets %}
+                <section class="dashboard-form-panel dashboard-form-panel--product">
+                    <div class="dashboard-form-panel__heading">
+                        <h2>{{ fieldset.title }}</h2>
+                        <p>{{ fieldset.description }}</p>
+                    </div>
+                    <div class="dashboard-form-fields">
+                        {% for field in fieldset.fields %}
+                            {% if field.name == "aesthetics" %}
+                                <div class="dashboard-field dashboard-field--choices">
+                                    <span>{{ field.label }}</span>
+                                    <div class="dashboard-choice-grid">
+                                        {{ field }}
+                                    </div>
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </div>
+                            {% elif field.name == "mood_description" or field.name == "styling_tips" %}
+                                <div class="dashboard-field dashboard-field--rich-text" data-rich-text>
+                                    <span>{{ field.label }}</span>
+                                    <div class="dashboard-rich-toolbar" aria-label="Formatowanie tekstu kreacji">
+                                        <button type="button" data-rich-action="bold">B</button>
+                                        <button type="button" data-rich-action="italic">I</button>
+                                        <button type="button" data-rich-action="heading">Nagłówek</button>
+                                        <button type="button" data-rich-action="list">Lista</button>
+                                        <button type="button" data-rich-action="link">Link</button>
+                                    </div>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </div>
+                            {% else %}
+                                <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox dashboard-field--compact-checkbox{% endif %}" data-field-name="{{ field.name }}">
+                                    <span>{{ field.label }}</span>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+
+        <aside class="dashboard-product-side">
+            <section class="dashboard-form-panel dashboard-form-panel--quiet">
+                <div class="dashboard-form-panel__heading">
+                    <h2>Szybki podgląd</h2>
+                    <p>Ceny i status zestawu bez przeklikiwania się po produktach.</p>
+                </div>
+                <dl class="dashboard-status-list">
+                    <div>
+                        <dt>Produkty osobno</dt>
+                        <dd>{{ outfit_summary.products_total|money }}</dd>
+                    </div>
+                    <div>
+                        <dt>Cena promocyjna</dt>
+                        <dd>{% if outfit_summary.promo_price %}{{ outfit_summary.promo_price|money }}{% else %}Brak{% endif %}</dd>
+                    </div>
+                    <div>
+                        <dt>Oszczędność</dt>
+                        <dd>{{ outfit_summary.discount|money }}</dd>
+                    </div>
+                    <div>
+                        <dt>Polecana</dt>
+                        <dd>{% if outfit_summary.is_featured %}Tak{% else %}Nie{% endif %}</dd>
+                    </div>
+                    {% if outfit %}
+                        <div>
+                            <dt>URL</dt>
+                            <dd class="dashboard-status-list__slug">{{ outfit.slug }}</dd>
+                        </div>
+                    {% endif %}
+                </dl>
+                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox dashboard-featured-control" data-field-name="{{ featured_field.name }}">
+                    <span>{{ featured_field.label }}</span>
+                    {{ featured_field }}
+                    {% if featured_field.help_text %}
+                        <small>{{ featured_field.help_text }}</small>
+                    {% endif %}
+                    {{ featured_field.errors }}
+                </label>
+            </section>
+        </aside>
+    </div>
+
+    {% if outfit %}
+        <section class="dashboard-form-panel dashboard-variant-panel dashboard-outfit-items-panel">
+            <div class="dashboard-form-panel__heading dashboard-heading--row">
+                <div>
+                    <p class="eyebrow">Produkty</p>
+                    <h2>Produkty w kreacji</h2>
+                    <p>Dodaj produkty, warianty i ilości, które tworzą gotowy zestaw.</p>
+                </div>
+                <button type="button" class="button" data-add-form="items">Dodaj produkt</button>
+            </div>
+
+            {{ item_formset.management_form }}
+            {{ item_formset.non_form_errors }}
+            <div class="dashboard-variant-list" data-formset-list="items">
+                {% for form in item_formset %}
+                    <article class="dashboard-variant-card dashboard-outfit-item-card" data-formset-form>
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                        <span class="dashboard-hidden-delete">{{ form.DELETE }}</span>
+                        <div class="dashboard-variant-card__top">
+                            <div>
+                                <strong>Pozycja <span data-form-index>{{ forloop.counter }}</span></strong>
+                                {% if form.instance.pk %}
+                                    <small>{{ form.instance.product }}</small>
+                                {% else %}
+                                    <small>Nowy produkt w kreacji</small>
+                                {% endif %}
+                            </div>
+                            <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń produkt z kreacji">×</button>
+                        </div>
+                        <div class="dashboard-variant-fields dashboard-outfit-item-fields">
+                            {% for field in form.visible_fields %}
+                                {% if field.name != "DELETE" %}
+                                    <label class="dashboard-field" data-field-name="{{ field.name }}">
+                                        <span>{{ field.label }}</span>
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <small>{{ field.help_text }}</small>
+                                        {% endif %}
+                                        {{ field.errors }}
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {{ form.non_field_errors }}
+                    </article>
+                {% endfor %}
+            </div>
+
+            <template data-formset-template="items">
+                <article class="dashboard-variant-card dashboard-outfit-item-card" data-formset-form>
+                    {% for hidden in item_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                    <span class="dashboard-hidden-delete">{{ item_formset.empty_form.DELETE }}</span>
+                    <div class="dashboard-variant-card__top">
+                        <div>
+                            <strong>Pozycja <span data-form-index></span></strong>
+                            <small>Nowy produkt w kreacji</small>
+                        </div>
+                        <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń produkt z kreacji">×</button>
+                    </div>
+                    <div class="dashboard-variant-fields dashboard-outfit-item-fields">
+                        {% for field in item_formset.empty_form.visible_fields %}
+                            {% if field.name != "DELETE" %}
+                                <label class="dashboard-field" data-field-name="{{ field.name }}">
+                                    <span>{{ field.label }}</span>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {{ field.errors }}
+                                </label>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </article>
+            </template>
+        </section>
+
+        <section class="dashboard-form-panel dashboard-image-panel">
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Zdjęcia kreacji</p>
+                <h2>Galeria i kolejność zdjęć</h2>
+                <p>Pierwsze zdjęcie w kolejności będzie zdjęciem głównym. Możesz wybrać pliki, przeciągnąć je albo wkleić obraz przez Ctrl+V.</p>
+            </div>
+
+            <div class="dashboard-image-uploader" data-image-uploader tabindex="0">
+                <input id="new-images-input" type="file" name="new_images" accept="{{ image_accept }}" multiple hidden data-image-input>
+                <div>
+                    <strong>Dodaj zdjęcia</strong>
+                    <p>Obsługiwane formaty: WEBP, JPG, JPEG i PNG.</p>
+                </div>
+                <button type="button" class="button" data-open-image-picker>Wybierz zdjęcia</button>
+            </div>
+            <div class="dashboard-pending-images" data-pending-images aria-live="polite"></div>
+
+            {{ image_formset.management_form }}
+            {{ image_formset.non_form_errors }}
+            <div class="dashboard-image-grid" data-image-sortable>
+                {% for form in image_formset %}
+                    <article class="dashboard-image-card {% if forloop.first %}is-main{% endif %}" draggable="true" data-image-card>
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                        <span class="dashboard-hidden-delete">{{ form.DELETE }}</span>
+                        <button type="button" class="dashboard-image-remove" data-remove-image aria-label="Usuń zdjęcie">×</button>
+                        <div class="dashboard-image-frame">
+                            {% if form.instance.image %}
+                                <img src="{{ form.instance.image.url }}" alt="{{ form.instance.alt_text|default:outfit.name }}">
+                            {% else %}
+                                <span>Brak zdjęcia</span>
+                            {% endif %}
+                            <span class="dashboard-main-image-badge">Główne</span>
+                        </div>
+                        {{ form.non_field_errors }}
+                    </article>
+                {% empty %}
+                    <p class="dashboard-empty-note" data-empty-images>Ta kreacja nie ma jeszcze zdjęć.</p>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <section class="dashboard-quality-panel dashboard-quality-panel--ok">
+            <div>
+                <p class="eyebrow">Następny krok</p>
+                <h2>Zapisz kreację, żeby dodać produkty i zdjęcia</h2>
+            </div>
+            <p>Po pierwszym zapisie pojawi się sekcja produktów w zestawie oraz galeria zdjęć.</p>
+        </section>
+    {% endif %}
+
+    <div class="dashboard-save-bar">
+        <button type="submit" class="button">{% if outfit %}Zapisz kreację{% else %}Utwórz kreację{% endif %}</button>
+        {% if outfit %}
+            <a href="{% url 'dashboard:model_delete' 'outfits' outfit.pk %}">Usuń kreację</a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+    const form = document.querySelector("[data-outfit-form]");
+    if (!form) {
+        return;
+    }
+
+    const allowedExtensions = [".webp", ".jpg", ".jpeg", ".png"];
+    const allowedTypes = ["image/webp", "image/jpeg", "image/png"];
+    const deletedItemInput = form.querySelector("[data-deleted-item-ids]");
+    const deletedImageInput = form.querySelector("[data-deleted-image-ids]");
+
+    function rememberDeletedId(input, idValue) {
+        if (!input || !idValue) {
+            return;
+        }
+        const ids = input.value ? input.value.split(",").filter(Boolean) : [];
+        if (!ids.includes(idValue)) {
+            ids.push(idValue);
+        }
+        input.value = ids.join(",");
+    }
+
+    function setupFormset(prefix, deletedInput) {
+        const list = form.querySelector(`[data-formset-list="${prefix}"]`);
+        const template = form.querySelector(`[data-formset-template="${prefix}"]`);
+        const addButton = form.querySelector(`[data-add-form="${prefix}"]`);
+        const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+
+        if (!list || !template || !addButton || !totalInput) {
+            return;
+        }
+
+        list.querySelectorAll("[data-formset-form]").forEach(bindCard);
+        refreshIndexes();
+
+        addButton.addEventListener("click", () => {
+            const index = Number.parseInt(totalInput.value, 10);
+            const html = template.innerHTML.replaceAll("__prefix__", index);
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = html.trim();
+            const card = wrapper.firstElementChild;
+            list.appendChild(card);
+            totalInput.value = index + 1;
+            bindCard(card);
+            refreshIndexes();
+        });
+
+        function bindCard(card) {
+            const removeButton = card.querySelector("[data-remove-form]");
+            if (!removeButton) {
+                return;
+            }
+            removeButton.addEventListener("click", () => {
+                const idInput = card.querySelector('input[name$="-id"]');
+                const deleteInput = card.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                rememberDeletedId(deletedInput, idInput?.value);
+                if (deleteInput) {
+                    deleteInput.checked = true;
+                }
+                card.hidden = true;
+                refreshIndexes();
+            });
+        }
+
+        function refreshIndexes() {
+            const visibleCards = [...list.querySelectorAll("[data-formset-form]:not([hidden])")];
+            visibleCards.forEach((card, index) => {
+                const label = card.querySelector("[data-form-index]");
+                const orderInput = card.querySelector('input[name$="-sort_order"]');
+                if (label) {
+                    label.textContent = index + 1;
+                }
+                if (orderInput) {
+                    orderInput.value = index;
+                }
+            });
+        }
+    }
+
+    function setupRichTextToolbar() {
+        form.querySelectorAll("[data-rich-text]").forEach((container) => {
+            const textarea = container.querySelector("textarea");
+            if (!textarea) {
+                return;
+            }
+            container.querySelectorAll("[data-rich-action]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    applyRichTextAction(textarea, button.dataset.richAction);
+                });
+            });
+            textarea.addEventListener("paste", (event) => {
+                const pastedHtml = event.clipboardData?.getData("text/html");
+                if (!pastedHtml) {
+                    return;
+                }
+                const markdown = convertHtmlToMarkdown(pastedHtml);
+                if (!markdown.trim()) {
+                    return;
+                }
+                event.preventDefault();
+                insertTextAtSelection(textarea, markdown);
+            });
+        });
+    }
+
+    function applyRichTextAction(textarea, action) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selected = textarea.value.slice(start, end);
+        const fallback = {
+            bold: "pogrubiony tekst",
+            italic: "kursywa",
+            heading: "Nagłówek sekcji",
+            list: "punkt listy",
+            link: "tekst linku",
+        }[action] || "";
+        const text = selected || fallback;
+        let replacement = text;
+
+        if (action === "bold") {
+            replacement = `**${text}**`;
+        } else if (action === "italic") {
+            replacement = `*${text}*`;
+        } else if (action === "heading") {
+            replacement = `## ${text}`;
+        } else if (action === "list") {
+            replacement = selected
+                ? selected.split("\n").map((line) => `- ${line.replace(/^[-*]\s+/, "")}`).join("\n")
+                : `- ${text}`;
+        } else if (action === "link") {
+            replacement = `[${text}](https://)`;
+        }
+
+        textarea.setRangeText(replacement, start, end, "select");
+        textarea.focus();
+    }
+
+    function insertTextAtSelection(textarea, text) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        textarea.setRangeText(text, start, end, "end");
+        textarea.focus();
+    }
+
+    function convertHtmlToMarkdown(pastedHtml) {
+        const template = document.createElement("template");
+        template.innerHTML = pastedHtml;
+        return normalizeMarkdown(markdownFromChildren(template.content));
+    }
+
+    function markdownFromChildren(node) {
+        return [...node.childNodes].map(markdownFromNode).join("");
+    }
+
+    function markdownFromNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent.replace(/\s+/g, " ");
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return "";
+        }
+
+        const tagName = node.tagName.toLowerCase();
+        if (tagName === "br") {
+            return "\n";
+        }
+        if (tagName === "script" || tagName === "style") {
+            return "";
+        }
+        if (tagName === "strong" || tagName === "b") {
+            return `**${inlineMarkdown(node)}**`;
+        }
+        if (tagName === "em" || tagName === "i") {
+            return `*${inlineMarkdown(node)}*`;
+        }
+        if (tagName === "a") {
+            const label = inlineMarkdown(node) || node.href;
+            const href = node.getAttribute("href") || "";
+            return href ? `[${label}](${href})` : label;
+        }
+        if (tagName === "h1" || tagName === "h2") {
+            return `\n\n## ${inlineMarkdown(node)}\n\n`;
+        }
+        if (tagName === "h3" || tagName === "h4") {
+            return `\n\n### ${inlineMarkdown(node)}\n\n`;
+        }
+        if (tagName === "ul") {
+            return `\n${[...node.children].filter((child) => child.tagName?.toLowerCase() === "li").map((child) => `- ${inlineMarkdown(child)}`).join("\n")}\n\n`;
+        }
+        if (tagName === "ol") {
+            return `\n${[...node.children].filter((child) => child.tagName?.toLowerCase() === "li").map((child, index) => `${index + 1}. ${inlineMarkdown(child)}`).join("\n")}\n\n`;
+        }
+        if (tagName === "p" || tagName === "div" || tagName === "section") {
+            const content = inlineMarkdown(node);
+            return content ? `\n\n${content}\n\n` : "";
+        }
+        if (tagName === "li") {
+            return inlineMarkdown(node);
+        }
+        return markdownFromChildren(node);
+    }
+
+    function inlineMarkdown(node) {
+        return markdownFromChildren(node).replace(/\n{2,}/g, " ").replace(/\s+/g, " ").trim();
+    }
+
+    function normalizeMarkdown(markdown) {
+        return markdown
+            .replace(/[ \t]+\n/g, "\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+    }
+
+    function setupImages() {
+        const uploader = form.querySelector("[data-image-uploader]");
+        const fileInput = form.querySelector("[data-image-input]");
+        const pickerButton = form.querySelector("[data-open-image-picker]");
+        const pendingList = form.querySelector("[data-pending-images]");
+        const imageGrid = form.querySelector("[data-image-sortable]");
+        let pendingFiles = [];
+        let dragCard = null;
+
+        if (pickerButton && fileInput) {
+            pickerButton.addEventListener("click", () => {
+                fileInput.value = "";
+                fileInput.click();
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener("change", () => {
+                addPendingFiles([...fileInput.files]);
+            });
+        }
+
+        if (uploader) {
+            uploader.addEventListener("dragover", (event) => {
+                event.preventDefault();
+                uploader.classList.add("is-dragover");
+            });
+            uploader.addEventListener("dragleave", () => {
+                uploader.classList.remove("is-dragover");
+            });
+            uploader.addEventListener("drop", (event) => {
+                event.preventDefault();
+                uploader.classList.remove("is-dragover");
+                addPendingFiles([...event.dataTransfer.files]);
+            });
+        }
+
+        document.addEventListener("paste", (event) => {
+            const files = [...(event.clipboardData?.files || [])].filter(isAllowedImage);
+            if (!files.length) {
+                return;
+            }
+            event.preventDefault();
+            addPendingFiles(files);
+        });
+
+        if (imageGrid) {
+            imageGrid.querySelectorAll("[data-image-card]").forEach(bindImageCard);
+            refreshImageOrder();
+
+            imageGrid.addEventListener("dragstart", (event) => {
+                dragCard = event.target.closest("[data-image-card]");
+                if (!dragCard) {
+                    return;
+                }
+                dragCard.classList.add("is-dragging");
+                event.dataTransfer.effectAllowed = "move";
+            });
+
+            imageGrid.addEventListener("dragend", () => {
+                if (dragCard) {
+                    dragCard.classList.remove("is-dragging");
+                }
+                dragCard = null;
+                refreshImageOrder();
+            });
+
+            imageGrid.addEventListener("dragover", (event) => {
+                if (!dragCard) {
+                    return;
+                }
+                event.preventDefault();
+                const nextCard = getNextImageCard(imageGrid, event.clientY);
+                if (nextCard) {
+                    imageGrid.insertBefore(dragCard, nextCard);
+                } else {
+                    imageGrid.appendChild(dragCard);
+                }
+                refreshImageOrder();
+            });
+        }
+
+        function addPendingFiles(files) {
+            const acceptedFiles = files.filter(isAllowedImage);
+            if (!acceptedFiles.length) {
+                return;
+            }
+            pendingFiles = pendingFiles.concat(acceptedFiles);
+            syncPendingInput();
+        }
+
+        function syncPendingInput() {
+            if (!fileInput || typeof DataTransfer === "undefined") {
+                return;
+            }
+            const transfer = new DataTransfer();
+            pendingFiles.forEach((file) => transfer.items.add(file));
+            fileInput.files = transfer.files;
+            renderPendingFiles();
+        }
+
+        function renderPendingFiles() {
+            if (!pendingList) {
+                return;
+            }
+            pendingList.innerHTML = "";
+            pendingFiles.forEach((file, index) => {
+                const item = document.createElement("article");
+                item.className = "dashboard-pending-image";
+                const image = document.createElement("img");
+                image.src = URL.createObjectURL(file);
+                image.alt = file.name;
+                const meta = document.createElement("span");
+                meta.textContent = file.name;
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.textContent = "×";
+                remove.setAttribute("aria-label", `Usuń ${file.name}`);
+                remove.addEventListener("click", () => {
+                    pendingFiles.splice(index, 1);
+                    syncPendingInput();
+                });
+                item.append(image, meta, remove);
+                pendingList.appendChild(item);
+            });
+        }
+
+        function isAllowedImage(file) {
+            const name = file.name.toLowerCase();
+            return allowedTypes.includes(file.type) || allowedExtensions.some((extension) => name.endsWith(extension));
+        }
+
+        function bindImageCard(card) {
+            const removeButton = card.querySelector("[data-remove-image]");
+            if (!removeButton) {
+                return;
+            }
+            removeButton.addEventListener("click", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const idInput = card.querySelector('input[name$="-id"]');
+                const deleteInput = card.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                rememberDeletedId(deletedImageInput, idInput?.value);
+                if (deleteInput) {
+                    deleteInput.checked = true;
+                }
+                card.hidden = true;
+                refreshImageOrder();
+            });
+        }
+
+        function refreshImageOrder() {
+            if (!imageGrid) {
+                return;
+            }
+            const cards = [...imageGrid.querySelectorAll("[data-image-card]:not([hidden])")];
+            cards.forEach((card, index) => {
+                const orderInput = card.querySelector('input[name$="-sort_order"]');
+                if (orderInput) {
+                    orderInput.value = index;
+                }
+                card.classList.toggle("is-main", index === 0);
+            });
+        }
+
+        function getNextImageCard(container, yPosition) {
+            const cards = [...container.querySelectorAll("[data-image-card]:not([hidden]):not(.is-dragging)")];
+            return cards.reduce(
+                (closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = yPosition - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset, element: child };
+                    }
+                    return closest;
+                },
+                { offset: Number.NEGATIVE_INFINITY, element: null }
+            ).element;
+        }
+    }
+
+    setupFormset("items", deletedItemInput);
+    setupRichTextToolbar();
+    setupImages();
+})();
+</script>
+{% endblock %}
