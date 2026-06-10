@@ -1,0 +1,141 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Kody rabatowe | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-commerce-heading">
+    <div>
+        <p class="eyebrow">Zamówienia</p>
+        <h1>Kody rabatowe</h1>
+        <p>Lista kodów, ich statusów, limitów i podstawowych warunków. Bez integracji płatności, ale gotowe pod przyszły koszyk.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj kod</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-commerce-summary" aria-label="Podsumowanie kodów rabatowych">
+    <article>
+        <span>Wszystkie</span>
+        <strong>{{ discount_summary.total_count }}</strong>
+        <small>kody w panelu</small>
+    </article>
+    <article>
+        <span>Aktywne teraz</span>
+        <strong>{{ discount_summary.active_count }}</strong>
+        <small>mogą działać w sklepie</small>
+    </article>
+    <article>
+        <span>Z limitem</span>
+        <strong>{{ discount_summary.limited_count }}</strong>
+        <small>mają limit użyć</small>
+    </article>
+    <article>
+        <span>Użycia</span>
+        <strong>{{ discount_summary.used_count }}</strong>
+        <small>licznik kodów</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--commerce">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po kodzie">
+    <select name="state">
+        <option value="">Wszystkie kody</option>
+        {% for value, label in discount_state_choices %}
+            <option value="{{ value }}" {% if selected_state == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Filtruj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-commerce-layout">
+    <div class="dashboard-commerce-main">
+        <div class="dashboard-list-toolbar dashboard-commerce-toolbar">
+            <div>
+                <span>{{ page.paginator.count }} kodów na aktualnej liście</span>
+                <small>{{ discount_summary.order_count }} zamówień ma przypisany kod rabatowy</small>
+            </div>
+        </div>
+
+        <div class="dashboard-commerce-list" aria-label="Lista kodów rabatowych">
+            {% for row in rows %}
+                <article class="dashboard-commerce-card {% if row.status_class == 'archived' %}is-muted{% endif %}">
+                    <div class="dashboard-commerce-card__top">
+                        <div>
+                            <p class="eyebrow">Kod rabatowy · {{ row.discount_type_label }}</p>
+                            <h2><a href="{{ row.admin_url }}">{{ row.code }}</a></h2>
+                            <p>{{ row.value_label }} rabatu · {{ row.minimum_order_label }} · {{ row.date_label }}</p>
+                        </div>
+                        <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
+                    </div>
+
+                    <dl class="dashboard-commerce-facts">
+                        <div>
+                            <dt>Wartość</dt>
+                            <dd>{{ row.value_label }}</dd>
+                        </div>
+                        <div>
+                            <dt>Minimum</dt>
+                            <dd>{{ row.minimum_order_label }}</dd>
+                        </div>
+                        <div>
+                            <dt>Użycia</dt>
+                            <dd>{{ row.usage_label }}</dd>
+                        </div>
+                        <div>
+                            <dt>Zamówienia</dt>
+                            <dd>{{ row.order_count }}</dd>
+                        </div>
+                    </dl>
+
+                    <div class="dashboard-taxonomy-actions dashboard-commerce-card__actions">
+                        <a href="{{ row.admin_url }}">Edytuj</a>
+                        <a href="{{ row.delete_url }}">Usuń</a>
+                    </div>
+                </article>
+            {% empty %}
+                <article class="dashboard-empty-card">
+                    <h2>Brak kodów rabatowych</h2>
+                    <p>Dodaj pierwszy kod testowy, np. dla przyszłej kampanii albo ręcznych zamówień.</p>
+                    <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj kod</a>
+                </article>
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <nav class="dashboard-pagination">
+                {% if page.has_previous %}
+                    <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+                {% endif %}
+                <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+
+    <aside class="dashboard-commerce-side">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Robocza zasada</h2>
+                    <p>Kod działa dopiero wtedy, gdy jest włączony, mieści się w terminie i nie przekroczył limitu użyć.</p>
+                </div>
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}

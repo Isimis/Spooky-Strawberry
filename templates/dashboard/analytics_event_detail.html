@@ -1,0 +1,96 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ event_detail.event_type_label }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-analytics-heading">
+    <div>
+        <p class="eyebrow">Analityka · Zdarzenia</p>
+        <h1>{{ event_detail.event_type_label }}</h1>
+        <p>{{ event_detail.path }}</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'analytics-events' %}" class="button button--secondary">Wróć do zdarzeń</a>
+        <a href="{{ event_detail.session_url }}" class="button">Zobacz całą sesję</a>
+    </div>
+</section>
+
+<section class="dashboard-analytics-detail-layout">
+    <div class="dashboard-analytics-detail-main">
+        <article class="dashboard-card dashboard-event-detail-card">
+            <div class="dashboard-event-detail-hero">
+                <i class="dashboard-event-marker dashboard-event-marker--{{ event_detail.event_type_class }}" aria-hidden="true"></i>
+                <div>
+                    <span>{{ event_detail.created_at|date:"d.m.Y H:i:s" }}</span>
+                    <h2>{{ event_detail.path }}</h2>
+                    <p>{{ event_detail.device_label }} · {{ event_detail.source_label }}</p>
+                </div>
+            </div>
+
+            {% if event_detail.product %}
+                <div class="dashboard-event-detail-product">
+                    <span>Powiązany produkt</span>
+                    <strong>{{ event_detail.product.name }}</strong>
+                    {% if event_detail.variant %}<small>{{ event_detail.variant }}</small>{% endif %}
+                    <a href="{{ event_detail.product_url }}" class="button button--secondary">Otwórz produkt</a>
+                </div>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Metadane zdarzenia</h2>
+                    <p>Dodatkowe wartości zapisane razem z tym działaniem.</p>
+                </div>
+            </div>
+            {% if event_detail.metadata_rows %}
+                <dl class="dashboard-event-metadata-list">
+                    {% for row in event_detail.metadata_rows %}
+                        <div>
+                            <dt>{{ row.key }}</dt>
+                            <dd>{{ row.value }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+                <details class="dashboard-analytics-json">
+                    <summary>Pokaż surowy JSON</summary>
+                    <pre>{{ event_detail.metadata_json }}</pre>
+                </details>
+            {% else %}
+                <p class="dashboard-empty-note">To zdarzenie nie ma dodatkowych metadanych.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    <aside class="dashboard-analytics-detail-side">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Powiązana sesja</h2>
+                    <p>{{ event_detail.short_session_key }}</p>
+                </div>
+            </div>
+            <dl class="dashboard-analytics-detail-list">
+                <div>
+                    <dt>Użytkownik</dt>
+                    <dd><code>{{ event_detail.visitor_id }}</code></dd>
+                </div>
+                <div>
+                    <dt>Urządzenie</dt>
+                    <dd>{{ event_detail.device_label }}</dd>
+                </div>
+                <div>
+                    <dt>Źródło</dt>
+                    <dd>{{ event_detail.source_label }}</dd>
+                </div>
+                <div>
+                    <dt>Szczegóły źródła</dt>
+                    <dd>{{ event_detail.source_detail }}</dd>
+                </div>
+            </dl>
+            <a href="{{ event_detail.session_url }}" class="button button--secondary">Przejdź do ścieżki</a>
+        </article>
+    </aside>
+</section>
+{% endblock %}

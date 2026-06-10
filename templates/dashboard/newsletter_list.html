@@ -1,0 +1,241 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Newsletter | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-newsletter-heading">
+    <div>
+        <p class="eyebrow">Marketing</p>
+        <h1>Newsletter</h1>
+        <p>Adresy do kampanii, zgody marketingowe, źródła zapisów i szybka lista gotowa do skopiowania.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj adres</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-newsletter-summary" aria-label="Podsumowanie newslettera">
+    <article>
+        <span>Aktywne</span>
+        <strong>{{ newsletter_summary.active_count }}</strong>
+        <small>gotowe do wysyłki</small>
+    </article>
+    <article>
+        <span>Nowe 30 dni</span>
+        <strong>{{ newsletter_summary.new_30_count }}</strong>
+        <small>świeże zapisy</small>
+    </article>
+    <article>
+        <span>Nieaktywne</span>
+        <strong>{{ newsletter_summary.inactive_count }}</strong>
+        <small>wypisane lub wyłączone</small>
+    </article>
+    <article>
+        <span>Bez zgody</span>
+        <strong>{{ newsletter_summary.missing_consent_count }}</strong>
+        <small>do sprawdzenia</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--newsletter">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po adresie e-mail">
+    <select name="status">
+        <option value="">Wszystkie statusy</option>
+        <option value="active" {% if selected_status == "active" %}selected{% endif %}>Aktywne</option>
+        <option value="inactive" {% if selected_status == "inactive" %}selected{% endif %}>Nieaktywne</option>
+    </select>
+    <select name="source">
+        <option value="">Każde źródło</option>
+        {% for value, label in newsletter_sources %}
+            <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="period">
+        <option value="">Cały czas</option>
+        {% for value, label in newsletter_periods %}
+            <option value="{{ value }}" {% if selected_period == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Filtruj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-newsletter-layout">
+    <div class="dashboard-newsletter-main">
+        <div class="dashboard-list-toolbar dashboard-newsletter-toolbar" aria-label="Akcje newslettera">
+            <div>
+                <span>{{ page.paginator.count }} adresów na aktualnej liście</span>
+                <small>{{ newsletter_summary.active_count }} aktywnych w całej bazie</small>
+            </div>
+            <a href="{% url 'dashboard:model_create' config.slug %}" class="button button--secondary">Dopisz ręcznie</a>
+        </div>
+
+        <div class="dashboard-newsletter-list" aria-label="Lista adresów newslettera">
+            {% for row in rows %}
+                <article class="dashboard-newsletter-card {% if not row.is_active %}is-inactive{% endif %}">
+                    <div class="dashboard-newsletter-card__avatar" aria-hidden="true">
+                        {{ row.email|first|upper }}
+                    </div>
+
+                    <div class="dashboard-newsletter-card__body">
+                        <div class="dashboard-newsletter-card__head">
+                            <div>
+                                <p class="eyebrow">{{ row.source_label }}</p>
+                                <h2><a href="{{ row.admin_url }}">{{ row.email }}</a></h2>
+                            </div>
+                            <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
+                        </div>
+
+                        <div class="dashboard-newsletter-card__meta">
+                            <span>Zapis: {{ row.subscribed_at|date:"d.m.Y H:i" }}</span>
+                            {% if row.unsubscribed_at %}
+                                <span>Wypis: {{ row.unsubscribed_at|date:"d.m.Y H:i" }}</span>
+                            {% else %}
+                                <span>Wypis: brak</span>
+                            {% endif %}
+                        </div>
+
+                        <p class="dashboard-newsletter-consent-text">
+                            {% if row.consent_text %}
+                                {{ row.consent_text|truncatechars:140 }}
+                            {% else %}
+                                Brak zapisanego tekstu zgody. Warto uzupełnić, zanim adres trafi do większej kampanii.
+                            {% endif %}
+                        </p>
+
+                        <dl class="dashboard-newsletter-facts">
+                            <div>
+                                <dt>Do wysyłki</dt>
+                                <dd>{% if row.is_sendable %}Tak{% else %}Nie{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>Zgoda</dt>
+                                <dd>{% if row.has_consent %}Tak{% else %}Brak{% endif %}</dd>
+                            </div>
+                            <div>
+                                <dt>Źródło</dt>
+                                <dd>{{ row.source_label }}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="dashboard-taxonomy-actions dashboard-newsletter-card__actions">
+                            <a href="{{ row.admin_url }}">Otwórz</a>
+                            <a href="{{ row.delete_url }}">Usuń</a>
+                        </div>
+                    </div>
+                </article>
+            {% empty %}
+                <article class="dashboard-empty-card">
+                    <h2>Brak adresów</h2>
+                    <p>Nie ma jeszcze zapisów dla wybranych filtrów.</p>
+                    <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj adres</a>
+                </article>
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <nav class="dashboard-pagination">
+                {% if page.has_previous %}
+                    <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+                {% endif %}
+                <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+
+    <aside class="dashboard-newsletter-side">
+        <article class="dashboard-card dashboard-newsletter-export">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Lista do wysyłki</h2>
+                    <p>{{ newsletter_summary.active_count }} aktywnych adresów</p>
+                </div>
+            </div>
+            <textarea readonly data-newsletter-emails aria-label="Aktywne adresy newslettera">{{ newsletter_active_emails }}</textarea>
+            <button type="button" class="button button--secondary" data-newsletter-copy {% if not newsletter_active_emails %}disabled{% endif %}>Kopiuj adresy</button>
+        </article>
+
+        <article class="dashboard-card dashboard-newsletter-health">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Jakość listy</h2>
+                    <p>Szybki przegląd przed wysyłką kampanii.</p>
+                </div>
+            </div>
+            <dl class="dashboard-newsletter-detail-list">
+                <div>
+                    <dt>Wszystkie adresy</dt>
+                    <dd>{{ newsletter_summary.total_count }}</dd>
+                </div>
+                <div>
+                    <dt>Bez zgody</dt>
+                    <dd>{{ newsletter_summary.missing_consent_count }}</dd>
+                </div>
+                <div>
+                    <dt>Nieaktywne</dt>
+                    <dd>{{ newsletter_summary.inactive_count }}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="dashboard-card dashboard-newsletter-sources">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Źródła zapisów</h2>
+                    <p>Skąd wpadają adresy i ile z nich nadal jest aktywnych.</p>
+                </div>
+            </div>
+            <div class="dashboard-newsletter-source-list">
+                {% for source in newsletter_source_rows %}
+                    <div>
+                        <span>{{ source.label }}</span>
+                        <strong>{{ source.active_count }} / {{ source.total_count }}</strong>
+                        <i style="--source-width: {{ source.bar_width }}%;"></i>
+                        <small>{% if source.latest_at %}Ostatni zapis: {{ source.latest_at|date:"d.m.Y" }}{% else %}Brak zapisów{% endif %}</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const copyButton = document.querySelector("[data-newsletter-copy]");
+    const emailTextarea = document.querySelector("[data-newsletter-emails]");
+
+    if (copyButton && emailTextarea) {
+        copyButton.addEventListener("click", async () => {
+            const emails = emailTextarea.value.trim();
+            if (!emails) return;
+
+            try {
+                await navigator.clipboard.writeText(emails);
+            } catch (error) {
+                emailTextarea.select();
+                document.execCommand("copy");
+            }
+
+            copyButton.textContent = "Skopiowano";
+            window.setTimeout(() => {
+                copyButton.textContent = "Kopiuj adresy";
+            }, 1600);
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Pozycje zamówień | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-order-heading">
+    <div>
+        <p class="eyebrow">Zamówienia</p>
+        <h1>Pozycje zamówień</h1>
+        <p>Kontrolny widok produktów zapisanych w zamówieniach. Edycję pozycji rób z poziomu konkretnego zamówienia.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'orders' %}" class="button button--secondary">Lista zamówień</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-order-summary" aria-label="Podsumowanie pozycji zamówień">
+    <article>
+        <span>Pozycje</span>
+        <strong>{{ order_item_summary.total_count }}</strong>
+        <small>wszystkie wiersze</small>
+    </article>
+    <article>
+        <span>Sztuki</span>
+        <strong>{{ order_item_summary.quantity_count }}</strong>
+        <small>łączna ilość</small>
+    </article>
+    <article>
+        <span>Sprzedaż</span>
+        <strong class="dashboard-taxonomy-summary__slug">{{ order_item_summary.sales_total|money }}</strong>
+        <small>z pozycji zamówień</small>
+    </article>
+    <article>
+        <span>Produkty</span>
+        <strong>{{ order_item_summary.unique_products }}</strong>
+        <small>unikalne produkty</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--order-items">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po nazwie produktu, wariancie albo kodzie">
+    <button type="submit">Szukaj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-order-item-check-list" aria-label="Lista pozycji zamówień">
+    {% for row in rows %}
+        <article class="dashboard-order-item-check-card">
+            <a href="{{ row.admin_url }}" class="dashboard-order-item-check-card__image">
+                {% if row.image_url %}
+                    <img src="{{ row.image_url }}" alt="{{ row.image_alt }}">
+                {% else %}
+                    <span>SS</span>
+                {% endif %}
+            </a>
+            <div class="dashboard-order-item-check-card__body">
+                <div class="dashboard-order-item-check-card__head">
+                    <div>
+                        <p class="eyebrow">{{ row.order_number }}</p>
+                        <h2><a href="{{ row.admin_url }}">{{ row.product_name }}</a></h2>
+                        {% if row.variant_name %}
+                            <p>{{ row.variant_name }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="dashboard-status-pill dashboard-status-pill--{{ row.order_status_class }}">{{ row.order_status_label }}</span>
+                </div>
+
+                <dl class="dashboard-order-facts">
+                    <div>
+                        <dt>Ilość</dt>
+                        <dd>{{ row.quantity }}</dd>
+                    </div>
+                    <div>
+                        <dt>Cena</dt>
+                        <dd>{{ row.unit_price|money }}</dd>
+                    </div>
+                    <div>
+                        <dt>Razem</dt>
+                        <dd>{{ row.line_total|money }}</dd>
+                    </div>
+                    <div>
+                        <dt>Kod</dt>
+                        <dd>{{ row.sku|default:"Brak" }}</dd>
+                    </div>
+                </dl>
+
+                <div class="dashboard-order-items-preview">
+                    <span>{{ row.customer_name }}</span>
+                    <span>{{ row.email }}</span>
+                    <span>{{ row.created_at|date:"d.m.Y H:i" }}</span>
+                </div>
+
+                <div class="dashboard-taxonomy-actions dashboard-order-card__actions">
+                    <a href="{{ row.admin_url }}">Sprawdź</a>
+                    <a href="{{ row.order_url }}">Zamówienie</a>
+                    {% if row.product_url %}
+                        <a href="{{ row.product_url }}">Produkt</a>
+                    {% endif %}
+                </div>
+            </div>
+        </article>
+    {% empty %}
+        <article class="dashboard-empty-card">
+            <h2>Brak pozycji</h2>
+            <p>Pozycje pojawią się po dodaniu produktów do zamówień.</p>
+            <a href="{% url 'dashboard:model_list' 'orders' %}" class="button">Przejdź do zamówień</a>
+        </article>
+    {% endfor %}
+</section>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

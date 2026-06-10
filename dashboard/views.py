@@ -1,5 +1,8 @@
 ﻿from pathlib import Path
+import json
 from datetime import datetime, time, timedelta
+from decimal import Decimal
+from urllib.parse import urlparse
 
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -18,11 +21,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
 
-from analytics.models import AnalyticsEvent
+from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
+from core.models import NewsletterSubscriber
 from dashboard.models import DataQualityIssue
-from orders.models import Order, OrderItem
+from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitImage, OutfitItem
 
 from .forms import (
@@ -30,6 +34,8 @@ from .forms import (
     OutfitImageFormSet,
     OutfitItemFormSet,
     ArticleDashboardForm,
+    OrderDashboardForm,
+    OrderItemFormSet,
     ProductDashboardForm,
     ProductImageFormSet,
     ProductVariantFormSet,
@@ -109,6 +115,34 @@ def model_list(request, model_slug):
     elif config.model is Article:
         queryset = queryset.select_related("category").prefetch_related("aesthetics", "products", "outfits")
         queryset = apply_article_admin_filters(request, queryset, active_filters)
+    elif config.model is NewsletterSubscriber:
+        queryset = apply_newsletter_admin_filters(request, queryset, active_filters)
+    elif config.model is Order:
+        queryset = queryset.select_related("user", "shipping_method", "discount_code").prefetch_related("items")
+        queryset = apply_order_admin_filters(request, queryset, active_filters)
+    elif config.model is OrderItem:
+        queryset = queryset.select_related("order", "product", "variant").prefetch_related("product__images")
+    elif config.model is ShippingMethod:
+        queryset = queryset.annotate(order_count=Count("orders"))
+        queryset = apply_shipping_method_admin_filters(request, queryset, active_filters)
+        queryset = queryset.order_by("sort_order", "name")
+    elif config.model is DiscountCode:
+        queryset = queryset.annotate(order_count=Count("orders"))
+        queryset = apply_discount_code_admin_filters(request, queryset, active_filters)
+        queryset = queryset.order_by("code")
+    elif config.model is AnalyticsSession:
+        queryset = queryset.prefetch_related("events__product", "events__variant").annotate(
+            event_count=Count("events"),
+            page_view_count=Count("events", filter=Q(events__event_type=AnalyticsEvent.EVENT_PAGE_VIEW)),
+            product_view_count=Count("events", filter=Q(events__event_type=AnalyticsEvent.EVENT_PRODUCT_VIEW)),
+            add_to_cart_count=Count("events", filter=Q(events__event_type=AnalyticsEvent.EVENT_ADD_TO_CART)),
+        )
+        queryset = apply_analytics_session_filters(request, queryset, active_filters)
+        queryset = queryset.order_by("-last_seen_at")
+    elif config.model is AnalyticsEvent:
+        queryset = queryset.select_related("session", "product", "variant")
+        queryset = apply_analytics_event_filters(request, queryset, active_filters)
+        queryset = queryset.order_by("-created_at")
     elif is_taxonomy_model(config.model):
         queryset = prepare_taxonomy_queryset(config.model, queryset)
         queryset = apply_taxonomy_filters(request, queryset, active_filters)
@@ -133,6 +167,20 @@ def model_list(request, model_slug):
         rows = [build_outfit_row(obj) for obj in page.object_list]
     elif config.model is Article:
         rows = [build_article_row(obj) for obj in page.object_list]
+    elif config.model is NewsletterSubscriber:
+        rows = [build_newsletter_row(obj) for obj in page.object_list]
+    elif config.model is Order:
+        rows = [build_order_row(obj) for obj in page.object_list]
+    elif config.model is OrderItem:
+        rows = [build_order_item_list_row(obj) for obj in page.object_list]
+    elif config.model is ShippingMethod:
+        rows = [build_shipping_method_row(obj) for obj in page.object_list]
+    elif config.model is DiscountCode:
+        rows = [build_discount_code_row(obj) for obj in page.object_list]
+    elif config.model is AnalyticsSession:
+        rows = [build_analytics_session_row(obj) for obj in page.object_list]
+    elif config.model is AnalyticsEvent:
+        rows = [build_analytics_event_row(obj) for obj in page.object_list]
     elif is_taxonomy_model(config.model):
         rows = [build_taxonomy_row(config, obj) for obj in page.object_list]
     else:
@@ -141,6 +189,20 @@ def model_list(request, model_slug):
         template_name = "dashboard/outfit_list.html"
     elif config.model is Article:
         template_name = "dashboard/article_list.html"
+    elif config.model is NewsletterSubscriber:
+        template_name = "dashboard/newsletter_list.html"
+    elif config.model is Order:
+        template_name = "dashboard/order_list.html"
+    elif config.model is OrderItem:
+        template_name = "dashboard/order_item_list.html"
+    elif config.model is ShippingMethod:
+        template_name = "dashboard/shipping_method_list.html"
+    elif config.model is DiscountCode:
+        template_name = "dashboard/discount_code_list.html"
+    elif config.model is AnalyticsSession:
+        template_name = "dashboard/analytics_session_list.html"
+    elif config.model is AnalyticsEvent:
+        template_name = "dashboard/analytics_event_list.html"
     elif is_taxonomy_model(config.model):
         template_name = "dashboard/taxonomy_list.html"
     else:
@@ -164,10 +226,35 @@ def model_list(request, model_slug):
             "selected_stock": request.GET.get("stock", ""),
             "selected_quality": request.GET.get("quality", ""),
             "selected_visibility": request.GET.get("visibility", ""),
+            "selected_source": request.GET.get("source", ""),
+            "selected_period": request.GET.get("period", ""),
+            "selected_state": request.GET.get("state", ""),
+            "selected_device": request.GET.get("device", ""),
+            "selected_event_type": request.GET.get("event_type", ""),
             "product_sort_headers": build_product_sort_headers(request) if config.model is Product else None,
             "outfit_summary": build_outfit_list_summary() if config.model is Outfit else None,
             "article_summary": build_article_list_summary() if config.model is Article else None,
             "article_categories": BlogCategory.objects.filter(is_active=True).order_by("sort_order", "name") if config.model is Article else None,
+            "newsletter_summary": build_newsletter_summary() if config.model is NewsletterSubscriber else None,
+            "newsletter_sources": get_newsletter_source_choices() if config.model is NewsletterSubscriber else None,
+            "newsletter_periods": get_newsletter_period_choices() if config.model is NewsletterSubscriber else None,
+            "newsletter_source_rows": build_newsletter_source_rows() if config.model is NewsletterSubscriber else None,
+            "newsletter_active_emails": build_newsletter_active_email_list() if config.model is NewsletterSubscriber else "",
+            "order_summary": build_order_summary() if config.model is Order else None,
+            "order_statuses": get_order_status_choices() if config.model is Order else None,
+            "order_periods": get_order_period_choices() if config.model is Order else None,
+            "order_status_rows": build_order_status_rows() if config.model is Order else None,
+            "order_item_summary": build_order_item_summary() if config.model is OrderItem else None,
+            "shipping_summary": build_shipping_method_summary() if config.model is ShippingMethod else None,
+            "shipping_state_choices": get_shipping_method_state_choices() if config.model is ShippingMethod else None,
+            "discount_summary": build_discount_code_summary() if config.model is DiscountCode else None,
+            "discount_state_choices": get_discount_code_state_choices() if config.model is DiscountCode else None,
+            "analytics_session_summary": build_analytics_session_summary() if config.model is AnalyticsSession else None,
+            "analytics_event_summary": build_analytics_event_summary() if config.model is AnalyticsEvent else None,
+            "analytics_device_choices": get_analytics_device_choices() if config.model in {AnalyticsSession, AnalyticsEvent} else None,
+            "analytics_period_choices": get_analytics_period_choices() if config.model in {AnalyticsSession, AnalyticsEvent} else None,
+            "analytics_source_choices": get_analytics_source_choices() if config.model is AnalyticsSession else None,
+            "analytics_event_type_choices": get_analytics_event_type_choices() if config.model is AnalyticsEvent else None,
             "taxonomy": build_taxonomy_list_context(config) if is_taxonomy_model(config.model) else None,
             "sections": get_sections(),
         },
@@ -178,10 +265,15 @@ def model_list(request, model_slug):
 @require_http_methods(["GET", "POST"])
 def model_create(request, model_slug):
     config = get_required_config(model_slug)
+    if config.readonly:
+        messages.info(request, "Dane analityczne są zapisywane automatycznie i nie można dodawać ich ręcznie.")
+        return redirect("dashboard:model_list", model_slug=config.slug)
     if config.model is Outfit:
         return redirect("dashboard:outfit_create_workspace")
     if config.model is Article:
         return redirect("dashboard:article_create_workspace")
+    if config.model is Order:
+        return redirect("dashboard:order_create_workspace")
     form_class = build_model_form(config.model)
     form = form_class(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
@@ -189,7 +281,14 @@ def model_create(request, model_slug):
         messages.success(request, f"Zapisano: {obj}")
         return redirect(get_admin_object_url(config, obj))
 
-    template_name = "dashboard/taxonomy_form.html" if is_taxonomy_model(config.model) else "dashboard/model_form.html"
+    if config.model is NewsletterSubscriber:
+        template_name = "dashboard/newsletter_form.html"
+    elif config.model is ShippingMethod:
+        template_name = "dashboard/shipping_method_form.html"
+    elif config.model is DiscountCode:
+        template_name = "dashboard/discount_code_form.html"
+    else:
+        template_name = "dashboard/taxonomy_form.html" if is_taxonomy_model(config.model) else "dashboard/model_form.html"
     return render(
         request,
         template_name,
@@ -198,6 +297,9 @@ def model_create(request, model_slug):
             "form": form,
             "object": None,
             "mode": "create",
+            "newsletter_detail": build_newsletter_detail_context(None) if config.model is NewsletterSubscriber else None,
+            "shipping_detail": build_shipping_method_detail_context(None) if config.model is ShippingMethod else None,
+            "discount_detail": build_discount_code_detail_context(None) if config.model is DiscountCode else None,
             "taxonomy": build_taxonomy_detail_context(config, None) if is_taxonomy_model(config.model) else None,
             "sections": get_sections(),
         },
@@ -212,6 +314,38 @@ def model_edit(request, model_slug, pk):
         return redirect("dashboard:outfit_workspace", pk=pk)
     if config.model is Article:
         return redirect("dashboard:article_workspace", pk=pk)
+    if config.model is Order:
+        return redirect("dashboard:order_workspace", pk=pk)
+    if config.model is OrderItem:
+        return redirect("dashboard:order_item_detail", pk=pk)
+    if config.model is AnalyticsSession:
+        session = get_object_or_404(
+            AnalyticsSession.objects.prefetch_related("events__product", "events__variant"),
+            pk=pk,
+        )
+        return render(
+            request,
+            "dashboard/analytics_session_detail.html",
+            {
+                "config": config,
+                "session_detail": build_analytics_session_detail(session),
+                "sections": get_sections(),
+            },
+        )
+    if config.model is AnalyticsEvent:
+        event = get_object_or_404(
+            AnalyticsEvent.objects.select_related("session", "product", "variant"),
+            pk=pk,
+        )
+        return render(
+            request,
+            "dashboard/analytics_event_detail.html",
+            {
+                "config": config,
+                "event_detail": build_analytics_event_detail(event),
+                "sections": get_sections(),
+            },
+        )
     obj = get_object_or_404(config.model, pk=pk)
     form_class = build_model_form(config.model)
     form = form_class(request.POST or None, request.FILES or None, instance=obj)
@@ -220,7 +354,14 @@ def model_edit(request, model_slug, pk):
         messages.success(request, f"Zapisano: {obj}")
         return redirect(get_admin_object_url(config, obj))
 
-    template_name = "dashboard/taxonomy_form.html" if is_taxonomy_model(config.model) else "dashboard/model_form.html"
+    if config.model is NewsletterSubscriber:
+        template_name = "dashboard/newsletter_form.html"
+    elif config.model is ShippingMethod:
+        template_name = "dashboard/shipping_method_form.html"
+    elif config.model is DiscountCode:
+        template_name = "dashboard/discount_code_form.html"
+    else:
+        template_name = "dashboard/taxonomy_form.html" if is_taxonomy_model(config.model) else "dashboard/model_form.html"
     return render(
         request,
         template_name,
@@ -229,6 +370,9 @@ def model_edit(request, model_slug, pk):
             "form": form,
             "object": obj,
             "mode": "edit",
+            "newsletter_detail": build_newsletter_detail_context(obj) if config.model is NewsletterSubscriber else None,
+            "shipping_detail": build_shipping_method_detail_context(obj) if config.model is ShippingMethod else None,
+            "discount_detail": build_discount_code_detail_context(obj) if config.model is DiscountCode else None,
             "taxonomy": build_taxonomy_detail_context(config, obj) if is_taxonomy_model(config.model) else None,
             "sections": get_sections(),
         },
@@ -239,6 +383,9 @@ def model_edit(request, model_slug, pk):
 @require_http_methods(["GET", "POST"])
 def model_delete(request, model_slug, pk):
     config = get_required_config(model_slug)
+    if config.readonly:
+        messages.info(request, "Dane analityczne są tylko do odczytu i nie można usuwać ich pojedynczo z panelu.")
+        return redirect("dashboard:model_list", model_slug=config.slug)
     obj = get_object_or_404(config.model, pk=pk)
     if request.method == "POST":
         label = str(obj)
@@ -493,6 +640,97 @@ def article_workspace(request, pk):
 
 
 @staff_required
+@require_http_methods(["GET", "POST"])
+def order_create_workspace(request):
+    order = Order()
+    order_form = OrderDashboardForm(request.POST or None, instance=order, prefix="order")
+
+    if request.method == "POST":
+        if order_form.is_valid():
+            order = order_form.save()
+            messages.success(request, "Zamówienie utworzone. Możesz teraz uzupełnić pozycje innymi narzędziami panelu.")
+            return redirect("dashboard:order_workspace", pk=order.pk)
+        messages.error(request, "Nie udało się utworzyć zamówienia. Sprawdź błędy w formularzu.")
+
+    return render(
+        request,
+        "dashboard/order_workspace.html",
+        {
+            "order": None,
+            "order_form": order_form,
+            "item_formset": None,
+            "fieldsets": build_order_fieldsets(order_form),
+            "order_detail": build_order_detail_context(order),
+            "order_product_catalog": {},
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def order_workspace(request, pk):
+    order = get_object_or_404(
+        Order.objects.select_related("user", "shipping_method", "discount_code").prefetch_related(
+            "items__product",
+            "items__variant",
+            "items__product__images",
+        ),
+        pk=pk,
+    )
+    order_form = OrderDashboardForm(request.POST or None, instance=order, prefix="order")
+    item_formset = OrderItemFormSet(
+        request.POST or None,
+        instance=order,
+        prefix="items",
+        queryset=OrderItem.objects.filter(order=order).select_related("product", "variant").prefetch_related("product__images"),
+    )
+
+    if request.method == "POST":
+        if order_form.is_valid() and item_formset.is_valid():
+            with transaction.atomic():
+                order = order_form.save()
+                item_formset.instance = order
+                item_formset.save()
+                sync_order_totals_from_items(order)
+            messages.success(request, "Zamówienie zapisane razem z pozycjami.")
+            return redirect("dashboard:order_workspace", pk=order.pk)
+        messages.error(request, "Nie udało się zapisać zamówienia. Sprawdź błędy w formularzu.")
+
+    order_detail = build_order_detail_context(order)
+    return render(
+        request,
+        "dashboard/order_workspace.html",
+        {
+            "order": order,
+            "order_form": order_form,
+            "item_formset": item_formset,
+            "fieldsets": build_order_fieldsets(order_form),
+            "order_detail": order_detail,
+            "order_product_catalog": build_order_product_catalog_data(),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+def order_item_detail(request, pk):
+    item = get_object_or_404(
+        OrderItem.objects.select_related("order", "product", "variant").prefetch_related("product__images"),
+        pk=pk,
+    )
+    return render(
+        request,
+        "dashboard/order_item_detail.html",
+        {
+            "item": item,
+            "item_detail": build_order_item_detail_context(item),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
 @require_POST
 def refresh_quality(request):
     total_open = refresh_all_product_quality_issues()
@@ -569,6 +807,137 @@ def apply_article_admin_filters(request, queryset, active_filters):
     return queryset
 
 
+def apply_newsletter_admin_filters(request, queryset, active_filters):
+    selected_status = request.GET.get("status", "").strip()
+    selected_source = request.GET.get("source", "").strip()
+    selected_period = request.GET.get("period", "").strip()
+
+    if selected_status == "active":
+        queryset = queryset.filter(is_active=True, unsubscribed_at__isnull=True)
+        active_filters.append("Aktywne")
+    elif selected_status == "inactive":
+        queryset = queryset.filter(Q(is_active=False) | Q(unsubscribed_at__isnull=False))
+        active_filters.append("Nieaktywne")
+
+    if selected_source:
+        queryset = queryset.filter(source=selected_source)
+        active_filters.append(f"Źródło: {get_newsletter_source_label(selected_source)}")
+
+    if selected_period in {"7", "30", "90"}:
+        days = int(selected_period)
+        queryset = queryset.filter(subscribed_at__gte=timezone.now() - timedelta(days=days))
+        active_filters.append(f"Ostatnie {days} dni")
+
+    return queryset
+
+
+def apply_order_admin_filters(request, queryset, active_filters):
+    selected_status = request.GET.get("status", "").strip()
+    selected_period = request.GET.get("period", "").strip()
+
+    if selected_status:
+        queryset = queryset.filter(status=selected_status)
+        active_filters.append(f"Status: {get_order_status_label(selected_status)}")
+
+    if selected_period in {"7", "30", "90"}:
+        days = int(selected_period)
+        queryset = queryset.filter(created_at__gte=timezone.now() - timedelta(days=days))
+        active_filters.append(f"Ostatnie {days} dni")
+
+    return queryset
+
+
+def apply_shipping_method_admin_filters(request, queryset, active_filters):
+    selected_state = request.GET.get("state", "").strip()
+
+    if selected_state == "active":
+        queryset = queryset.filter(is_active=True)
+        active_filters.append("Aktywne")
+    elif selected_state == "inactive":
+        queryset = queryset.filter(is_active=False)
+        active_filters.append("Ukryte")
+    elif selected_state == "free_from":
+        queryset = queryset.filter(free_from_amount__isnull=False)
+        active_filters.append("Z progiem darmowej dostawy")
+
+    return queryset
+
+
+def apply_discount_code_admin_filters(request, queryset, active_filters):
+    selected_state = request.GET.get("state", "").strip()
+    now = timezone.now()
+
+    if selected_state == "active":
+        queryset = queryset.filter(get_discount_current_query(now))
+        active_filters.append("Aktywne teraz")
+    elif selected_state == "inactive":
+        queryset = queryset.filter(is_active=False)
+        active_filters.append("Wyłączone")
+    elif selected_state == "expired":
+        queryset = queryset.filter(ends_at__lt=now)
+        active_filters.append("Po terminie")
+    elif selected_state == "limited":
+        queryset = queryset.filter(max_uses__isnull=False)
+        active_filters.append("Z limitem użyć")
+
+    return queryset
+
+
+def apply_analytics_session_filters(request, queryset, active_filters):
+    selected_device = request.GET.get("device", "").strip()
+    selected_source = request.GET.get("source", "").strip()
+    selected_period = request.GET.get("period", "").strip()
+
+    if selected_device:
+        queryset = queryset.filter(device_type=selected_device)
+        active_filters.append(f"Urządzenie: {get_analytics_device_label(selected_device)}")
+
+    if selected_source == "direct":
+        queryset = queryset.filter(referrer="", utm_source="")
+        active_filters.append("Źródło: wejście bezpośrednie")
+    elif selected_source == "campaign":
+        queryset = queryset.exclude(utm_source="")
+        active_filters.append("Źródło: kampania UTM")
+    elif selected_source == "referral":
+        queryset = queryset.exclude(referrer="").filter(utm_source="")
+        active_filters.append("Źródło: strona odsyłająca")
+
+    if selected_period in {"1", "7", "30", "90"}:
+        days = int(selected_period)
+        queryset = queryset.filter(last_seen_at__gte=timezone.now() - timedelta(days=days))
+        active_filters.append("Ostatnie 24 godziny" if days == 1 else f"Ostatnie {days} dni")
+
+    return queryset
+
+
+def apply_analytics_event_filters(request, queryset, active_filters):
+    selected_event_type = request.GET.get("event_type", "").strip()
+    selected_device = request.GET.get("device", "").strip()
+    selected_period = request.GET.get("period", "").strip()
+
+    if selected_event_type:
+        queryset = queryset.filter(event_type=selected_event_type)
+        active_filters.append(f"Zdarzenie: {get_analytics_event_type_label(selected_event_type)}")
+    if selected_device:
+        queryset = queryset.filter(session__device_type=selected_device)
+        active_filters.append(f"Urządzenie: {get_analytics_device_label(selected_device)}")
+    if selected_period in {"1", "7", "30", "90"}:
+        days = int(selected_period)
+        queryset = queryset.filter(created_at__gte=timezone.now() - timedelta(days=days))
+        active_filters.append("Ostatnie 24 godziny" if days == 1 else f"Ostatnie {days} dni")
+
+    return queryset
+
+
+def get_discount_current_query(now):
+    return (
+        Q(is_active=True)
+        & (Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        & (Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+        & (Q(max_uses__isnull=True) | Q(used_count__lt=F("max_uses")))
+    )
+
+
 def get_product_status_label(status):
     return dict(Product.STATUS_CHOICES).get(status, status)
 
@@ -587,6 +956,190 @@ def get_article_status_label(status):
         Article.STATUS_PUBLISHED: "Opublikowany",
         Article.STATUS_ARCHIVED: "Archiwalny",
     }.get(status, status)
+
+
+def get_newsletter_source_choices():
+    return [
+        (NewsletterSubscriber.SOURCE_FOOTER, "Stopka"),
+        (NewsletterSubscriber.SOURCE_HOME, "Strona główna"),
+        (NewsletterSubscriber.SOURCE_POPUP, "Popup"),
+        (NewsletterSubscriber.SOURCE_OTHER, "Inne"),
+    ]
+
+
+def get_newsletter_source_label(source):
+    return dict(get_newsletter_source_choices()).get(source, source)
+
+
+def get_newsletter_period_choices():
+    return [
+        ("7", "Ostatnie 7 dni"),
+        ("30", "Ostatnie 30 dni"),
+        ("90", "Ostatnie 90 dni"),
+    ]
+
+
+def get_order_status_choices():
+    return [
+        (Order.STATUS_DRAFT, "Szkic"),
+        (Order.STATUS_PLACED, "Złożone"),
+        (Order.STATUS_CONFIRMED, "Potwierdzone"),
+        (Order.STATUS_PACKED, "Spakowane"),
+        (Order.STATUS_SHIPPED, "Wysłane"),
+        (Order.STATUS_CANCELLED, "Anulowane"),
+    ]
+
+
+def get_order_status_label(status):
+    return dict(get_order_status_choices()).get(status, status)
+
+
+def get_order_period_choices():
+    return [
+        ("7", "Ostatnie 7 dni"),
+        ("30", "Ostatnie 30 dni"),
+        ("90", "Ostatnie 90 dni"),
+    ]
+
+
+def get_order_status_class(status):
+    return {
+        Order.STATUS_DRAFT: "draft",
+        Order.STATUS_PLACED: "placed",
+        Order.STATUS_CONFIRMED: "confirmed",
+        Order.STATUS_PACKED: "packed",
+        Order.STATUS_SHIPPED: "shipped",
+        Order.STATUS_CANCELLED: "cancelled",
+    }.get(status, "draft")
+
+
+def get_shipping_method_state_choices():
+    return [
+        ("active", "Aktywne"),
+        ("inactive", "Ukryte"),
+        ("free_from", "Z darmową dostawą"),
+    ]
+
+
+def get_discount_code_state_choices():
+    return [
+        ("active", "Aktywne teraz"),
+        ("inactive", "Wyłączone"),
+        ("expired", "Po terminie"),
+        ("limited", "Z limitem użyć"),
+    ]
+
+
+def get_analytics_device_choices():
+    return [
+        ("mobile", "Telefon"),
+        ("desktop", "Komputer"),
+        ("tablet", "Tablet"),
+        ("unknown", "Nieznane"),
+    ]
+
+
+def get_analytics_device_label(device_type):
+    normalized = (device_type or "").strip().lower()
+    return dict(get_analytics_device_choices()).get(normalized, "Nieznane")
+
+
+def get_analytics_period_choices():
+    return [
+        ("1", "Ostatnie 24 godziny"),
+        ("7", "Ostatnie 7 dni"),
+        ("30", "Ostatnie 30 dni"),
+        ("90", "Ostatnie 90 dni"),
+    ]
+
+
+def get_analytics_source_choices():
+    return [
+        ("direct", "Wejście bezpośrednie"),
+        ("campaign", "Kampania UTM"),
+        ("referral", "Strona odsyłająca"),
+    ]
+
+
+def get_analytics_event_type_choices():
+    return [
+        (AnalyticsEvent.EVENT_PAGE_VIEW, "Wyświetlenie strony"),
+        (AnalyticsEvent.EVENT_PRODUCT_VIEW, "Wyświetlenie produktu"),
+        (AnalyticsEvent.EVENT_SEARCH, "Wyszukiwanie"),
+        (AnalyticsEvent.EVENT_FILTER_APPLIED, "Użycie filtra"),
+        (AnalyticsEvent.EVENT_ADD_TO_CART, "Dodanie do koszyka"),
+        (AnalyticsEvent.EVENT_CART_VIEW, "Wyświetlenie koszyka"),
+    ]
+
+
+def get_analytics_event_type_label(event_type):
+    return dict(get_analytics_event_type_choices()).get(event_type, event_type)
+
+
+def get_analytics_event_type_class(event_type):
+    return {
+        AnalyticsEvent.EVENT_PAGE_VIEW: "page-view",
+        AnalyticsEvent.EVENT_PRODUCT_VIEW: "product-view",
+        AnalyticsEvent.EVENT_SEARCH: "search",
+        AnalyticsEvent.EVENT_FILTER_APPLIED: "filter",
+        AnalyticsEvent.EVENT_ADD_TO_CART: "cart",
+        AnalyticsEvent.EVENT_CART_VIEW: "cart-view",
+    }.get(event_type, "other")
+
+
+def get_discount_type_label(discount_type):
+    return {
+        DiscountCode.TYPE_PERCENT: "Procent",
+        DiscountCode.TYPE_FIXED: "Kwota",
+    }.get(discount_type, discount_type)
+
+
+def get_discount_status(discount_code):
+    now = timezone.now()
+    if not discount_code.is_active:
+        return "Wyłączony", "archived"
+    if discount_code.starts_at and discount_code.starts_at > now:
+        return "Zaplanowany", "draft"
+    if discount_code.ends_at and discount_code.ends_at < now:
+        return "Po terminie", "archived"
+    if discount_code.max_uses is not None and discount_code.used_count >= discount_code.max_uses:
+        return "Wykorzystany", "archived"
+    return "Aktywny", "active"
+
+
+def format_admin_money(value):
+    if value is None:
+        return "Brak"
+    return f"{value:.2f}".replace(".", ",") + " zł"
+
+
+def format_admin_number(value):
+    if value is None:
+        return "Brak"
+    text = f"{value:.2f}".rstrip("0").rstrip(".")
+    return text.replace(".", ",")
+
+
+def format_discount_value(discount_code):
+    if discount_code.discount_type == DiscountCode.TYPE_PERCENT:
+        return f"{format_admin_number(discount_code.value)}%"
+    return format_admin_money(discount_code.value)
+
+
+def get_discount_usage_label(discount_code):
+    if discount_code.max_uses is None:
+        return f"{discount_code.used_count} / bez limitu"
+    return f"{discount_code.used_count} / {discount_code.max_uses}"
+
+
+def get_discount_date_label(discount_code):
+    if discount_code.starts_at and discount_code.ends_at:
+        return f"{discount_code.starts_at:%d.%m.%Y} - {discount_code.ends_at:%d.%m.%Y}"
+    if discount_code.starts_at:
+        return f"od {discount_code.starts_at:%d.%m.%Y}"
+    if discount_code.ends_at:
+        return f"do {discount_code.ends_at:%d.%m.%Y}"
+    return "bez terminu"
 
 
 def get_article_cover_url(article):
@@ -724,6 +1277,694 @@ def build_article_workspace_summary(article):
         "cover_url": get_article_cover_url(article),
         "slug": getattr(article, "slug", ""),
     }
+
+
+def build_newsletter_summary():
+    subscribers = NewsletterSubscriber.objects.all()
+    now = timezone.now()
+    return {
+        "total_count": subscribers.count(),
+        "active_count": subscribers.filter(is_active=True, unsubscribed_at__isnull=True).count(),
+        "inactive_count": subscribers.filter(Q(is_active=False) | Q(unsubscribed_at__isnull=False)).distinct().count(),
+        "new_30_count": subscribers.filter(subscribed_at__gte=now - timedelta(days=30)).count(),
+        "missing_consent_count": subscribers.filter(consent_text="").count(),
+    }
+
+
+def build_newsletter_source_rows():
+    subscribers = NewsletterSubscriber.objects.all()
+    rows = []
+    max_active_count = 1
+    counts_by_source = {}
+
+    for value, label in get_newsletter_source_choices():
+        source_queryset = subscribers.filter(source=value)
+        active_count = source_queryset.filter(is_active=True, unsubscribed_at__isnull=True).count()
+        counts_by_source[value] = active_count
+        max_active_count = max(max_active_count, active_count)
+        rows.append(
+            {
+                "value": value,
+                "label": label,
+                "total_count": source_queryset.count(),
+                "active_count": active_count,
+                "latest_at": source_queryset.order_by("-subscribed_at").values_list("subscribed_at", flat=True).first(),
+            }
+        )
+
+    for row in rows:
+        active_count = counts_by_source[row["value"]]
+        row["bar_width"] = 0 if active_count == 0 else max(8, round((active_count / max_active_count) * 100))
+
+    return rows
+
+
+def build_newsletter_active_email_list():
+    return ", ".join(
+        NewsletterSubscriber.objects.filter(is_active=True, unsubscribed_at__isnull=True).order_by("email").values_list("email", flat=True)
+    )
+
+
+def build_newsletter_row(subscriber):
+    is_sendable = subscriber.is_active and not subscriber.unsubscribed_at
+    return {
+        "object": subscriber,
+        "admin_url": reverse("dashboard:model_edit", args=["newsletter-subscribers", subscriber.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["newsletter-subscribers", subscriber.pk]),
+        "email": subscriber.email,
+        "source": subscriber.source,
+        "source_label": get_newsletter_source_label(subscriber.source),
+        "is_active": subscriber.is_active,
+        "is_sendable": is_sendable,
+        "has_consent": bool(subscriber.consent_text),
+        "status_label": "Aktywna" if subscriber.is_active else "Nieaktywna",
+        "status_class": "active" if subscriber.is_active else "archived",
+        "consent_text": subscriber.consent_text,
+        "subscribed_at": subscriber.subscribed_at,
+        "unsubscribed_at": subscriber.unsubscribed_at,
+    }
+
+
+def build_newsletter_detail_context(subscriber):
+    if not subscriber:
+        return {
+            "status_label": "Nowy adres",
+            "status_class": "draft",
+            "source_label": "Nie wybrano",
+            "is_sendable": False,
+            "sendability_label": "po zapisie",
+            "subscribed_at": None,
+            "unsubscribed_at": None,
+            "has_consent": False,
+            "consent_text": "",
+            "email": "",
+        }
+
+    return {
+        "status_label": "Aktywna" if subscriber.is_active else "Nieaktywna",
+        "status_class": "active" if subscriber.is_active else "archived",
+        "source_label": get_newsletter_source_label(subscriber.source),
+        "is_sendable": subscriber.is_active and not subscriber.unsubscribed_at,
+        "sendability_label": "Tak" if subscriber.is_active and not subscriber.unsubscribed_at else "Nie",
+        "subscribed_at": subscriber.subscribed_at,
+        "unsubscribed_at": subscriber.unsubscribed_at,
+        "has_consent": bool(subscriber.consent_text),
+        "consent_text": subscriber.consent_text,
+        "email": subscriber.email,
+    }
+
+
+def build_order_summary():
+    orders = Order.objects.all()
+    active_orders = orders.exclude(status__in=[Order.STATUS_DRAFT, Order.STATUS_CANCELLED])
+    open_statuses = [Order.STATUS_PLACED, Order.STATUS_CONFIRMED, Order.STATUS_PACKED]
+    now = timezone.now()
+    return {
+        "total_count": orders.count(),
+        "open_count": orders.filter(status__in=open_statuses).count(),
+        "new_30_count": orders.filter(created_at__gte=now - timedelta(days=30)).count(),
+        "cancelled_count": orders.filter(status=Order.STATUS_CANCELLED).count(),
+        "revenue_total": active_orders.aggregate(total=Sum("grand_total"))["total"] or 0,
+    }
+
+
+def build_order_status_rows():
+    orders = Order.objects.all()
+    rows = []
+    max_count = 1
+    counts = {}
+    for value, label in get_order_status_choices():
+        count = orders.filter(status=value).count()
+        counts[value] = count
+        max_count = max(max_count, count)
+        rows.append(
+            {
+                "value": value,
+                "label": label,
+                "count": count,
+                "class": get_order_status_class(value),
+            }
+        )
+    for row in rows:
+        count = counts[row["value"]]
+        row["bar_width"] = 0 if count == 0 else max(8, round((count / max_count) * 100))
+    return rows
+
+
+def build_order_item_summary():
+    items = OrderItem.objects.all()
+    return {
+        "total_count": items.count(),
+        "quantity_count": items.aggregate(total=Sum("quantity"))["total"] or 0,
+        "sales_total": items.aggregate(total=Sum("line_total"))["total"] or 0,
+        "unique_products": items.values("product_id").distinct().count(),
+    }
+
+
+def build_shipping_method_summary():
+    methods = ShippingMethod.objects.all()
+    cheapest_price = methods.filter(is_active=True).order_by("price").values_list("price", flat=True).first()
+    return {
+        "total_count": methods.count(),
+        "active_count": methods.filter(is_active=True).count(),
+        "free_from_count": methods.filter(free_from_amount__isnull=False).count(),
+        "cheapest_price": cheapest_price,
+        "order_count": Order.objects.filter(shipping_method__isnull=False).count(),
+    }
+
+
+def build_shipping_method_row(method):
+    return {
+        "object": method,
+        "admin_url": reverse("dashboard:model_edit", args=["shipping-methods", method.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["shipping-methods", method.pk]),
+        "name": method.name,
+        "code": method.code,
+        "description": method.description,
+        "price": method.price,
+        "price_label": format_admin_money(method.price),
+        "free_from_amount": method.free_from_amount,
+        "free_from_label": format_admin_money(method.free_from_amount) if method.free_from_amount is not None else "Brak progu",
+        "is_active": method.is_active,
+        "status_label": "Aktywna" if method.is_active else "Ukryta",
+        "status_class": "active" if method.is_active else "archived",
+        "sort_order": method.sort_order,
+        "order_count": getattr(method, "order_count", method.orders.count()),
+    }
+
+
+def build_shipping_method_detail_context(method):
+    if not method:
+        return {
+            "status_label": "Nowa metoda",
+            "status_class": "draft",
+            "price_label": "po zapisie",
+            "free_from_label": "opcjonalnie",
+            "order_count": 0,
+            "code": "utworzy się z nazwy",
+            "description": "",
+        }
+
+    return {
+        "status_label": "Aktywna" if method.is_active else "Ukryta",
+        "status_class": "active" if method.is_active else "archived",
+        "price_label": format_admin_money(method.price),
+        "free_from_label": format_admin_money(method.free_from_amount) if method.free_from_amount is not None else "Brak progu",
+        "order_count": method.orders.count(),
+        "code": method.code,
+        "description": method.description,
+    }
+
+
+def build_discount_code_summary():
+    discounts = DiscountCode.objects.all()
+    now = timezone.now()
+    return {
+        "total_count": discounts.count(),
+        "active_count": discounts.filter(get_discount_current_query(now)).count(),
+        "expired_count": discounts.filter(ends_at__lt=now).count(),
+        "limited_count": discounts.filter(max_uses__isnull=False).count(),
+        "used_count": discounts.aggregate(total=Sum("used_count"))["total"] or 0,
+        "order_count": Order.objects.filter(discount_code__isnull=False).count(),
+    }
+
+
+def build_discount_code_row(discount_code):
+    status_label, status_class = get_discount_status(discount_code)
+    return {
+        "object": discount_code,
+        "admin_url": reverse("dashboard:model_edit", args=["discount-codes", discount_code.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["discount-codes", discount_code.pk]),
+        "code": discount_code.code,
+        "discount_type_label": get_discount_type_label(discount_code.discount_type),
+        "value_label": format_discount_value(discount_code),
+        "minimum_order_label": (
+            format_admin_money(discount_code.minimum_order_amount)
+            if discount_code.minimum_order_amount is not None
+            else "Brak minimum"
+        ),
+        "usage_label": get_discount_usage_label(discount_code),
+        "date_label": get_discount_date_label(discount_code),
+        "is_active": discount_code.is_active,
+        "status_label": status_label,
+        "status_class": status_class,
+        "order_count": getattr(discount_code, "order_count", discount_code.orders.count()),
+        "created_at": discount_code.created_at,
+    }
+
+
+def build_discount_code_detail_context(discount_code):
+    if not discount_code:
+        return {
+            "status_label": "Nowy kod",
+            "status_class": "draft",
+            "value_label": "po zapisie",
+            "usage_label": "0 / bez limitu",
+            "date_label": "bez terminu",
+            "minimum_order_label": "opcjonalnie",
+            "order_count": 0,
+            "code": "np. SPOOKY10",
+        }
+
+    status_label, status_class = get_discount_status(discount_code)
+    return {
+        "status_label": status_label,
+        "status_class": status_class,
+        "value_label": format_discount_value(discount_code),
+        "usage_label": get_discount_usage_label(discount_code),
+        "date_label": get_discount_date_label(discount_code),
+        "minimum_order_label": (
+            format_admin_money(discount_code.minimum_order_amount)
+            if discount_code.minimum_order_amount is not None
+            else "Brak minimum"
+        ),
+        "order_count": discount_code.orders.count(),
+        "code": discount_code.code,
+    }
+
+
+def build_analytics_session_summary():
+    sessions = AnalyticsSession.objects.all()
+    events = AnalyticsEvent.objects.all()
+    now = timezone.now()
+    return {
+        "total_count": sessions.count(),
+        "active_count": sessions.filter(last_seen_at__gte=now - timedelta(minutes=30)).count(),
+        "last_24_count": sessions.filter(last_seen_at__gte=now - timedelta(days=1)).count(),
+        "unique_visitors": count_unique_visitors(events),
+        "campaign_count": sessions.exclude(utm_source="").count(),
+        "event_count": events.count(),
+    }
+
+
+def build_analytics_event_summary():
+    events = AnalyticsEvent.objects.all()
+    now = timezone.now()
+    return {
+        "total_count": events.count(),
+        "last_24_count": events.filter(created_at__gte=now - timedelta(days=1)).count(),
+        "page_view_count": events.filter(event_type=AnalyticsEvent.EVENT_PAGE_VIEW).count(),
+        "product_view_count": events.filter(event_type=AnalyticsEvent.EVENT_PRODUCT_VIEW).count(),
+        "add_to_cart_count": events.filter(event_type=AnalyticsEvent.EVENT_ADD_TO_CART).count(),
+        "session_count": events.values("session_id").distinct().count(),
+    }
+
+
+def build_analytics_session_row(session):
+    events = sorted(list(session.events.all()), key=lambda event: event.created_at)
+    first_event = events[0] if events else None
+    last_event = events[-1] if events else None
+    return {
+        "object": session,
+        "admin_url": reverse("dashboard:model_edit", args=["analytics-sessions", session.pk]),
+        "session_key": session.session_key,
+        "short_session_key": shorten_identifier(session.session_key),
+        "visitor_id": session.visitor_id,
+        "short_visitor_id": shorten_identifier(session.visitor_id) if session.visitor_id else "Brak",
+        "device_label": get_analytics_device_label(session.device_type),
+        "device_class": (session.device_type or "unknown").lower(),
+        "source_label": get_analytics_source_label(session),
+        "source_detail": get_analytics_source_detail(session),
+        "first_seen_at": session.first_seen_at,
+        "last_seen_at": session.last_seen_at,
+        "duration_label": format_analytics_duration(session.first_seen_at, session.last_seen_at),
+        "event_count": getattr(session, "event_count", len(events)),
+        "page_view_count": getattr(session, "page_view_count", count_events(events, AnalyticsEvent.EVENT_PAGE_VIEW)),
+        "product_view_count": getattr(session, "product_view_count", count_events(events, AnalyticsEvent.EVENT_PRODUCT_VIEW)),
+        "add_to_cart_count": getattr(session, "add_to_cart_count", count_events(events, AnalyticsEvent.EVENT_ADD_TO_CART)),
+        "entry_path": first_event.path if first_event else "Brak zdarzeń",
+        "exit_path": last_event.path if last_event else "Brak zdarzeń",
+        "is_active": session.last_seen_at >= timezone.now() - timedelta(minutes=30),
+    }
+
+
+def build_analytics_event_row(event):
+    return {
+        "object": event,
+        "admin_url": reverse("dashboard:model_edit", args=["analytics-events", event.pk]),
+        "session_url": reverse("dashboard:model_edit", args=["analytics-sessions", event.session_id]),
+        "event_type": event.event_type,
+        "event_type_label": get_analytics_event_type_label(event.event_type),
+        "event_type_class": get_analytics_event_type_class(event.event_type),
+        "path": event.path,
+        "product": event.product,
+        "variant": event.variant,
+        "device_label": get_analytics_device_label(event.session.device_type),
+        "source_label": get_analytics_source_label(event.session),
+        "session_key": shorten_identifier(event.session.session_key),
+        "metadata_summary": format_analytics_metadata_summary(event.metadata),
+        "created_at": event.created_at,
+    }
+
+
+def build_analytics_session_detail(session):
+    events = sorted(list(session.events.all()), key=lambda event: event.created_at)
+    event_rows = [build_analytics_event_row(event) for event in events]
+    counts = {
+        event_type: count_events(events, event_type)
+        for event_type, _label in get_analytics_event_type_choices()
+    }
+    return {
+        "object": session,
+        "session_key": session.session_key,
+        "short_session_key": shorten_identifier(session.session_key),
+        "visitor_id": session.visitor_id or "Brak",
+        "device_label": get_analytics_device_label(session.device_type),
+        "device_class": (session.device_type or "unknown").lower(),
+        "source_label": get_analytics_source_label(session),
+        "source_detail": get_analytics_source_detail(session),
+        "referrer": session.referrer,
+        "utm_source": session.utm_source,
+        "utm_medium": session.utm_medium,
+        "utm_campaign": session.utm_campaign,
+        "user_agent": session.user_agent or "Brak danych",
+        "first_seen_at": session.first_seen_at,
+        "last_seen_at": session.last_seen_at,
+        "duration_label": format_analytics_duration(session.first_seen_at, session.last_seen_at),
+        "event_count": len(events),
+        "page_view_count": counts[AnalyticsEvent.EVENT_PAGE_VIEW],
+        "product_view_count": counts[AnalyticsEvent.EVENT_PRODUCT_VIEW],
+        "add_to_cart_count": counts[AnalyticsEvent.EVENT_ADD_TO_CART],
+        "cart_view_count": counts[AnalyticsEvent.EVENT_CART_VIEW],
+        "entry_path": events[0].path if events else "Brak zdarzeń",
+        "exit_path": events[-1].path if events else "Brak zdarzeń",
+        "events": event_rows,
+        "is_active": session.last_seen_at >= timezone.now() - timedelta(minutes=30),
+    }
+
+
+def build_analytics_event_detail(event):
+    metadata = event.metadata if isinstance(event.metadata, dict) else {}
+    product_url = reverse("dashboard:product_workspace", args=[event.product_id]) if event.product_id else ""
+    return {
+        "object": event,
+        "event_type_label": get_analytics_event_type_label(event.event_type),
+        "event_type_class": get_analytics_event_type_class(event.event_type),
+        "path": event.path,
+        "created_at": event.created_at,
+        "product": event.product,
+        "product_url": product_url,
+        "variant": event.variant,
+        "metadata": metadata,
+        "metadata_rows": [{"key": key, "value": format_analytics_metadata_value(value)} for key, value in metadata.items()],
+        "metadata_json": json.dumps(metadata, ensure_ascii=False, indent=2),
+        "session_url": reverse("dashboard:model_edit", args=["analytics-sessions", event.session_id]),
+        "session_key": event.session.session_key,
+        "short_session_key": shorten_identifier(event.session.session_key),
+        "visitor_id": event.session.visitor_id or "Brak",
+        "device_label": get_analytics_device_label(event.session.device_type),
+        "source_label": get_analytics_source_label(event.session),
+        "source_detail": get_analytics_source_detail(event.session),
+    }
+
+
+def get_analytics_source_label(session):
+    if session.utm_source:
+        return session.utm_source
+    if session.referrer:
+        hostname = urlparse(session.referrer).hostname
+        return hostname or session.referrer
+    return "Wejście bezpośrednie"
+
+
+def get_analytics_source_detail(session):
+    if session.utm_source:
+        details = [session.utm_medium, session.utm_campaign]
+        return " · ".join(value for value in details if value) or "Kampania UTM"
+    if session.referrer:
+        return session.referrer
+    return "Brak referrera i parametrów UTM"
+
+
+def format_analytics_duration(start_at, end_at):
+    if not start_at or not end_at:
+        return "Brak danych"
+    seconds = max(0, int((end_at - start_at).total_seconds()))
+    if seconds < 60:
+        return f"{seconds} s"
+    minutes, seconds = divmod(seconds, 60)
+    if minutes < 60:
+        return f"{minutes} min {seconds} s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours} godz. {minutes} min"
+
+
+def shorten_identifier(value, visible=10):
+    value = str(value or "")
+    if len(value) <= visible * 2 + 1:
+        return value or "Brak"
+    return f"{value[:visible]}…{value[-visible:]}"
+
+
+def count_events(events, event_type):
+    return sum(1 for event in events if event.event_type == event_type)
+
+
+def format_analytics_metadata_summary(metadata):
+    if not isinstance(metadata, dict) or not metadata:
+        return "Brak dodatkowych danych"
+    pairs = [f"{key}: {format_analytics_metadata_value(value)}" for key, value in list(metadata.items())[:3]]
+    return " · ".join(pairs)
+
+
+def format_analytics_metadata_value(value):
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, bool):
+        return "Tak" if value else "Nie"
+    if value in (None, ""):
+        return "Brak"
+    return str(value)
+
+
+def build_order_product_catalog_data():
+    products = Product.objects.prefetch_related(
+        "images",
+        "variants__color",
+        "variants__size",
+    ).order_by("name")
+    data = {}
+    for product in products:
+        image = get_product_image_data(product)
+        data[str(product.pk)] = {
+            "name": product.name,
+            "price": str(product.current_price),
+            "image_url": image["url"],
+            "image_alt": image["alt"],
+            "variants": [
+                {
+                    "id": str(variant.pk),
+                    "label": get_variant_snapshot_label(variant),
+                    "sku": variant.sku or "",
+                    "price": str(variant.price),
+                }
+                for variant in product.variants.all()
+            ],
+        }
+    return data
+
+
+def get_product_image_data(product):
+    image = product.main_image if product else None
+    if image and image.image:
+        try:
+            return {"url": image.image.url, "alt": image.alt_text or product.name}
+        except ValueError:
+            pass
+    return {"url": "", "alt": product.name if product else ""}
+
+
+def get_variant_snapshot_label(variant):
+    parts = []
+    if variant.color:
+        parts.append(variant.color.name)
+    if variant.size:
+        parts.append(variant.size.name)
+    return " / ".join(parts) or "Domyślny"
+
+
+def build_order_row(order):
+    items = list(order.items.all())
+    quantity_count = sum(item.quantity for item in items)
+    return {
+        "object": order,
+        "admin_url": reverse("dashboard:order_workspace", args=[order.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["orders", order.pk]),
+        "order_number": order.order_number or f"Zamówienie #{order.pk}",
+        "customer_name": get_order_customer_name(order),
+        "email": order.email,
+        "phone": order.phone,
+        "status": order.status,
+        "status_label": get_order_status_label(order.status),
+        "status_class": get_order_status_class(order.status),
+        "city": order.shipping_city,
+        "shipping_method": order.shipping_method,
+        "grand_total": order.grand_total,
+        "item_count": len(items),
+        "quantity_count": quantity_count,
+        "created_at": order.created_at,
+        "placed_at": order.placed_at,
+        "items_preview": [item.product_name for item in items[:3]],
+        "has_more_items": len(items) > 3,
+        "is_open": order.status in {Order.STATUS_PLACED, Order.STATUS_CONFIRMED, Order.STATUS_PACKED},
+    }
+
+
+def build_order_item_list_row(item):
+    image = get_order_item_image(item)
+    return {
+        "object": item,
+        "admin_url": reverse("dashboard:order_item_detail", args=[item.pk]),
+        "delete_url": reverse("dashboard:model_delete", args=["order-items", item.pk]),
+        "order_url": reverse("dashboard:order_workspace", args=[item.order_id]),
+        "product_url": reverse("dashboard:product_workspace", args=[item.product_id]) if item.product_id else "",
+        "order_number": item.order.order_number or f"Zamówienie #{item.order_id}",
+        "order_status_label": get_order_status_label(item.order.status),
+        "order_status_class": get_order_status_class(item.order.status),
+        "customer_name": get_order_customer_name(item.order),
+        "email": item.order.email,
+        "product_name": item.product_name,
+        "variant_name": item.variant_name,
+        "sku": item.sku,
+        "quantity": item.quantity,
+        "unit_price": item.unit_price,
+        "line_total": item.line_total,
+        "created_at": item.created_at,
+        "image_url": image["url"],
+        "image_alt": image["alt"],
+    }
+
+
+def build_order_item_detail_context(item):
+    image = get_order_item_image(item)
+    return {
+        "image_url": image["url"],
+        "image_alt": image["alt"],
+        "order_number": item.order.order_number or f"Zamówienie #{item.order_id}",
+        "order_url": reverse("dashboard:order_workspace", args=[item.order_id]),
+        "product_url": reverse("dashboard:product_workspace", args=[item.product_id]) if item.product_id else "",
+        "order_status_label": get_order_status_label(item.order.status),
+        "order_status_class": get_order_status_class(item.order.status),
+        "customer_name": get_order_customer_name(item.order),
+        "email": item.order.email,
+        "snapshot_rows": [
+            {"label": "Nazwa w zamówieniu", "value": item.product_name},
+            {"label": "Wariant w zamówieniu", "value": item.variant_name or "Brak"},
+            {"label": "Kod wariantu", "value": item.sku or "Brak"},
+            {"label": "Ilość", "value": item.quantity},
+            {"label": "Cena za sztukę", "value": item.unit_price},
+            {"label": "Razem", "value": item.line_total},
+        ],
+    }
+
+
+def build_order_detail_context(order):
+    items = build_order_item_rows(order) if getattr(order, "pk", None) else []
+    quantity_count = sum(item["quantity"] for item in items)
+    return {
+        "order_number": getattr(order, "order_number", "") or (f"Zamówienie #{order.pk}" if getattr(order, "pk", None) else "Nowe zamówienie"),
+        "customer_name": get_order_customer_name(order) if getattr(order, "pk", None) else "Nowa klientka",
+        "status_label": get_order_status_label(getattr(order, "status", Order.STATUS_DRAFT)),
+        "status_class": get_order_status_class(getattr(order, "status", Order.STATUS_DRAFT)),
+        "item_count": len(items),
+        "quantity_count": quantity_count,
+        "items": items,
+        "address_lines": get_order_address_lines(order),
+        "timeline": build_order_timeline(order),
+        "totals": build_order_total_rows(order),
+        "steps": build_order_status_steps(getattr(order, "status", Order.STATUS_DRAFT)),
+        "is_open": getattr(order, "status", Order.STATUS_DRAFT) in {Order.STATUS_PLACED, Order.STATUS_CONFIRMED, Order.STATUS_PACKED},
+    }
+
+
+def sync_order_totals_from_items(order):
+    subtotal = order.items.aggregate(total=Sum("line_total"))["total"] or Decimal("0.00")
+    order.subtotal = subtotal
+    order.grand_total = max(Decimal("0.00"), subtotal - order.discount_total + order.shipping_total)
+    order.save(update_fields=["subtotal", "grand_total", "updated_at"])
+
+
+def build_order_item_rows(order):
+    rows = []
+    if not getattr(order, "pk", None):
+        return rows
+    for item in order.items.all():
+        image = get_order_item_image(item)
+        rows.append(
+            {
+                "product_name": item.product_name,
+                "variant_name": item.variant_name,
+                "sku": item.sku,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "line_total": item.line_total,
+                "image_url": image["url"],
+                "image_alt": image["alt"],
+                "product_url": reverse("dashboard:product_workspace", args=[item.product_id]) if item.product_id else "",
+            }
+        )
+    return rows
+
+
+def get_order_item_image(item):
+    product = getattr(item, "product", None)
+    image = product.main_image if product else None
+    if image and image.image:
+        try:
+            return {"url": image.image.url, "alt": image.alt_text or item.product_name}
+        except ValueError:
+            pass
+    return {"url": "", "alt": item.product_name}
+
+
+def build_order_total_rows(order):
+    return [
+        {"label": "Produkty", "value": getattr(order, "subtotal", 0)},
+        {"label": "Rabat", "value": getattr(order, "discount_total", 0)},
+        {"label": "Dostawa", "value": getattr(order, "shipping_total", 0)},
+        {"label": "Razem", "value": getattr(order, "grand_total", 0), "is_strong": True},
+    ]
+
+
+def build_order_timeline(order):
+    if not getattr(order, "pk", None):
+        return []
+    return [
+        {"label": "Utworzone", "date": order.created_at},
+        {"label": "Złożone", "date": order.placed_at},
+        {"label": "Ostatnia zmiana", "date": order.updated_at},
+    ]
+
+
+def build_order_status_steps(active_status):
+    return [
+        {
+            "label": label,
+            "value": value,
+            "is_active": value == active_status,
+            "class": get_order_status_class(value),
+        }
+        for value, label in get_order_status_choices()
+    ]
+
+
+def get_order_customer_name(order):
+    first_name = getattr(order, "first_name", "") or ""
+    last_name = getattr(order, "last_name", "") or ""
+    name = f"{first_name} {last_name}".strip()
+    return name or getattr(order, "email", "") or "Brak danych"
+
+
+def get_order_address_lines(order):
+    if not getattr(order, "pk", None):
+        return []
+    lines = [
+        order.shipping_address_line_1,
+        order.shipping_address_line_2,
+        f"{order.shipping_postal_code} {order.shipping_city}".strip(),
+        order.shipping_country,
+    ]
+    return [line for line in lines if line]
 
 
 def is_taxonomy_model(model):
@@ -1506,6 +2747,55 @@ def build_article_seo_fields(form):
     return [form[name] for name in ["seo_title", "seo_description"]]
 
 
+def build_order_fieldsets(form):
+    return [
+        {
+            "title": "Status i identyfikacja",
+            "description": "Numer, status i data złożenia zamówienia.",
+            "fields": [form[name] for name in ["order_number", "status", "placed_at"]],
+        },
+        {
+            "title": "Klientka",
+            "description": "Dane kontaktowe osoby składającej zamówienie.",
+            "fields": [form[name] for name in ["email", "phone", "first_name", "last_name"]],
+        },
+        {
+            "title": "Adres dostawy",
+            "description": "Adres, kraj i metoda dostawy. Płatności zostają poza tym etapem.",
+            "fields": [
+                form[name]
+                for name in [
+                    "shipping_address_line_1",
+                    "shipping_address_line_2",
+                    "shipping_postal_code",
+                    "shipping_city",
+                    "shipping_country",
+                    "shipping_method",
+                ]
+            ],
+        },
+        {
+            "title": "Kwoty",
+            "description": "Podsumowanie wartości zamówienia. Na razie bez integracji płatności.",
+            "fields": [
+                form[name]
+                for name in [
+                    "subtotal",
+                    "discount_total",
+                    "shipping_total",
+                    "grand_total",
+                    "discount_code",
+                ]
+            ],
+        },
+        {
+            "title": "Notatki i analityka",
+            "description": "Wiadomość klientki oraz robocze powiązanie z późniejszą analityką ścieżki.",
+            "fields": [form[name] for name in ["customer_note", "source_session_key"]],
+        },
+    ]
+
+
 def build_row(config, obj):
     return {
         "object": obj,
@@ -1564,6 +2854,8 @@ def get_admin_object_url(config, obj):
         return reverse("dashboard:outfit_workspace", args=[obj.pk])
     if config.model is Article:
         return reverse("dashboard:article_workspace", args=[obj.pk])
+    if config.model is Order:
+        return reverse("dashboard:order_workspace", args=[obj.pk])
     return reverse("dashboard:model_edit", args=[config.slug, obj.pk])
 
 

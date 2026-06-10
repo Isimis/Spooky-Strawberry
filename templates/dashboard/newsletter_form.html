@@ -1,0 +1,187 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if object %}{{ object.email }}{% else %}Nowy adres newslettera{% endif %} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-newsletter-detail-heading">
+    <div>
+        <p class="eyebrow">Marketing · Newsletter</p>
+        <h1>{% if object %}{{ object.email }}{% else %}Nowy adres{% endif %}</h1>
+        <p>Sprawdź zgodę, status wysyłki i źródło zapisu. Ten widok ma pomagać szybko zdecydować, czy adres może trafić do kampanii.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' config.slug %}" class="button button--secondary">Lista newslettera</a>
+        <button type="submit" form="newsletter-detail-form" class="button">{% if object %}Zapisz adres{% else %}Dodaj adres{% endif %}</button>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-newsletter-detail-summary" aria-label="Podsumowanie adresu newslettera">
+    <article>
+        <span>Status</span>
+        <strong>{{ newsletter_detail.status_label }}</strong>
+        <small>subskrypcja</small>
+    </article>
+    <article>
+        <span>Do wysyłki</span>
+        <strong>{{ newsletter_detail.sendability_label }}</strong>
+        <small>aktywny i niewypisany</small>
+    </article>
+    <article>
+        <span>Źródło</span>
+        <strong>{{ newsletter_detail.source_label }}</strong>
+        <small>miejsce zapisu</small>
+    </article>
+    <article>
+        <span>Zgoda</span>
+        <strong>{% if newsletter_detail.has_consent %}Tak{% else %}Brak{% endif %}</strong>
+        <small>tekst przy zapisie</small>
+    </article>
+</section>
+
+<form id="newsletter-detail-form" method="post" class="dashboard-newsletter-detail-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="dashboard-newsletter-editor">
+        <section class="dashboard-form-panel dashboard-form-panel--product">
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Dane adresu</p>
+                <h2>Adres i pochodzenie</h2>
+                <p>To podstawowe dane potrzebne do segmentowania zapisów i ręcznego eksportu listy.</p>
+            </div>
+
+            <div class="dashboard-form-fields dashboard-form-fields--newsletter-primary">
+                <label class="dashboard-field" data-field-name="{{ form.email.name }}">
+                    <span>{{ form.email.label }}</span>
+                    {{ form.email }}
+                    {% if form.email.help_text %}
+                        <small>{{ form.email.help_text }}</small>
+                    {% endif %}
+                    {{ form.email.errors }}
+                </label>
+
+                <label class="dashboard-field" data-field-name="{{ form.source.name }}">
+                    <span>{{ form.source.label }}</span>
+                    {{ form.source }}
+                    {% if form.source.help_text %}
+                        <small>{{ form.source.help_text }}</small>
+                    {% endif %}
+                    {{ form.source.errors }}
+                </label>
+            </div>
+        </section>
+
+        <section class="dashboard-form-panel dashboard-form-panel--product">
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Status</p>
+                <h2>Wysyłka i wypis</h2>
+                <p>Wyłącz aktywność, jeśli adres nie powinien trafić do kolejnej kampanii. Datę wypisu uzupełniaj tylko wtedy, gdy faktycznie ktoś się wypisał.</p>
+            </div>
+
+            <div class="dashboard-newsletter-status-grid">
+                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox dashboard-newsletter-active-toggle" data-field-name="{{ form.is_active.name }}">
+                    <span>{{ form.is_active.label }}</span>
+                    {{ form.is_active }}
+                    {% if form.is_active.help_text %}
+                        <small>{{ form.is_active.help_text }}</small>
+                    {% endif %}
+                    {{ form.is_active.errors }}
+                </label>
+
+                <label class="dashboard-field" data-field-name="{{ form.unsubscribed_at.name }}">
+                    <span>{{ form.unsubscribed_at.label }}</span>
+                    {{ form.unsubscribed_at }}
+                    {% if form.unsubscribed_at.help_text %}
+                        <small>{{ form.unsubscribed_at.help_text }}</small>
+                    {% endif %}
+                    {{ form.unsubscribed_at.errors }}
+                </label>
+            </div>
+        </section>
+
+        <section class="dashboard-form-panel dashboard-form-panel--product">
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Zgoda</p>
+                <h2>Zgoda marketingowa</h2>
+                <p>Najlepiej trzymać tutaj dokładny tekst zgody albo informację, skąd pochodzi ręcznie dodany adres.</p>
+            </div>
+
+            <label class="dashboard-field dashboard-field--wide" data-field-name="{{ form.consent_text.name }}">
+                <span>{{ form.consent_text.label }}</span>
+                {{ form.consent_text }}
+                {% if form.consent_text.help_text %}
+                    <small>{{ form.consent_text.help_text }}</small>
+                {% endif %}
+                {{ form.consent_text.errors }}
+            </label>
+        </section>
+
+        <div class="dashboard-save-bar">
+            <button type="submit" class="button">{% if object %}Zapisz adres{% else %}Dodaj adres{% endif %}</button>
+            {% if object %}
+                <a href="{% url 'dashboard:model_delete' config.slug object.pk %}">Usuń adres</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <aside class="dashboard-newsletter-detail-side">
+        <article class="dashboard-card dashboard-newsletter-delivery">
+            <div class="dashboard-newsletter-delivery__status {% if newsletter_detail.is_sendable %}is-sendable{% else %}is-blocked{% endif %}">
+                <span>{% if newsletter_detail.is_sendable %}Można wysłać{% else %}Nie wysyłać{% endif %}</span>
+                <strong>{{ newsletter_detail.email|default:"Nowy adres" }}</strong>
+                <p>
+                    {% if newsletter_detail.is_sendable %}
+                        Adres jest aktywny i nie ma daty wypisu.
+                    {% else %}
+                        Sprawdź aktywność, datę wypisu i zgodę przed wysyłką.
+                    {% endif %}
+                </p>
+            </div>
+
+            <dl class="dashboard-newsletter-detail-list">
+                <div>
+                    <dt>Status</dt>
+                    <dd>
+                        <span class="dashboard-status-pill dashboard-status-pill--{{ newsletter_detail.status_class }}">{{ newsletter_detail.status_label }}</span>
+                    </dd>
+                </div>
+                <div>
+                    <dt>Zapis</dt>
+                    <dd>{% if newsletter_detail.subscribed_at %}{{ newsletter_detail.subscribed_at|date:"d.m.Y H:i" }}{% else %}po utworzeniu{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>Wypis</dt>
+                    <dd>{% if newsletter_detail.unsubscribed_at %}{{ newsletter_detail.unsubscribed_at|date:"d.m.Y H:i" }}{% else %}brak{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>Źródło</dt>
+                    <dd>{{ newsletter_detail.source_label }}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="dashboard-card dashboard-newsletter-consent">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Podgląd zgody</h2>
+                    <p>Tekst, który mamy zapisany przy subskrypcji.</p>
+                </div>
+            </div>
+            {% if newsletter_detail.consent_text %}
+                <p>{{ newsletter_detail.consent_text }}</p>
+            {% else %}
+                <p class="dashboard-muted">Brak zapisanego tekstu zgody. Przy ręcznie dodanym adresie warto wpisać, skąd pochodzi zgoda.</p>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-card dashboard-newsletter-note">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Robocza zasada</h2>
+                    <p>Do kampanii kopiuj tylko aktywne adresy bez daty wypisu. Brak zgody traktuj jako coś do ręcznego sprawdzenia.</p>
+                </div>
+            </div>
+        </article>
+    </aside>
+</form>
+{% endblock %}

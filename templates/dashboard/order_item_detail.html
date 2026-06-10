@@ -1,0 +1,83 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{{ item.product_name }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-order-heading">
+    <div>
+        <p class="eyebrow">Pozycja zamówienia</p>
+        <h1>{{ item.product_name }}</h1>
+        <p>{{ item_detail.order_number }} · {{ item_detail.customer_name }}</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'order-items' %}" class="button button--secondary">Lista pozycji</a>
+        <a href="{{ item_detail.order_url }}" class="button">Otwórz zamówienie</a>
+    </div>
+</section>
+
+<section class="dashboard-order-item-detail-layout">
+    <div class="dashboard-order-item-detail-main">
+        <article class="dashboard-form-panel dashboard-order-item-detail-card">
+            <div class="dashboard-order-item-detail-hero">
+                <div class="dashboard-order-item-detail-image">
+                    {% if item_detail.image_url %}
+                        <img src="{{ item_detail.image_url }}" alt="{{ item_detail.image_alt }}">
+                    {% else %}
+                        <span>SS</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="eyebrow">Snapshot z zamówienia</p>
+                    <h2>{{ item.product_name }}</h2>
+                    {% if item.variant_name %}
+                        <p>{{ item.variant_name }}</p>
+                    {% endif %}
+                    <p>Te dane są zapisane w zamówieniu osobno. Jeśli później zmienisz nazwę albo cenę produktu w katalogu, ta pozycja zostanie historycznie taka sama.</p>
+                </div>
+            </div>
+
+            <dl class="dashboard-order-item-snapshot-list">
+                {% for row in item_detail.snapshot_rows %}
+                    <div>
+                        <dt>{{ row.label }}</dt>
+                        <dd>
+                            {% if row.label == "Cena za sztukę" or row.label == "Razem" %}
+                                {{ row.value|money }}
+                            {% else %}
+                                {{ row.value }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </article>
+    </div>
+
+    <aside class="dashboard-order-detail-side">
+        <article class="dashboard-card dashboard-order-fulfillment">
+            <div class="dashboard-order-fulfillment__status dashboard-order-fulfillment__status--{{ item_detail.order_status_class }}">
+                <span>Zamówienie</span>
+                <strong>{{ item_detail.order_status_label }}</strong>
+                <p>{{ item_detail.order_number }}</p>
+            </div>
+            <div class="dashboard-taxonomy-actions dashboard-order-card__actions">
+                <a href="{{ item_detail.order_url }}">Otwórz zamówienie</a>
+                {% if item_detail.product_url %}
+                    <a href="{{ item_detail.product_url }}">Aktualny produkt</a>
+                {% endif %}
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Klientka</h2>
+                    <p>{{ item_detail.customer_name }}</p>
+                </div>
+            </div>
+            <p class="dashboard-muted">{{ item_detail.email }}</p>
+        </article>
+    </aside>
+</section>
+{% endblock %}

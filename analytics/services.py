@@ -1,5 +1,7 @@
 from uuid import uuid4
 
+from django.utils import timezone
+
 from .models import AnalyticsEvent, AnalyticsSession
 
 
@@ -71,6 +73,9 @@ def track_event(request, event_type, product=None, variant=None, metadata=None):
         return None
 
     session = get_or_create_analytics_session(request)
+    now = timezone.now()
+    AnalyticsSession.objects.filter(pk=session.pk).update(last_seen_at=now)
+    session.last_seen_at = now
     return AnalyticsEvent.objects.create(
         session=session,
         event_type=event_type,

@@ -1,11 +1,15 @@
 import re
+from decimal import Decimal
 
 from django import forms
 from django.forms import inlineformset_factory
 from django.forms import modelform_factory
+from django.utils.text import slugify
 
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size, unique_slug_for
+from core.models import NewsletterSubscriber
+from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitImage, OutfitItem
 
 
@@ -24,6 +28,14 @@ def build_model_form(model):
         return ArticleDashboardForm
     if model is BlogCategory:
         return BlogCategoryDashboardForm
+    if model is NewsletterSubscriber:
+        return NewsletterSubscriberDashboardForm
+    if model is Order:
+        return OrderDashboardForm
+    if model is ShippingMethod:
+        return ShippingMethodDashboardForm
+    if model is DiscountCode:
+        return DiscountCodeDashboardForm
 
     form_class = modelform_factory(model, fields="__all__")
     for field in form_class.base_fields.values():
@@ -206,6 +218,373 @@ class BlogCategoryDashboardForm(AutoSlugDashboardForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_dashboard_widgets()
+
+
+class NewsletterSubscriberDashboardForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = NewsletterSubscriber
+        fields = ["email", "source", "is_active", "consent_text", "unsubscribed_at"]
+        labels = {
+            "email": "Adres e-mail",
+            "source": "Źródło zapisu",
+            "is_active": "Aktywna subskrypcja",
+            "consent_text": "Treść zgody",
+            "unsubscribed_at": "Data wypisu",
+        }
+        help_texts = {
+            "email": "Adres używany przy wysyłce newslettera.",
+            "source": "Miejsce, z którego osoba zapisała się do newslettera.",
+            "is_active": "Wyłącz, jeśli adres nie powinien trafiać do wysyłki.",
+            "consent_text": "Tekst zgody zapisany przy subskrypcji.",
+            "unsubscribed_at": "Opcjonalnie uzupełnij, jeśli osoba wypisała się ręcznie.",
+        }
+        widgets = {
+            "consent_text": forms.Textarea(attrs={"rows": 5}),
+            "unsubscribed_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["source"].choices = [
+            (NewsletterSubscriber.SOURCE_FOOTER, "Stopka"),
+            (NewsletterSubscriber.SOURCE_HOME, "Strona główna"),
+            (NewsletterSubscriber.SOURCE_POPUP, "Popup"),
+            (NewsletterSubscriber.SOURCE_OTHER, "Inne"),
+        ]
+        if self.instance and self.instance.unsubscribed_at:
+            self.initial["unsubscribed_at"] = self.instance.unsubscribed_at.strftime("%Y-%m-%dT%H:%M")
+
+
+class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = [
+            "order_number",
+            "status",
+            "placed_at",
+            "email",
+            "phone",
+            "first_name",
+            "last_name",
+            "shipping_address_line_1",
+            "shipping_address_line_2",
+            "shipping_postal_code",
+            "shipping_city",
+            "shipping_country",
+            "shipping_method",
+            "discount_code",
+            "subtotal",
+            "discount_total",
+            "shipping_total",
+            "grand_total",
+            "customer_note",
+            "source_session_key",
+        ]
+        labels = {
+            "order_number": "Numer zamówienia",
+            "status": "Status zamówienia",
+            "placed_at": "Data złożenia",
+            "email": "E-mail klientki",
+            "phone": "Telefon",
+            "first_name": "Imię",
+            "last_name": "Nazwisko",
+            "shipping_address_line_1": "Adres dostawy",
+            "shipping_address_line_2": "Adres dostawy cd.",
+            "shipping_postal_code": "Kod pocztowy",
+            "shipping_city": "Miasto",
+            "shipping_country": "Kraj",
+            "shipping_method": "Metoda dostawy",
+            "discount_code": "Kod rabatowy",
+            "subtotal": "Wartość produktów",
+            "discount_total": "Rabat",
+            "shipping_total": "Koszt dostawy",
+            "grand_total": "Razem",
+            "customer_note": "Notatka klientki",
+            "source_session_key": "Sesja źródłowa",
+        }
+        help_texts = {
+            "order_number": "Możesz zostawić puste przy roboczym zamówieniu.",
+            "status": "Status realizacji po stronie sklepu. Płatności zostają poza zakresem do czasu działalności.",
+            "placed_at": "Data złożenia zamówienia. Przy szkicu może zostać pusta.",
+            "shipping_address_line_2": "Opcjonalnie mieszkanie, paczkomat albo dopisek adresowy.",
+            "discount_code": "Kod użyty w zamówieniu, jeśli był przypisany.",
+            "customer_note": "Wiadomość od klientki albo notatka robocza dla obsługi.",
+            "source_session_key": "Techniczne powiązanie z sesją analityczną. Przyda się później do ścieżek zakupowych.",
+        }
+        widgets = {
+            "placed_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "customer_note": forms.Textarea(attrs={"rows": 5}),
+            "source_session_key": forms.TextInput(attrs={"placeholder": "np. session_key z analityki"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["status"].choices = [
+            (Order.STATUS_DRAFT, "Szkic"),
+            (Order.STATUS_PLACED, "Złożone"),
+            (Order.STATUS_CONFIRMED, "Potwierdzone"),
+            (Order.STATUS_PACKED, "Spakowane"),
+            (Order.STATUS_SHIPPED, "Wysłane"),
+            (Order.STATUS_CANCELLED, "Anulowane"),
+        ]
+        self.fields["shipping_method"].queryset = ShippingMethod.objects.order_by("sort_order", "name")
+        self.fields["shipping_method"].empty_label = "Brak / do ustalenia"
+        self.fields["discount_code"].queryset = DiscountCode.objects.order_by("code")
+        self.fields["discount_code"].empty_label = "Brak kodu"
+        if self.instance and self.instance.placed_at:
+            self.initial["placed_at"] = self.instance.placed_at.strftime("%Y-%m-%dT%H:%M")
+
+
+def unique_shipping_code(instance, value):
+    base_code = slugify(value) or "dostawa"
+    code = base_code
+    counter = 2
+    queryset = ShippingMethod.objects.filter(code=code)
+    if instance.pk:
+        queryset = queryset.exclude(pk=instance.pk)
+
+    while queryset.exists():
+        code = f"{base_code}-{counter}"
+        queryset = ShippingMethod.objects.filter(code=code)
+        if instance.pk:
+            queryset = queryset.exclude(pk=instance.pk)
+        counter += 1
+
+    return code
+
+
+class ShippingMethodDashboardForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = ShippingMethod
+        fields = [
+            "name",
+            "code",
+            "description",
+            "price",
+            "free_from_amount",
+            "sort_order",
+            "is_active",
+        ]
+        labels = {
+            "name": "Nazwa metody dostawy",
+            "code": "Kod techniczny",
+            "description": "Opis dla klientki",
+            "price": "Cena dostawy",
+            "free_from_amount": "Darmowa od kwoty",
+            "sort_order": "Kolejność",
+            "is_active": "Aktywna w sklepie",
+        }
+        help_texts = {
+            "name": "Nazwa widoczna w koszyku i później przy zamówieniu.",
+            "code": "Roboczy identyfikator metody. Możesz zostawić puste, utworzy się z nazwy.",
+            "description": "Krótki tekst pomocniczy, np. czas dostawy albo miejsce odbioru.",
+            "price": "Koszt tej dostawy przed ewentualnym progiem darmowej wysyłki.",
+            "free_from_amount": "Zostaw puste, jeśli ta metoda nie ma własnego progu darmowej dostawy.",
+            "sort_order": "Niższa liczba oznacza wyższą pozycję na liście.",
+            "is_active": "Wyłącz, jeśli metoda ma zostać w panelu, ale nie ma być dostępna w sklepie.",
+        }
+        widgets = {
+            "code": forms.TextInput(attrs={"placeholder": "np. inpost-paczkomat"}),
+            "description": forms.Textarea(attrs={"rows": 5, "placeholder": "Np. Dostawa do paczkomatu zwykle w 1-3 dni robocze."}),
+            "price": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
+            "free_from_amount": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
+            "sort_order": forms.NumberInput(attrs={"min": 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["code"].required = False
+        if not self.instance.pk:
+            self.fields["price"].initial = Decimal("0.00")
+
+    def clean_code(self):
+        code = (self.cleaned_data.get("code") or "").strip()
+        return slugify(code) if code else ""
+
+    def save(self, commit=True):
+        shipping_method = super().save(commit=False)
+        if not shipping_method.code:
+            shipping_method.code = unique_shipping_code(shipping_method, shipping_method.name)
+
+        if commit:
+            shipping_method.save()
+            self.save_m2m()
+        return shipping_method
+
+
+class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = DiscountCode
+        fields = [
+            "code",
+            "discount_type",
+            "value",
+            "minimum_order_amount",
+            "max_uses",
+            "used_count",
+            "starts_at",
+            "ends_at",
+            "is_active",
+        ]
+        labels = {
+            "code": "Kod rabatowy",
+            "discount_type": "Typ rabatu",
+            "value": "Wartość rabatu",
+            "minimum_order_amount": "Minimalna wartość zamówienia",
+            "max_uses": "Limit użyć",
+            "used_count": "Użycia dotychczas",
+            "starts_at": "Aktywny od",
+            "ends_at": "Aktywny do",
+            "is_active": "Włączony",
+        }
+        help_texts = {
+            "code": "Kod wpisywany przez klientkę. Zapisuje się wielkimi literami.",
+            "discount_type": "Procent obniża koszyk procentowo, kwota odejmuje stałą wartość.",
+            "value": "Dla procentu wpisz np. 10, dla kwoty np. 15.00.",
+            "minimum_order_amount": "Zostaw puste, jeśli kod działa od każdej kwoty koszyka.",
+            "max_uses": "Opcjonalny limit całkowitej liczby użyć kodu.",
+            "used_count": "Licznik historyczny. Zwykle będzie zwiększany automatycznie po zamówieniu.",
+            "starts_at": "Opcjonalna data startu promocji.",
+            "ends_at": "Opcjonalna data zakończenia promocji.",
+            "is_active": "Wyłącz, aby kod nie działał mimo ustawionych dat.",
+        }
+        widgets = {
+            "code": forms.TextInput(attrs={"placeholder": "np. SPOOKY10"}),
+            "value": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
+            "minimum_order_amount": forms.NumberInput(attrs={"min": 0, "step": "0.01"}),
+            "max_uses": forms.NumberInput(attrs={"min": 0}),
+            "used_count": forms.NumberInput(attrs={"min": 0}),
+            "starts_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "ends_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["discount_type"].choices = [
+            (DiscountCode.TYPE_PERCENT, "Procent"),
+            (DiscountCode.TYPE_FIXED, "Kwota"),
+        ]
+        if self.instance and self.instance.starts_at:
+            self.initial["starts_at"] = self.instance.starts_at.strftime("%Y-%m-%dT%H:%M")
+        if self.instance and self.instance.ends_at:
+            self.initial["ends_at"] = self.instance.ends_at.strftime("%Y-%m-%dT%H:%M")
+
+    def clean_code(self):
+        return (self.cleaned_data.get("code") or "").strip().upper()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        discount_type = cleaned_data.get("discount_type")
+        value = cleaned_data.get("value")
+        starts_at = cleaned_data.get("starts_at")
+        ends_at = cleaned_data.get("ends_at")
+        max_uses = cleaned_data.get("max_uses")
+        used_count = cleaned_data.get("used_count") or 0
+
+        if discount_type == DiscountCode.TYPE_PERCENT and value is not None and value > Decimal("100.00"):
+            self.add_error("value", "Rabat procentowy nie może być większy niż 100%.")
+        if starts_at and ends_at and ends_at <= starts_at:
+            self.add_error("ends_at", "Data zakończenia musi być późniejsza niż data startu.")
+        if max_uses is not None and used_count > max_uses:
+            self.add_error("used_count", "Liczba użyć nie może być większa niż limit.")
+
+        return cleaned_data
+
+
+class OrderItemInlineForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = OrderItem
+        fields = [
+            "product",
+            "variant",
+            "product_name",
+            "variant_name",
+            "sku",
+            "quantity",
+            "unit_price",
+            "line_total",
+        ]
+        labels = {
+            "product": "Produkt z katalogu",
+            "variant": "Wariant z katalogu",
+            "product_name": "Nazwa w zamówieniu",
+            "variant_name": "Wariant w zamówieniu",
+            "sku": "Kod wariantu",
+            "quantity": "Ilość",
+            "unit_price": "Cena za sztukę",
+            "line_total": "Razem za pozycję",
+        }
+        help_texts = {
+            "product": "Powiązanie z aktualnym produktem w katalogu.",
+            "variant": "Opcjonalnie konkretny wariant. Dane historyczne obok nie zmienią się same po zmianach w katalogu.",
+            "product_name": "Snapshot nazwy z momentu zamówienia. To zostaje nawet po zmianie produktu w katalogu.",
+            "variant_name": "Snapshot wariantu z momentu zamówienia.",
+            "sku": "Snapshot kodu wariantu z momentu zamówienia.",
+            "line_total": "Wylicza się z ilości i ceny za sztukę przy zapisie.",
+        }
+        widgets = {
+            "sku": forms.HiddenInput(),
+            "quantity": forms.NumberInput(attrs={"min": 1, "data-order-item-quantity": "true"}),
+            "unit_price": forms.NumberInput(attrs={"min": 0, "step": "0.01", "data-order-item-unit-price": "true"}),
+            "line_total": forms.NumberInput(attrs={"min": 0, "step": "0.01", "readonly": "readonly", "data-order-item-line-total": "true"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["product"].queryset = Product.objects.order_by("name")
+        self.fields["variant"].queryset = ProductVariant.objects.select_related("product", "color", "size").order_by(
+            "product__name",
+            "sort_order",
+            "id",
+        )
+        self.fields["variant"].empty_label = "Brak / domyślny"
+        self.fields["product_name"].required = False
+        self.fields["variant_name"].required = False
+        self.fields["sku"].required = False
+        self.fields["unit_price"].required = False
+        self.fields["line_total"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("DELETE"):
+            return cleaned_data
+
+        product = cleaned_data.get("product")
+        variant = cleaned_data.get("variant")
+        quantity = cleaned_data.get("quantity") or 1
+        unit_price = cleaned_data.get("unit_price")
+
+        if product and variant and variant.product_id != product.id:
+            self.add_error("variant", "Wybierz wariant przypisany do tego produktu.")
+            return cleaned_data
+        if product and not cleaned_data.get("product_name"):
+            cleaned_data["product_name"] = product.name
+        if variant:
+            if not cleaned_data.get("variant_name"):
+                parts = []
+                if variant.color:
+                    parts.append(variant.color.name)
+                if variant.size:
+                    parts.append(variant.size.name)
+                cleaned_data["variant_name"] = " / ".join(parts) or "Domyślny"
+            if not cleaned_data.get("sku"):
+                cleaned_data["sku"] = variant.sku or ""
+            if unit_price is None:
+                cleaned_data["unit_price"] = variant.price
+                unit_price = variant.price
+        elif product and unit_price is None:
+            cleaned_data["unit_price"] = product.current_price
+            unit_price = product.current_price
+
+        if unit_price is not None:
+            cleaned_data["line_total"] = unit_price * quantity
+
+        return cleaned_data
 
 
 class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
@@ -538,6 +917,14 @@ OutfitImageFormSet = inlineformset_factory(
     Outfit,
     OutfitImage,
     form=OutfitImageInlineForm,
+    extra=0,
+    can_delete=True,
+)
+
+OrderItemFormSet = inlineformset_factory(
+    Order,
+    OrderItem,
+    form=OrderItemInlineForm,
     extra=0,
     can_delete=True,
 )

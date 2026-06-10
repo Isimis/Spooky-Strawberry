@@ -1,0 +1,137 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Sesja {{ session_detail.short_session_key }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-analytics-heading">
+    <div>
+        <p class="eyebrow">Analityka · Sesje</p>
+        <h1>Ścieżka użytkowniczki</h1>
+        <p>Chronologiczny zapis wizyty od pierwszego wejścia do ostatniego zarejestrowanego działania.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'analytics-sessions' %}" class="button button--secondary">Wróć do sesji</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-analytics-summary" aria-label="Podsumowanie sesji">
+    <article>
+        <span>Zdarzenia</span>
+        <strong>{{ session_detail.event_count }}</strong>
+        <small>wszystkie kroki</small>
+    </article>
+    <article>
+        <span>Odsłony produktów</span>
+        <strong>{{ session_detail.product_view_count }}</strong>
+        <small>oglądane produkty</small>
+    </article>
+    <article>
+        <span>Dodania do koszyka</span>
+        <strong>{{ session_detail.add_to_cart_count }}</strong>
+        <small>intencje zakupowe</small>
+    </article>
+    <article>
+        <span>Czas sesji</span>
+        <strong class="dashboard-taxonomy-summary__slug">{{ session_detail.duration_label }}</strong>
+        <small>{{ session_detail.first_seen_at|date:"d.m.Y H:i" }} – {{ session_detail.last_seen_at|date:"H:i" }}</small>
+    </article>
+</section>
+
+<section class="dashboard-analytics-detail-layout">
+    <div class="dashboard-analytics-detail-main">
+        <article class="dashboard-card dashboard-journey-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Przebieg sesji</h2>
+                    <p>Zdarzenia są ułożone od najstarszego do najnowszego.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-journey">
+                {% for event in session_detail.events %}
+                    <a href="{{ event.admin_url }}" class="dashboard-journey-item">
+                        <i class="dashboard-event-marker dashboard-event-marker--{{ event.event_type_class }}" aria-hidden="true"></i>
+                        <div>
+                            <span>{{ event.event_type_label }}</span>
+                            <strong>{{ event.path }}</strong>
+                            {% if event.product %}
+                                <small>{{ event.product.name }}{% if event.variant %} · {{ event.variant }}{% endif %}</small>
+                            {% else %}
+                                <small>{{ event.metadata_summary }}</small>
+                            {% endif %}
+                        </div>
+                        <time datetime="{{ event.created_at|date:'c' }}">{{ event.created_at|date:"H:i:s" }}</time>
+                    </a>
+                {% empty %}
+                    <p class="dashboard-empty-note">Ta sesja nie ma zapisanych zdarzeń.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+
+    <aside class="dashboard-analytics-detail-side">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Sesja</h2>
+                    <p>Identyfikatory i urządzenie.</p>
+                </div>
+            </div>
+            <dl class="dashboard-analytics-detail-list">
+                <div>
+                    <dt>Status</dt>
+                    <dd>{% if session_detail.is_active %}Aktywna teraz{% else %}Zakończona{% endif %}</dd>
+                </div>
+                <div>
+                    <dt>Urządzenie</dt>
+                    <dd>{{ session_detail.device_label }}</dd>
+                </div>
+                <div>
+                    <dt>Klucz sesji</dt>
+                    <dd><code>{{ session_detail.session_key }}</code></dd>
+                </div>
+                <div>
+                    <dt>Użytkownik</dt>
+                    <dd><code>{{ session_detail.visitor_id }}</code></dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Źródło wejścia</h2>
+                    <p>{{ session_detail.source_label }}</p>
+                </div>
+            </div>
+            <dl class="dashboard-analytics-detail-list">
+                <div>
+                    <dt>Referrer</dt>
+                    <dd>{{ session_detail.referrer|default:"Brak" }}</dd>
+                </div>
+                <div>
+                    <dt>UTM source</dt>
+                    <dd>{{ session_detail.utm_source|default:"Brak" }}</dd>
+                </div>
+                <div>
+                    <dt>UTM medium</dt>
+                    <dd>{{ session_detail.utm_medium|default:"Brak" }}</dd>
+                </div>
+                <div>
+                    <dt>UTM campaign</dt>
+                    <dd>{{ session_detail.utm_campaign|default:"Brak" }}</dd>
+                </div>
+            </dl>
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Przeglądarka</h2>
+                    <p class="dashboard-user-agent">{{ session_detail.user_agent }}</p>
+                </div>
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}

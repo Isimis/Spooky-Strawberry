@@ -1,0 +1,158 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{% if object %}{{ object.name }}{% else %}Nowa metoda dostawy{% endif %} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-commerce-heading">
+    <div>
+        <p class="eyebrow">Zamówienia · Metody dostawy</p>
+        <h1>{% if object %}{{ object.name }}{% else %}Nowa metoda dostawy{% endif %}</h1>
+        <p>Ustaw nazwę, opis, cenę i próg darmowej dostawy. To dane, które później podepniemy pod koszyk i zamówienia.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' config.slug %}" class="button button--secondary">Wróć do listy</a>
+        <button type="submit" form="shipping-method-form" class="button">{% if object %}Zapisz metodę{% else %}Dodaj metodę{% endif %}</button>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-commerce-summary" aria-label="Podsumowanie metody dostawy">
+    <article>
+        <span>Status</span>
+        <strong>{{ shipping_detail.status_label }}</strong>
+        <small>widoczność w sklepie</small>
+    </article>
+    <article>
+        <span>Cena</span>
+        <strong class="dashboard-taxonomy-summary__slug">{{ shipping_detail.price_label }}</strong>
+        <small>koszt dostawy</small>
+    </article>
+    <article>
+        <span>Darmowa od</span>
+        <strong class="dashboard-taxonomy-summary__slug">{{ shipping_detail.free_from_label }}</strong>
+        <small>próg kwotowy</small>
+    </article>
+    <article>
+        <span>Zamówienia</span>
+        <strong>{{ shipping_detail.order_count }}</strong>
+        <small>z tą metodą</small>
+    </article>
+</section>
+
+<form id="shipping-method-form" method="post" class="dashboard-commerce-detail-form dashboard-product-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="dashboard-commerce-editor">
+        <section class="dashboard-form-panel dashboard-form-panel--product">
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Podstawy</p>
+                <h2>Nazwa i opis</h2>
+                <p>Nazwa powinna być krótka, a opis może dopowiadać czas dostawy albo warunki odbioru.</p>
+            </div>
+
+            <div class="dashboard-form-fields dashboard-form-fields--commerce">
+                <label class="dashboard-field" data-field-name="{{ form.name.name }}">
+                    <span>{{ form.name.label }}</span>
+                    {{ form.name }}
+                    {% if form.name.help_text %}<small>{{ form.name.help_text }}</small>{% endif %}
+                    {{ form.name.errors }}
+                </label>
+
+                <label class="dashboard-field" data-field-name="{{ form.code.name }}">
+                    <span>{{ form.code.label }}</span>
+                    {{ form.code }}
+                    {% if form.code.help_text %}<small>{{ form.code.help_text }}</small>{% endif %}
+                    {{ form.code.errors }}
+                </label>
+
+                <label class="dashboard-field dashboard-field--wide" data-field-name="{{ form.description.name }}">
+                    <span>{{ form.description.label }}</span>
+                    {{ form.description }}
+                    {% if form.description.help_text %}<small>{{ form.description.help_text }}</small>{% endif %}
+                    {{ form.description.errors }}
+                </label>
+            </div>
+        </section>
+
+        <section class="dashboard-form-panel dashboard-form-panel--product">
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Cena</p>
+                <h2>Koszt i widoczność</h2>
+                <p>Próg darmowej dostawy jest opcjonalny. Jeśli pole zostanie puste, metoda ma stałą cenę.</p>
+            </div>
+
+            <div class="dashboard-form-fields dashboard-form-fields--commerce">
+                <label class="dashboard-field" data-field-name="{{ form.price.name }}">
+                    <span>{{ form.price.label }}</span>
+                    {{ form.price }}
+                    {% if form.price.help_text %}<small>{{ form.price.help_text }}</small>{% endif %}
+                    {{ form.price.errors }}
+                </label>
+
+                <label class="dashboard-field" data-field-name="{{ form.free_from_amount.name }}">
+                    <span>{{ form.free_from_amount.label }}</span>
+                    {{ form.free_from_amount }}
+                    {% if form.free_from_amount.help_text %}<small>{{ form.free_from_amount.help_text }}</small>{% endif %}
+                    {{ form.free_from_amount.errors }}
+                </label>
+
+                <label class="dashboard-field" data-field-name="{{ form.sort_order.name }}">
+                    <span>{{ form.sort_order.label }}</span>
+                    {{ form.sort_order }}
+                    {% if form.sort_order.help_text %}<small>{{ form.sort_order.help_text }}</small>{% endif %}
+                    {{ form.sort_order.errors }}
+                </label>
+
+                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox" data-field-name="{{ form.is_active.name }}">
+                    <span>{{ form.is_active.label }}</span>
+                    {{ form.is_active }}
+                    {% if form.is_active.help_text %}<small>{{ form.is_active.help_text }}</small>{% endif %}
+                    {{ form.is_active.errors }}
+                </label>
+            </div>
+        </section>
+
+        <div class="dashboard-save-bar">
+            <button type="submit" class="button">{% if object %}Zapisz metodę{% else %}Dodaj metodę{% endif %}</button>
+            {% if object %}
+                <a href="{% url 'dashboard:model_delete' config.slug object.pk %}">Usuń metodę</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <aside class="dashboard-commerce-detail-side">
+        <article class="dashboard-card dashboard-commerce-preview">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Podgląd roboczy</h2>
+                    <p>Taką informację panel będzie kojarzył z metodą dostawy.</p>
+                </div>
+            </div>
+            <div class="dashboard-commerce-preview-box">
+                <span class="dashboard-status-pill dashboard-status-pill--{{ shipping_detail.status_class }}">{{ shipping_detail.status_label }}</span>
+                <strong>{% if object %}{{ object.name }}{% else %}Nazwa po zapisaniu{% endif %}</strong>
+                <p>{% if shipping_detail.description %}{{ shipping_detail.description }}{% else %}Opis pojawi się po uzupełnieniu pola obok.{% endif %}</p>
+            </div>
+        </article>
+
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Dane techniczne</h2>
+                    <p>Kod jest potrzebny tylko w systemie. Jeśli go nie wpiszesz, powstanie automatycznie z nazwy.</p>
+                </div>
+            </div>
+            <dl class="dashboard-commerce-detail-list">
+                <div>
+                    <dt>Kod</dt>
+                    <dd>{{ shipping_detail.code }}</dd>
+                </div>
+                <div>
+                    <dt>Zamówienia</dt>
+                    <dd>{{ shipping_detail.order_count }}</dd>
+                </div>
+            </dl>
+        </article>
+    </aside>
+</form>
+{% endblock %}

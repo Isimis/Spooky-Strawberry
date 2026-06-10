@@ -1,0 +1,177 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Zamówienia | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-order-heading">
+    <div>
+        <p class="eyebrow">Zamówienia</p>
+        <h1>Zamówienia</h1>
+        <p>Lista zamówień, statusy realizacji, dane klientek i kwoty. Checkout oraz płatności zostają poza tym etapem.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:order_create_workspace' %}" class="button">Dodaj ręcznie</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-order-summary" aria-label="Podsumowanie zamówień">
+    <article>
+        <span>Otwarte</span>
+        <strong>{{ order_summary.open_count }}</strong>
+        <small>do obsługi</small>
+    </article>
+    <article>
+        <span>Nowe 30 dni</span>
+        <strong>{{ order_summary.new_30_count }}</strong>
+        <small>ostatni miesiąc</small>
+    </article>
+    <article>
+        <span>Przychód</span>
+        <strong class="dashboard-taxonomy-summary__slug">{{ order_summary.revenue_total|money }}</strong>
+        <small>bez szkiców i anulowanych</small>
+    </article>
+    <article>
+        <span>Anulowane</span>
+        <strong>{{ order_summary.cancelled_count }}</strong>
+        <small>do wglądu</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--orders">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po numerze, e-mailu, imieniu lub nazwisku">
+    <select name="status">
+        <option value="">Każdy status</option>
+        {% for value, label in order_statuses %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="period">
+        <option value="">Cały czas</option>
+        {% for value, label in order_periods %}
+            <option value="{{ value }}" {% if selected_period == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Filtruj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<section class="dashboard-order-layout">
+    <div class="dashboard-order-main">
+        <div class="dashboard-list-toolbar dashboard-order-toolbar">
+            <div>
+                <span>{{ page.paginator.count }} zamówień na aktualnej liście</span>
+                <small>{{ order_summary.open_count }} otwartych w całej bazie</small>
+            </div>
+        </div>
+
+        <div class="dashboard-order-list" aria-label="Lista zamówień">
+            {% for row in rows %}
+                <article class="dashboard-order-card {% if row.is_open %}is-open{% endif %}">
+                    <div class="dashboard-order-card__top">
+                        <div>
+                            <p class="eyebrow">{{ row.created_at|date:"d.m.Y H:i" }}</p>
+                            <h2><a href="{{ row.admin_url }}">{{ row.order_number }}</a></h2>
+                            <p>{{ row.customer_name }} · {{ row.email }}</p>
+                        </div>
+                        <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
+                    </div>
+
+                    <dl class="dashboard-order-facts">
+                        <div>
+                            <dt>Kwota</dt>
+                            <dd>{{ row.grand_total|money }}</dd>
+                        </div>
+                        <div>
+                            <dt>Produkty</dt>
+                            <dd>{{ row.quantity_count }} szt.</dd>
+                        </div>
+                        <div>
+                            <dt>Miasto</dt>
+                            <dd>{{ row.city|default:"Brak" }}</dd>
+                        </div>
+                        <div>
+                            <dt>Dostawa</dt>
+                            <dd>{% if row.shipping_method %}{{ row.shipping_method.name }}{% else %}Brak{% endif %}</dd>
+                        </div>
+                    </dl>
+
+                    <div class="dashboard-order-items-preview">
+                        {% for item_name in row.items_preview %}
+                            <span>{{ item_name }}</span>
+                        {% empty %}
+                            <span>Brak pozycji zamówienia</span>
+                        {% endfor %}
+                        {% if row.has_more_items %}
+                            <span>+ więcej</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="dashboard-taxonomy-actions dashboard-order-card__actions">
+                        <a href="{{ row.admin_url }}">Otwórz</a>
+                        <a href="{{ row.delete_url }}">Usuń</a>
+                    </div>
+                </article>
+            {% empty %}
+                <article class="dashboard-empty-card">
+                    <h2>Brak zamówień</h2>
+                    <p>Gdy koszyk i checkout będą gotowe, zamówienia pojawią się tutaj. Możesz też dodać testowe ręcznie.</p>
+                    <a href="{% url 'dashboard:order_create_workspace' %}" class="button">Dodaj ręcznie</a>
+                </article>
+            {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+            <nav class="dashboard-pagination">
+                {% if page.has_previous %}
+                    <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+                {% endif %}
+                <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}
+                    <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+
+    <aside class="dashboard-order-side">
+        <article class="dashboard-card dashboard-order-status-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Statusy</h2>
+                    <p>Ile zamówień jest na każdym etapie.</p>
+                </div>
+            </div>
+            <div class="dashboard-order-status-list">
+                {% for row in order_status_rows %}
+                    <div>
+                        <span>{{ row.label }}</span>
+                        <strong>{{ row.count }}</strong>
+                        <i class="dashboard-order-status-bar--{{ row.class }}" style="--order-status-width: {{ row.bar_width }}%;"></i>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="dashboard-card dashboard-order-note">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Na teraz</h2>
+                    <p>Ten moduł jest przygotowany pod obsługę zamówień, ale bez integracji PayU/Przelewy24 do czasu działalności.</p>
+                </div>
+            </div>
+        </article>
+    </aside>
+</section>
+{% endblock %}

@@ -2,15 +2,18 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from decimal import Decimal
 
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
+from core.models import NewsletterSubscriber
 from dashboard.models import DataQualityIssue
+from dashboard.registry import get_model_config, get_sections
 from dashboard.services import get_dashboard_analytics
 from dashboard.views import filter_product_image_files, sync_product_main_image
-from orders.models import Order, OrderItem
+from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitImage, OutfitItem
 
 
@@ -108,6 +111,118 @@ class DashboardAccessTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Color.objects.filter(slug="test-pink").exists())
+
+    def test_dashboard_registry_moves_newsletter_to_marketing(self):
+        sections = get_sections()
+
+        self.assertNotIn("Treści strony", sections)
+        self.assertNotIn("Klientki", sections)
+        self.assertIsNone(get_model_config("site-pages"))
+        self.assertIsNone(get_model_config("homepage-sections"))
+        self.assertIsNone(get_model_config("customer-profiles"))
+        self.assertIsNone(get_model_config("customer-addresses"))
+        self.assertIsNone(get_model_config("favorite-products"))
+        self.assertIsNone(get_model_config("checkout-drafts"))
+        self.assertIsNone(get_model_config("dashboard-tasks"))
+        self.assertIsNone(get_model_config("data-quality-issues"))
+        self.assertIsNone(get_model_config("ai-jobs"))
+        self.assertIsNone(get_model_config("ai-suggestions"))
+        self.assertNotIn("Panel", sections)
+        self.assertNotIn("AI", sections)
+        self.assertIn("Marketing", sections)
+        self.assertEqual([config.label for config in sections["Marketing"]], ["Newsletter"])
+        self.assertEqual(
+            [config.label for config in sections["Analityka"]],
+            ["Sesje analityczne", "Zdarzenia analityczne"],
+        )
+
+    def test_analytics_session_list_and_detail_use_custom_readonly_views(self):
+        session = AnalyticsSession.objects.create(
+            session_key="analytics-session-key",
+            visitor_id="visitor-analytics-1",
+            device_type="mobile",
+            referrer="https://www.instagram.com/spookystrawberry",
+            utm_source="instagram",
+            utm_medium="social",
+            utm_campaign="summer-drop",
+            user_agent="Mobile Test Browser",
+        )
+        AnalyticsEvent.objects.create(
+            session=session,
+            event_type=AnalyticsEvent.EVENT_PAGE_VIEW,
+            path="/",
+        )
+        AnalyticsEvent.objects.create(
+            session=session,
+            event_type=AnalyticsEvent.EVENT_PRODUCT_VIEW,
+            path="/produkt/test/",
+        )
+        self.client.login(username="staff", password="pass")
+
+        list_response = self.client.get(
+            reverse("dashboard:model_list", args=["analytics-sessions"]),
+            {"device": "mobile", "source": "campaign"},
+        )
+        detail_response = self.client.get(
+            reverse("dashboard:model_edit", args=["analytics-sessions", session.id])
+        )
+        create_response = self.client.get(
+            reverse("dashboard:model_create", args=["analytics-sessions"])
+        )
+        delete_response = self.client.get(
+            reverse("dashboard:model_delete", args=["analytics-sessions", session.id])
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertTemplateUsed(list_response, "dashboard/analytics_session_list.html")
+        self.assertContains(list_response, "Sesje analityczne")
+        self.assertContains(list_response, "Telefon")
+        self.assertContains(list_response, "instagram")
+        self.assertEqual(list_response.context["rows"][0]["event_count"], 2)
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertTemplateUsed(detail_response, "dashboard/analytics_session_detail.html")
+        self.assertContains(detail_response, "Ścieżka użytkowniczki")
+        self.assertContains(detail_response, "/produkt/test/")
+        self.assertContains(detail_response, "summer-drop")
+        self.assertEqual(create_response.status_code, 302)
+        self.assertEqual(delete_response.status_code, 302)
+        self.assertTrue(AnalyticsSession.objects.filter(pk=session.pk).exists())
+
+    def test_analytics_event_list_and_detail_show_metadata_and_session(self):
+        product = self.create_product("Analytics Choker", "analytics-choker")
+        session = AnalyticsSession.objects.create(
+            session_key="event-session-key",
+            visitor_id="event-visitor",
+            device_type="desktop",
+            user_agent="Desktop Test Browser",
+        )
+        event = AnalyticsEvent.objects.create(
+            session=session,
+            event_type=AnalyticsEvent.EVENT_ADD_TO_CART,
+            path="/koszyk/dodaj/",
+            product=product,
+            metadata={"quantity": 2, "source": "product-card"},
+        )
+        self.client.login(username="staff", password="pass")
+
+        list_response = self.client.get(
+            reverse("dashboard:model_list", args=["analytics-events"]),
+            {"event_type": AnalyticsEvent.EVENT_ADD_TO_CART, "device": "desktop"},
+        )
+        detail_response = self.client.get(
+            reverse("dashboard:model_edit", args=["analytics-events", event.id])
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertTemplateUsed(list_response, "dashboard/analytics_event_list.html")
+        self.assertContains(list_response, "Dodanie do koszyka")
+        self.assertContains(list_response, "Analytics Choker")
+        self.assertContains(list_response, "quantity: 2")
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertTemplateUsed(detail_response, "dashboard/analytics_event_detail.html")
+        self.assertContains(detail_response, "Metadane zdarzenia")
+        self.assertContains(detail_response, "product-card")
+        self.assertContains(detail_response, "Zobacz całą sesję")
 
     def test_product_list_shows_image_prices_and_stock(self):
         product = self.create_product("List Product", "list-product")
@@ -663,6 +778,359 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(post_response.status_code, 302)
         self.assertEqual(category.slug, "nowe-poradniki-seo")
 
+    def test_newsletter_list_uses_marketing_workspace(self):
+        active_subscriber = NewsletterSubscriber.objects.create(
+            email="active@example.com",
+            source=NewsletterSubscriber.SOURCE_HOME,
+            consent_text="Zgoda na newsletter Spooky Strawberry.",
+        )
+        inactive_subscriber = NewsletterSubscriber.objects.create(
+            email="inactive@example.com",
+            source=NewsletterSubscriber.SOURCE_FOOTER,
+            is_active=False,
+            consent_text="Zgoda historyczna.",
+            unsubscribed_at=timezone.now(),
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_list", args=["newsletter-subscribers"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/newsletter_list.html")
+        self.assertContains(response, "Marketing")
+        self.assertContains(response, "dashboard-newsletter-toolbar")
+        self.assertContains(response, "Lista do wysyłki")
+        self.assertContains(response, "Źródła zapisów")
+        self.assertContains(response, "active@example.com")
+        self.assertContains(response, "inactive@example.com")
+        self.assertContains(response, "Strona główna")
+        self.assertEqual(response.context["newsletter_summary"]["active_count"], 1)
+        self.assertIn(active_subscriber.email, response.context["newsletter_active_emails"])
+        self.assertNotIn(inactive_subscriber.email, response.context["newsletter_active_emails"])
+
+    def test_newsletter_list_filters_by_status_source_and_period(self):
+        NewsletterSubscriber.objects.create(
+            email="home@example.com",
+            source=NewsletterSubscriber.SOURCE_HOME,
+            consent_text="Zgoda.",
+        )
+        NewsletterSubscriber.objects.create(
+            email="footer@example.com",
+            source=NewsletterSubscriber.SOURCE_FOOTER,
+            is_active=False,
+            consent_text="Zgoda.",
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(
+            reverse("dashboard:model_list", args=["newsletter-subscribers"]),
+            {
+                "status": "active",
+                "source": NewsletterSubscriber.SOURCE_HOME,
+                "period": "30",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "home@example.com")
+        self.assertNotContains(response, "footer@example.com")
+        self.assertEqual([row["email"] for row in response.context["rows"]], ["home@example.com"])
+
+    def test_newsletter_subscriber_detail_uses_custom_workspace(self):
+        subscriber = NewsletterSubscriber.objects.create(
+            email="detail@example.com",
+            source=NewsletterSubscriber.SOURCE_POPUP,
+            consent_text="Zgoda z popupu.",
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_edit", args=["newsletter-subscribers", subscriber.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/newsletter_form.html")
+        self.assertContains(response, "Marketing · Newsletter")
+        self.assertContains(response, "Do wysyłki")
+        self.assertContains(response, "Zgoda z popupu.")
+        self.assertEqual(response.context["newsletter_detail"]["source_label"], "Popup")
+
+    def test_order_list_uses_custom_workspace(self):
+        product = self.create_product("Order Choker", "order-choker")
+        order = self.create_order("SS-001", "order@example.com", status=Order.STATUS_PLACED, grand_total="59.00")
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_name=product.name,
+            quantity=2,
+            unit_price="29.50",
+            line_total="59.00",
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_list", args=["orders"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/order_list.html")
+        self.assertContains(response, "SS-001")
+        self.assertContains(response, "Order Choker")
+        self.assertContains(response, "Złożone")
+        self.assertContains(response, "Przychód")
+        self.assertEqual(response.context["order_summary"]["open_count"], 1)
+        self.assertEqual(response.context["rows"][0]["quantity_count"], 2)
+
+    def test_order_workspace_shows_items_and_updates_status(self):
+        product = self.create_product("Workspace Order Choker", "workspace-order-choker")
+        shipping_method = ShippingMethod.objects.create(name="InPost", code="inpost", price="12.99")
+        order = self.create_order(
+            "SS-002",
+            "workspace-order@example.com",
+            status=Order.STATUS_PLACED,
+            grand_total="41.99",
+            shipping_method=shipping_method,
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_name=product.name,
+            variant_name="Midnight Black",
+            sku="CHOKER-BLK",
+            quantity=1,
+            unit_price="29.00",
+            line_total="29.00",
+        )
+        self.client.login(username="staff", password="pass")
+
+        get_response = self.client.get(reverse("dashboard:order_workspace", args=[order.id]))
+        post_response = self.client.post(
+            reverse("dashboard:order_workspace", args=[order.id]),
+            {
+                "order-order_number": order.order_number,
+                "order-status": Order.STATUS_CONFIRMED,
+                "order-placed_at": "",
+                "order-email": order.email,
+                "order-phone": order.phone,
+                "order-first_name": order.first_name,
+                "order-last_name": order.last_name,
+                "order-shipping_address_line_1": order.shipping_address_line_1,
+                "order-shipping_address_line_2": order.shipping_address_line_2,
+                "order-shipping_postal_code": order.shipping_postal_code,
+                "order-shipping_city": order.shipping_city,
+                "order-shipping_country": order.shipping_country,
+                "order-shipping_method": str(shipping_method.id),
+                "order-discount_code": "",
+                "order-subtotal": "29.00",
+                "order-discount_total": "0.00",
+                "order-shipping_total": "12.99",
+                "order-grand_total": "41.99",
+                "order-customer_note": "Zapakować na prezent.",
+                "order-source_session_key": "test-session",
+                "items-TOTAL_FORMS": "1",
+                "items-INITIAL_FORMS": "1",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "items-0-id": str(order.items.first().id),
+                "items-0-product": str(product.id),
+                "items-0-variant": "",
+                "items-0-product_name": product.name,
+                "items-0-variant_name": "Midnight Black",
+                "items-0-sku": "CHOKER-BLK",
+                "items-0-quantity": "1",
+                "items-0-unit_price": "29.00",
+                "items-0-line_total": "29.00",
+            },
+        )
+
+        order.refresh_from_db()
+        self.assertEqual(get_response.status_code, 200)
+        self.assertTemplateUsed(get_response, "dashboard/order_workspace.html")
+        self.assertContains(get_response, "Pozycje zamówienia")
+        self.assertContains(get_response, "Workspace Order Choker")
+        self.assertContains(get_response, "Midnight Black")
+        self.assertEqual(post_response.status_code, 302)
+        self.assertEqual(order.status, Order.STATUS_CONFIRMED)
+        self.assertEqual(order.customer_note, "Zapakować na prezent.")
+
+    def test_order_workspace_manages_items_with_snapshot_and_image(self):
+        product = self.create_product("Snapshot Choker", "snapshot-choker")
+        ProductImage.objects.create(product=product, image="products/snapshot/main.webp", is_main=True)
+        order = self.create_order("SS-003", "snapshot@example.com", status=Order.STATUS_PLACED, grand_total="0.00")
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:order_workspace", args=[order.id]),
+            {
+                "order-order_number": order.order_number,
+                "order-status": Order.STATUS_PLACED,
+                "order-placed_at": "",
+                "order-email": order.email,
+                "order-phone": order.phone,
+                "order-first_name": order.first_name,
+                "order-last_name": order.last_name,
+                "order-shipping_address_line_1": order.shipping_address_line_1,
+                "order-shipping_address_line_2": order.shipping_address_line_2,
+                "order-shipping_postal_code": order.shipping_postal_code,
+                "order-shipping_city": order.shipping_city,
+                "order-shipping_country": order.shipping_country,
+                "order-shipping_method": "",
+                "order-discount_code": "",
+                "order-subtotal": "0.00",
+                "order-discount_total": "0.00",
+                "order-shipping_total": "12.00",
+                "order-grand_total": "12.00",
+                "order-customer_note": "",
+                "order-source_session_key": "",
+                "items-TOTAL_FORMS": "1",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "items-0-product": str(product.id),
+                "items-0-variant": "",
+                "items-0-product_name": "",
+                "items-0-variant_name": "",
+                "items-0-sku": "",
+                "items-0-quantity": "2",
+                "items-0-unit_price": "29.00",
+                "items-0-line_total": "",
+            },
+        )
+
+        order.refresh_from_db()
+        item = order.items.get()
+        get_response = self.client.get(reverse("dashboard:order_workspace", args=[order.id]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(item.product_name, "Snapshot Choker")
+        self.assertEqual(item.line_total, Decimal("58.00"))
+        self.assertEqual(order.subtotal, Decimal("58.00"))
+        self.assertEqual(order.grand_total, Decimal("70.00"))
+        self.assertContains(get_response, "products/snapshot/main.webp")
+        self.assertContains(get_response, "Snapshot Choker")
+
+    def test_order_item_list_and_detail_are_readable(self):
+        product = self.create_product("Checked Choker", "checked-choker")
+        ProductImage.objects.create(product=product, image="products/checked/main.webp", is_main=True)
+        order = self.create_order("SS-004", "checked@example.com", status=Order.STATUS_CONFIRMED, grand_total="29.00")
+        item = OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_name="Historyczna nazwa chokera",
+            variant_name="Black / One Size",
+            sku="OLD-SKU",
+            quantity=1,
+            unit_price="29.00",
+            line_total="29.00",
+        )
+        product.name = "Nowa nazwa w katalogu"
+        product.save(update_fields=["name"])
+        self.client.login(username="staff", password="pass")
+
+        list_response = self.client.get(reverse("dashboard:model_list", args=["order-items"]))
+        detail_response = self.client.get(reverse("dashboard:order_item_detail", args=[item.id]))
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertTemplateUsed(list_response, "dashboard/order_item_list.html")
+        self.assertContains(list_response, "Historyczna nazwa chokera")
+        self.assertContains(list_response, "products/checked/main.webp")
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertTemplateUsed(detail_response, "dashboard/order_item_detail.html")
+        self.assertContains(detail_response, "Snapshot z zamówienia")
+        self.assertContains(detail_response, "Historyczna nazwa chokera")
+        self.assertNotContains(detail_response, "Nowa nazwa w katalogu")
+
+    def test_shipping_method_list_and_detail_use_custom_workspace(self):
+        shipping_method = ShippingMethod.objects.create(
+            name="Paczkomat InPost",
+            code="paczkomat-inpost",
+            description="Dostawa do paczkomatu.",
+            price="12.99",
+            free_from_amount="150.00",
+            is_active=True,
+        )
+        self.create_order(
+            "SS-SHIP",
+            "shipping@example.com",
+            status=Order.STATUS_PLACED,
+            grand_total="41.99",
+            shipping_method=shipping_method,
+        )
+        self.client.login(username="staff", password="pass")
+
+        list_response = self.client.get(reverse("dashboard:model_list", args=["shipping-methods"]))
+        detail_response = self.client.get(reverse("dashboard:model_edit", args=["shipping-methods", shipping_method.id]))
+        post_response = self.client.post(
+            reverse("dashboard:model_edit", args=["shipping-methods", shipping_method.id]),
+            {
+                "name": "Paczkomat InPost 24/7",
+                "code": "",
+                "description": "Dostawa do paczkomatu w 1-3 dni robocze.",
+                "price": "12.99",
+                "free_from_amount": "150.00",
+                "sort_order": "1",
+                "is_active": "on",
+            },
+        )
+
+        shipping_method.refresh_from_db()
+        self.assertEqual(list_response.status_code, 200)
+        self.assertTemplateUsed(list_response, "dashboard/shipping_method_list.html")
+        self.assertContains(list_response, "Metody dostawy")
+        self.assertContains(list_response, "Paczkomat InPost")
+        self.assertContains(list_response, "12,99")
+        self.assertEqual(list_response.context["shipping_summary"]["active_count"], 1)
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertTemplateUsed(detail_response, "dashboard/shipping_method_form.html")
+        self.assertContains(detail_response, "Cena dostawy")
+        self.assertContains(detail_response, "Dane techniczne")
+        self.assertEqual(post_response.status_code, 302)
+        self.assertEqual(shipping_method.name, "Paczkomat InPost 24/7")
+        self.assertEqual(shipping_method.code, "paczkomat-inpost-247")
+
+    def test_discount_code_list_and_detail_use_custom_workspace(self):
+        discount_code = DiscountCode.objects.create(
+            code="SPOOKY10",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            value="10.00",
+            minimum_order_amount="50.00",
+            max_uses=5,
+            used_count=1,
+            is_active=True,
+        )
+        order = self.create_order("SS-DISCOUNT", "discount@example.com", status=Order.STATUS_PLACED, grand_total="49.00")
+        order.discount_code = discount_code
+        order.save(update_fields=["discount_code"])
+        self.client.login(username="staff", password="pass")
+
+        list_response = self.client.get(reverse("dashboard:model_list", args=["discount-codes"]))
+        detail_response = self.client.get(reverse("dashboard:model_edit", args=["discount-codes", discount_code.id]))
+        post_response = self.client.post(
+            reverse("dashboard:model_edit", args=["discount-codes", discount_code.id]),
+            {
+                "code": "spooky15",
+                "discount_type": DiscountCode.TYPE_FIXED,
+                "value": "15.00",
+                "minimum_order_amount": "60.00",
+                "max_uses": "10",
+                "used_count": "1",
+                "starts_at": "",
+                "ends_at": "",
+                "is_active": "on",
+            },
+        )
+
+        discount_code.refresh_from_db()
+        self.assertEqual(list_response.status_code, 200)
+        self.assertTemplateUsed(list_response, "dashboard/discount_code_list.html")
+        self.assertContains(list_response, "Kody rabatowe")
+        self.assertContains(list_response, "SPOOKY10")
+        self.assertContains(list_response, "10%")
+        self.assertEqual(list_response.context["discount_summary"]["active_count"], 1)
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertTemplateUsed(detail_response, "dashboard/discount_code_form.html")
+        self.assertContains(detail_response, "Wartość rabatu")
+        self.assertContains(detail_response, "Kontrola")
+        self.assertEqual(post_response.status_code, 302)
+        self.assertEqual(discount_code.code, "SPOOKY15")
+        self.assertEqual(discount_code.discount_type, DiscountCode.TYPE_FIXED)
+
     def test_quality_refresh_creates_product_issue(self):
         product = self.create_product("Incomplete Product", "incomplete-product")
         self.client.login(username="staff", password="pass")
@@ -781,4 +1249,23 @@ class DashboardAccessTests(TestCase):
             category=category,
             regular_price="29.00",
             status=Product.STATUS_ACTIVE,
+        )
+
+    def create_order(self, order_number, email, status=Order.STATUS_PLACED, grand_total="29.00", shipping_method=None):
+        return Order.objects.create(
+            order_number=order_number,
+            email=email,
+            phone="123456789",
+            first_name="Ada",
+            last_name="Test",
+            shipping_address_line_1="Testowa 1",
+            shipping_postal_code="00-000",
+            shipping_city="Warszawa",
+            shipping_country="Polska",
+            status=status,
+            shipping_method=shipping_method,
+            subtotal=grand_total,
+            discount_total="0.00",
+            shipping_total="0.00",
+            grand_total=grand_total,
         )

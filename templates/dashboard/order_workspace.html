@@ -1,0 +1,476 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{{ order_detail.order_number }} | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row dashboard-order-heading">
+    <div>
+        <p class="eyebrow">Zamówienie</p>
+        <h1>{{ order_detail.order_number }}</h1>
+        <p>{{ order_detail.customer_name }} · status: {{ order_detail.status_label }}</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'orders' %}" class="button button--secondary">Lista zamówień</a>
+        <button type="submit" form="order-workspace-form" class="button">{% if order %}Zapisz zamówienie{% else %}Utwórz zamówienie{% endif %}</button>
+    </div>
+</section>
+
+<section class="dashboard-product-summary dashboard-order-detail-summary" aria-label="Podsumowanie zamówienia">
+    <article>
+        <span>Status</span>
+        <strong>{{ order_detail.status_label }}</strong>
+    </article>
+    <article>
+        <span>Produkty</span>
+        <strong>{{ order_detail.quantity_count }}</strong>
+    </article>
+    <article>
+        <span>Razem</span>
+        <strong>{% if order %}{{ order.grand_total|money }}{% else %}0,00 zł{% endif %}</strong>
+    </article>
+</section>
+
+<form id="order-workspace-form" method="post" class="dashboard-product-form dashboard-order-form">
+    {% csrf_token %}
+    {{ order_form.non_field_errors }}
+
+    <div class="dashboard-order-detail-layout">
+        <div class="dashboard-order-editor">
+            {% for fieldset in fieldsets %}
+                <section class="dashboard-form-panel dashboard-form-panel--product dashboard-order-section">
+                    <div class="dashboard-form-panel__heading">
+                        <h2>{{ fieldset.title }}</h2>
+                        <p>{{ fieldset.description }}</p>
+                    </div>
+
+                    <div class="dashboard-form-fields dashboard-form-fields--order">
+                        {% for field in fieldset.fields %}
+                            <label class="dashboard-field {% if field.field.widget.input_type == 'checkbox' %}dashboard-field--checkbox dashboard-field--compact-checkbox{% endif %}" data-field-name="{{ field.name }}">
+                                <span>{{ field.label }}</span>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small>{{ field.help_text }}</small>
+                                {% endif %}
+                                {{ field.errors }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+
+            {% if order %}
+                <section class="dashboard-form-panel dashboard-order-items-panel">
+                    <div class="dashboard-form-panel__heading dashboard-heading--row">
+                        <div>
+                            <p class="eyebrow">Produkty</p>
+                            <h2>Pozycje zamówienia</h2>
+                            <p>Dodawaj i edytuj produkty w zamówieniu. Nazwa, wariant, kod i cena są snapshotem, więc późniejsze zmiany w katalogu nie nadpiszą historii zamówienia.</p>
+                        </div>
+                        <button type="button" class="button" data-add-form="items">Dodaj pozycję</button>
+                    </div>
+
+                    {{ item_formset.management_form }}
+                    {{ item_formset.non_form_errors }}
+                    <div class="dashboard-order-item-form-list" data-formset-list="items">
+                        {% for form in item_formset %}
+                            <article class="dashboard-order-item-form" data-formset-form>
+                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                <span class="dashboard-hidden-delete">{{ form.DELETE }}</span>
+
+                                <div class="dashboard-order-item-thumb" data-order-item-thumb>
+                                    {% if form.instance.pk and form.instance.product.main_image %}
+                                        <img src="{{ form.instance.product.main_image.image.url }}" alt="{{ form.instance.product_name }}">
+                                    {% else %}
+                                        <span>SS</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="dashboard-order-item-form__body">
+                                    <div class="dashboard-variant-card__top">
+                                        <div>
+                                            <strong>Pozycja <span data-form-index>{{ forloop.counter }}</span></strong>
+                                            {% if form.instance.pk %}
+                                                <small>{{ form.instance.product_name }}{% if form.instance.variant_name %} / {{ form.instance.variant_name }}{% endif %}</small>
+                                            {% else %}
+                                                <small>Nowa pozycja zamówienia</small>
+                                            {% endif %}
+                                        </div>
+                                        <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń pozycję">×</button>
+                                    </div>
+
+                                    <div class="dashboard-order-item-form-fields">
+                                        {% for field in form.visible_fields %}
+                                            {% if field.name != "DELETE" %}
+                                                <label class="dashboard-field" data-field-name="{{ field.name }}">
+                                                    <span>{{ field.label }}</span>
+                                                    {{ field }}
+                                                    {% if field.help_text %}
+                                                        <small>{{ field.help_text }}</small>
+                                                    {% endif %}
+                                                    {{ field.errors }}
+                                                </label>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+
+                                    {{ form.non_field_errors }}
+                                </div>
+                            </article>
+                        {% empty %}
+                            <p class="dashboard-empty-note" data-empty-order-items>To zamówienie nie ma jeszcze pozycji.</p>
+                        {% endfor %}
+                    </div>
+
+                    <template data-formset-template="items">
+                        <article class="dashboard-order-item-form" data-formset-form>
+                            {% for hidden in item_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            <span class="dashboard-hidden-delete">{{ item_formset.empty_form.DELETE }}</span>
+                            <div class="dashboard-order-item-thumb" data-order-item-thumb>
+                                <span>SS</span>
+                            </div>
+                            <div class="dashboard-order-item-form__body">
+                                <div class="dashboard-variant-card__top">
+                                    <div>
+                                        <strong>Pozycja <span data-form-index></span></strong>
+                                        <small>Nowa pozycja zamówienia</small>
+                                    </div>
+                                    <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń pozycję">×</button>
+                                </div>
+                                <div class="dashboard-order-item-form-fields">
+                                    {% for field in item_formset.empty_form.visible_fields %}
+                                        {% if field.name != "DELETE" %}
+                                            <label class="dashboard-field" data-field-name="{{ field.name }}">
+                                                <span>{{ field.label }}</span>
+                                                {{ field }}
+                                                {% if field.help_text %}
+                                                    <small>{{ field.help_text }}</small>
+                                                {% endif %}
+                                                {{ field.errors }}
+                                            </label>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </article>
+                    </template>
+                </section>
+            {% else %}
+                <section class="dashboard-quality-panel dashboard-quality-panel--ok">
+                    <div>
+                        <p class="eyebrow">Następny krok</p>
+                        <h2>Zapisz zamówienie, żeby dodać pozycje później</h2>
+                    </div>
+                    <p>Po pierwszym zapisie pojawi się sekcja pozycji zamówienia.</p>
+                </section>
+            {% endif %}
+
+            <div class="dashboard-save-bar">
+                <button type="submit" class="button">{% if order %}Zapisz zamówienie{% else %}Utwórz zamówienie{% endif %}</button>
+                {% if order %}
+                    <a href="{% url 'dashboard:model_delete' 'orders' order.pk %}">Usuń zamówienie</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <aside class="dashboard-order-detail-side">
+            <article class="dashboard-card dashboard-order-fulfillment">
+                <div class="dashboard-order-fulfillment__status dashboard-order-fulfillment__status--{{ order_detail.status_class }}">
+                    <span>{% if order_detail.is_open %}Do obsługi{% else %}Status{% endif %}</span>
+                    <strong>{{ order_detail.status_label }}</strong>
+                    <p>{% if order_detail.is_open %}Zamówienie jest na etapie realizacji.{% else %}Sprawdź szczegóły i status w formularzu.{% endif %}</p>
+                </div>
+
+                <div class="dashboard-order-steps">
+                    {% for step in order_detail.steps %}
+                        <span class="{% if step.is_active %}is-active{% endif %} dashboard-order-step--{{ step.class }}">{{ step.label }}</span>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="dashboard-card dashboard-order-address">
+                <div class="dashboard-card__head">
+                    <div>
+                        <h2>Dostawa</h2>
+                        <p>Adres i metoda dostawy.</p>
+                    </div>
+                </div>
+                {% if order_detail.address_lines %}
+                    <address>
+                        {% for line in order_detail.address_lines %}
+                            <span>{{ line }}</span>
+                        {% endfor %}
+                    </address>
+                {% else %}
+                    <p class="dashboard-muted">Adres pojawi się po zapisaniu danych dostawy.</p>
+                {% endif %}
+                {% if order and order.shipping_method %}
+                    <p>{{ order.shipping_method.name }}</p>
+                {% endif %}
+            </article>
+
+            <article class="dashboard-card dashboard-order-total-card">
+                <div class="dashboard-card__head">
+                    <div>
+                        <h2>Podsumowanie kwot</h2>
+                        <p>Bez integracji płatności na tym etapie.</p>
+                    </div>
+                </div>
+                <dl class="dashboard-order-total-list">
+                    {% for row in order_detail.totals %}
+                        <div class="{% if row.is_strong %}is-strong{% endif %}">
+                            <dt>{{ row.label }}</dt>
+                            <dd>{{ row.value|money }}</dd>
+                        </div>
+                    {% endfor %}
+                </dl>
+            </article>
+
+            {% if order_detail.timeline %}
+                <article class="dashboard-card dashboard-order-timeline">
+                    <div class="dashboard-card__head">
+                        <div>
+                            <h2>Historia</h2>
+                            <p>Najważniejsze daty zamówienia.</p>
+                        </div>
+                    </div>
+                    <dl class="dashboard-newsletter-detail-list">
+                        {% for event in order_detail.timeline %}
+                            <div>
+                                <dt>{{ event.label }}</dt>
+                                <dd>{% if event.date %}{{ event.date|date:"d.m.Y H:i" }}{% else %}brak{% endif %}</dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </article>
+            {% endif %}
+        </aside>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ order_product_catalog|json_script:"order-product-catalog-data" }}
+<script>
+(() => {
+    const form = document.querySelector("#order-workspace-form");
+    if (!form) {
+        return;
+    }
+    const catalogScript = document.getElementById("order-product-catalog-data");
+    const productCatalog = catalogScript ? JSON.parse(catalogScript.textContent) : {};
+
+    setupFormset("items");
+    setupOrderItemCards();
+
+    function setupFormset(prefix) {
+        const list = form.querySelector(`[data-formset-list="${prefix}"]`);
+        const template = form.querySelector(`[data-formset-template="${prefix}"]`);
+        const addButton = form.querySelector(`[data-add-form="${prefix}"]`);
+        const totalInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+
+        if (!list || !template || !addButton || !totalInput) {
+            return;
+        }
+
+        list.querySelectorAll("[data-formset-form]").forEach(bindCard);
+        refreshIndexes();
+
+        addButton.addEventListener("click", () => {
+            const index = Number.parseInt(totalInput.value, 10);
+            const html = template.innerHTML.replaceAll("__prefix__", index);
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = html.trim();
+            const card = wrapper.firstElementChild;
+            const emptyNote = list.querySelector("[data-empty-order-items]");
+            if (emptyNote) {
+                emptyNote.remove();
+            }
+            list.appendChild(card);
+            totalInput.value = index + 1;
+            bindCard(card);
+            bindOrderItemCard(card, { preserveSnapshot: false });
+            refreshIndexes();
+        });
+
+        function bindCard(card) {
+            const removeButton = card.querySelector("[data-remove-form]");
+            if (!removeButton) {
+                return;
+            }
+            removeButton.addEventListener("click", () => {
+                const deleteInput = card.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                if (deleteInput) {
+                    deleteInput.checked = true;
+                }
+                card.hidden = true;
+                refreshIndexes();
+            });
+        }
+
+        function refreshIndexes() {
+            const visibleCards = [...list.querySelectorAll("[data-formset-form]:not([hidden])")];
+            visibleCards.forEach((card, index) => {
+                const label = card.querySelector("[data-form-index]");
+                if (label) {
+                    label.textContent = index + 1;
+                }
+            });
+        }
+    }
+
+    function setupOrderItemCards() {
+        form.querySelectorAll("[data-formset-form]").forEach((card) => {
+            bindOrderItemCard(card, { preserveSnapshot: true });
+        });
+    }
+
+    function bindOrderItemCard(card, options = {}) {
+        const productSelect = card.querySelector('select[name$="-product"]');
+        const variantSelect = card.querySelector('select[name$="-variant"]');
+        const productNameInput = card.querySelector('input[name$="-product_name"]');
+        const variantNameInput = card.querySelector('input[name$="-variant_name"]');
+        const skuInput = card.querySelector('input[name$="-sku"]');
+        const quantityInput = card.querySelector("[data-order-item-quantity]");
+        const unitPriceInput = card.querySelector("[data-order-item-unit-price]");
+        const lineTotalInput = card.querySelector("[data-order-item-line-total]");
+        const thumb = card.querySelector("[data-order-item-thumb]");
+        const variantField = card.querySelector('[data-field-name="variant"]');
+        const preserveSnapshot = Boolean(options.preserveSnapshot);
+
+        if (!productSelect) {
+            return;
+        }
+
+        productSelect.addEventListener("change", () => {
+            applyProductSelection(card, { preserveSnapshot: false });
+        });
+        if (variantSelect) {
+            variantSelect.addEventListener("change", () => {
+                applyVariantSelection(card, { preserveSnapshot: false });
+            });
+        }
+        if (quantityInput && unitPriceInput) {
+            quantityInput.addEventListener("input", () => updateLineTotal(card));
+            unitPriceInput.addEventListener("input", () => updateLineTotal(card));
+        }
+
+        applyProductSelection(card, { preserveSnapshot });
+        updateLineTotal(card);
+
+        function applyProductSelection(card, selectionOptions = {}) {
+            const productId = productSelect.value;
+            const productData = productCatalog[productId];
+            const shouldPreserve = Boolean(selectionOptions.preserveSnapshot);
+
+            updateThumb(thumb, productData);
+            updateVariantChoices(variantSelect, variantField, productData);
+
+            if (!shouldPreserve && productData) {
+                if (productNameInput) {
+                    productNameInput.value = productData.name || "";
+                }
+                if (unitPriceInput && productData.price) {
+                    unitPriceInput.value = normalizePrice(productData.price);
+                }
+            }
+
+            applyVariantSelection(card, { preserveSnapshot: shouldPreserve });
+            updateLineTotal(card);
+        }
+
+        function applyVariantSelection(card, selectionOptions = {}) {
+            if (!variantSelect) {
+                return;
+            }
+            const productData = productCatalog[productSelect.value];
+            const variantData = (productData?.variants || []).find((variant) => variant.id === variantSelect.value);
+            const shouldPreserve = Boolean(selectionOptions.preserveSnapshot);
+
+            if (!shouldPreserve) {
+                if (variantNameInput) {
+                    variantNameInput.value = variantData ? variantData.label : "";
+                }
+                if (skuInput) {
+                    skuInput.value = variantData ? variantData.sku : "";
+                }
+                if (unitPriceInput && variantData?.price) {
+                    unitPriceInput.value = normalizePrice(variantData.price);
+                }
+            }
+            updateLineTotal(card);
+        }
+    }
+
+    function updateVariantChoices(variantSelect, variantField, productData) {
+        if (!variantSelect) {
+            return;
+        }
+        const selectedValue = variantSelect.value;
+        const variants = productData?.variants || [];
+        variantSelect.innerHTML = "";
+
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = variants.length ? "Wybierz wariant" : "Brak wariantów";
+        variantSelect.appendChild(emptyOption);
+
+        variants.forEach((variant) => {
+            const option = document.createElement("option");
+            option.value = variant.id;
+            option.textContent = variant.label;
+            variantSelect.appendChild(option);
+        });
+
+        if (selectedValue && variants.some((variant) => variant.id === selectedValue)) {
+            variantSelect.value = selectedValue;
+        } else {
+            variantSelect.value = "";
+        }
+
+        if (variantField) {
+            variantField.classList.toggle("is-hidden", variants.length === 0);
+        }
+        variantSelect.disabled = variants.length === 0;
+    }
+
+    function updateThumb(thumb, productData) {
+        if (!thumb) {
+            return;
+        }
+        if (productData?.image_url) {
+            thumb.innerHTML = `<img src="${escapeAttribute(productData.image_url)}" alt="${escapeAttribute(productData.image_alt || productData.name)}">`;
+        } else {
+            thumb.innerHTML = "<span>SS</span>";
+        }
+    }
+
+    function updateLineTotal(card) {
+        const quantityInput = card.querySelector("[data-order-item-quantity]");
+        const unitPriceInput = card.querySelector("[data-order-item-unit-price]");
+        const lineTotalInput = card.querySelector("[data-order-item-line-total]");
+
+        if (!quantityInput || !unitPriceInput || !lineTotalInput) {
+            return;
+        };
+
+        const quantity = Number.parseFloat(quantityInput.value.replace(",", ".")) || 0;
+        const unitPrice = Number.parseFloat(unitPriceInput.value.replace(",", ".")) || 0;
+        lineTotalInput.value = (quantity * unitPrice).toFixed(2);
+    }
+
+    function normalizePrice(value) {
+        const parsed = Number.parseFloat(String(value).replace(",", "."));
+        return Number.isFinite(parsed) ? parsed.toFixed(2) : "";
+    }
+
+    function escapeAttribute(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
+})();
+</script>
+{% endblock %}

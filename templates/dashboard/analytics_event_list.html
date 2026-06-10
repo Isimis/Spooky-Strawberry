@@ -1,0 +1,123 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Zdarzenia analityczne | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-analytics-heading">
+    <p class="eyebrow">Analityka</p>
+    <h1>Zdarzenia analityczne</h1>
+    <p>Pojedyncze działania wykonane w sklepie: odsłony, wyszukiwania, filtry, produkty i koszyk.</p>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-analytics-summary" aria-label="Podsumowanie zdarzeń">
+    <article>
+        <span>Wszystkie</span>
+        <strong>{{ analytics_event_summary.total_count }}</strong>
+        <small>zapisane zdarzenia</small>
+    </article>
+    <article>
+        <span>Ostatnie 24 godziny</span>
+        <strong>{{ analytics_event_summary.last_24_count }}</strong>
+        <small>najnowsza aktywność</small>
+    </article>
+    <article>
+        <span>Wyświetlenia produktów</span>
+        <strong>{{ analytics_event_summary.product_view_count }}</strong>
+        <small>zainteresowanie ofertą</small>
+    </article>
+    <article>
+        <span>Dodania do koszyka</span>
+        <strong>{{ analytics_event_summary.add_to_cart_count }}</strong>
+        <small>intencja zakupowa</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--analytics-events">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po ścieżce, sesji albo produkcie">
+    <select name="event_type">
+        <option value="">Każdy typ zdarzenia</option>
+        {% for value, label in analytics_event_type_choices %}
+            <option value="{{ value }}" {% if selected_event_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="device">
+        <option value="">Każde urządzenie</option>
+        {% for value, label in analytics_device_choices %}
+            <option value="{{ value }}" {% if selected_device == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="period">
+        <option value="">Cały czas</option>
+        {% for value, label in analytics_period_choices %}
+            <option value="{{ value }}" {% if selected_period == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Filtruj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<div class="dashboard-analytics-list-head">
+    <span>{{ page.paginator.count }} zdarzeń na aktualnej liście</span>
+    <small>Kliknij zdarzenie, aby zobaczyć pełne metadane i powiązaną sesję.</small>
+</div>
+
+<section class="dashboard-event-list" aria-label="Lista zdarzeń analitycznych">
+    {% for row in rows %}
+        <article class="dashboard-event-card">
+            <div class="dashboard-event-marker dashboard-event-marker--{{ row.event_type_class }}" aria-hidden="true"></div>
+            <div class="dashboard-event-card__body">
+                <div class="dashboard-event-card__head">
+                    <div>
+                        <p class="eyebrow">{{ row.event_type_label }}</p>
+                        <h2><a href="{{ row.admin_url }}">{{ row.path }}</a></h2>
+                    </div>
+                    <time datetime="{{ row.created_at|date:'c' }}">{{ row.created_at|date:"d.m.Y H:i:s" }}</time>
+                </div>
+
+                <div class="dashboard-event-context">
+                    <span>{{ row.device_label }}</span>
+                    <span>{{ row.source_label }}</span>
+                    <a href="{{ row.session_url }}">Sesja {{ row.session_key }}</a>
+                </div>
+
+                {% if row.product %}
+                    <p class="dashboard-event-product">
+                        Produkt: <strong>{{ row.product.name }}</strong>
+                        {% if row.variant %} · {{ row.variant }}{% endif %}
+                    </p>
+                {% endif %}
+
+                <p class="dashboard-event-metadata">{{ row.metadata_summary }}</p>
+            </div>
+        </article>
+    {% empty %}
+        <article class="dashboard-empty-card">
+            <h2>Brak zdarzeń</h2>
+            <p>Nie ma zdarzeń pasujących do wybranych filtrów.</p>
+        </article>
+    {% endfor %}
+</section>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

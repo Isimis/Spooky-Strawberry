@@ -1,0 +1,153 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Sesje analityczne | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-analytics-heading">
+    <p class="eyebrow">Analityka</p>
+    <h1>Sesje analityczne</h1>
+    <p>Rzeczywiste wizyty w sklepie: urządzenie, źródło wejścia, czas trwania i kolejne kroki użytkowniczki.</p>
+</section>
+
+<section class="dashboard-taxonomy-summary dashboard-analytics-summary" aria-label="Podsumowanie sesji">
+    <article>
+        <span>Wszystkie sesje</span>
+        <strong>{{ analytics_session_summary.total_count }}</strong>
+        <small>zapisane w bazie</small>
+    </article>
+    <article>
+        <span>Ostatnie 24 godziny</span>
+        <strong>{{ analytics_session_summary.last_24_count }}</strong>
+        <small>ostatnio aktywne</small>
+    </article>
+    <article>
+        <span>Unikalni użytkownicy</span>
+        <strong>{{ analytics_session_summary.unique_visitors }}</strong>
+        <small>według identyfikatora przeglądarki</small>
+    </article>
+    <article>
+        <span>Wszystkie zdarzenia</span>
+        <strong>{{ analytics_session_summary.event_count }}</strong>
+        <small>kroki zapisane w sesjach</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search dashboard-search--analytics-sessions">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po sesji, użytkowniku, źródle lub kampanii">
+    <select name="device">
+        <option value="">Każde urządzenie</option>
+        {% for value, label in analytics_device_choices %}
+            <option value="{{ value }}" {% if selected_device == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="source">
+        <option value="">Każde źródło</option>
+        {% for value, label in analytics_source_choices %}
+            <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="period">
+        <option value="">Cały czas</option>
+        {% for value, label in analytics_period_choices %}
+            <option value="{{ value }}" {% if selected_period == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">Filtruj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+<div class="dashboard-analytics-list-head">
+    <span>{{ page.paginator.count }} sesji na aktualnej liście</span>
+    <small>Rekordy powstają automatycznie podczas korzystania ze sklepu.</small>
+</div>
+
+<section class="dashboard-session-list" aria-label="Lista sesji analitycznych">
+    {% for row in rows %}
+        <article class="dashboard-session-card">
+            <div class="dashboard-session-card__head">
+                <div>
+                    <div class="dashboard-session-card__labels">
+                        <span class="dashboard-device-pill dashboard-device-pill--{{ row.device_class }}">{{ row.device_label }}</span>
+                        {% if row.is_active %}
+                            <span class="dashboard-status-pill dashboard-status-pill--active">Aktywna teraz</span>
+                        {% endif %}
+                    </div>
+                    <h2><a href="{{ row.admin_url }}">{{ row.short_session_key }}</a></h2>
+                    <p>{{ row.source_label }} · {{ row.source_detail|truncatechars:110 }}</p>
+                </div>
+                <time datetime="{{ row.last_seen_at|date:'c' }}">
+                    Ostatnia aktywność<br>
+                    <strong>{{ row.last_seen_at|date:"d.m.Y H:i" }}</strong>
+                </time>
+            </div>
+
+            <dl class="dashboard-session-facts">
+                <div>
+                    <dt>Zdarzenia</dt>
+                    <dd>{{ row.event_count }}</dd>
+                </div>
+                <div>
+                    <dt>Odsłony stron</dt>
+                    <dd>{{ row.page_view_count }}</dd>
+                </div>
+                <div>
+                    <dt>Produkty</dt>
+                    <dd>{{ row.product_view_count }}</dd>
+                </div>
+                <div>
+                    <dt>Koszyk</dt>
+                    <dd>{{ row.add_to_cart_count }}</dd>
+                </div>
+                <div>
+                    <dt>Czas sesji</dt>
+                    <dd>{{ row.duration_label }}</dd>
+                </div>
+            </dl>
+
+            <div class="dashboard-session-path">
+                <div>
+                    <span>Wejście</span>
+                    <strong>{{ row.entry_path }}</strong>
+                </div>
+                <i aria-hidden="true">→</i>
+                <div>
+                    <span>Ostatni krok</span>
+                    <strong>{{ row.exit_path }}</strong>
+                </div>
+            </div>
+
+            <div class="dashboard-taxonomy-actions dashboard-session-card__actions">
+                <a href="{{ row.admin_url }}">Zobacz ścieżkę</a>
+            </div>
+        </article>
+    {% empty %}
+        <article class="dashboard-empty-card">
+            <h2>Brak sesji</h2>
+            <p>Nie ma sesji pasujących do wybranych filtrów.</p>
+        </article>
+    {% endfor %}
+</section>
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}
