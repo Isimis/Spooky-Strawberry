@@ -3,14 +3,16 @@
 }
 
 :root {
-    --ink: #170d13;
-    --muted: #705462;
-    --paper: #fff8fb;
-    --soft: #f7e7ef;
-    --line: #ead1dc;
-    --accent: #c2235a;
-    --deep: #2b111e;
+    --ink: #000000;
+    --muted: #666666;
+    --paper: #ffffff;
+    --soft: #f7f7f7;
+    --line: #e6e6e6;
+    --accent: #c3cca6;
+    --sage: #c3cca6;
+    --deep: #000000;
     --white: #ffffff;
+    --blush: rgba(247, 232, 249, 0.73);
 }
 
 html {
@@ -19,9 +21,11 @@ html {
 
 body {
     margin: 0;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: var(--paper);
     color: var(--ink);
+    font-size: 0.875rem;
+    line-height: 1.6;
 }
 
 img {
@@ -41,11 +45,18 @@ select {
 }
 
 .announcement-bar {
-    background: var(--deep);
-    color: var(--white);
-    padding: 10px 16px;
+    background: #000000;
+    color: #ffffff;
+    padding: 11px 16px;
     text-align: center;
     font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.announcement-bar a {
+    color: #ffffff;
+    text-decoration: none;
 }
 
 .site-header {
@@ -55,15 +66,21 @@ select {
     display: grid;
     gap: 14px;
     padding: 18px 16px;
-    border-bottom: 1px solid rgba(23, 13, 19, 0.08);
-    background: rgba(255, 248, 251, 0.92);
+    border-bottom: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(14px);
 }
 
 .site-logo {
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.site-logo__img {
+    height: 40px;
+    width: auto;
+    display: block;
 }
 
 .site-nav {
@@ -76,7 +93,13 @@ select {
 }
 
 .site-nav a {
-    color: var(--muted);
+    color: var(--ink);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.site-nav a:hover {
+    opacity: 1;
 }
 
 .header-search {
@@ -101,9 +124,38 @@ main {
 }
 
 .hero {
-    display: grid;
-    gap: 28px;
-    padding: 52px 16px 34px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 80vh;
+    overflow: hidden;
+    background: #000;
+    color: #fff;
+}
+
+.hero__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.hero__bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    opacity: 0.65;
+}
+
+.hero__overlay {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 60px 16px;
+}
+
+.hero__content {
+    max-width: 640px;
 }
 
 .aesthetic-grid {
@@ -119,8 +171,15 @@ main {
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 14px;
-    background: linear-gradient(135deg, var(--white), var(--soft));
-    font-weight: 900;
+    background: var(--soft);
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.aesthetic-grid a:hover {
+    background: var(--line);
+    border-color: var(--ink);
 }
 
 .guide-preview p {
@@ -129,34 +188,57 @@ main {
     line-height: 1.7;
 }
 
-.hero__content {
-    align-self: center;
-}
+/* .hero__content rules now in .hero__content above */
 
 .eyebrow {
     margin: 0 0 10px;
-    color: var(--accent);
+    color: var(--muted);
     font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
+    font-weight: 600;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
+}
+
+h1, h2, h3 {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400;
+    letter-spacing: 0;
 }
 
 .hero h1,
 .catalog-hero h1 {
     margin: 0;
     max-width: 880px;
-    font-size: clamp(46px, 12vw, 104px);
-    line-height: 0.9;
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(3rem, 7.2vw, 4.5rem);
+    line-height: 1.05;
     letter-spacing: 0;
+}
+
+.hero .eyebrow {
+    color: rgba(255, 255, 255, 0.75);
 }
 
 .hero p,
 .catalog-hero p {
     max-width: 620px;
-    color: var(--muted);
-    font-size: 17px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
     line-height: 1.65;
+}
+
+.hero .button {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: #000;
+    margin-top: 24px;
+}
+
+.hero .button:hover {
+    background: #fff;
+    border-color: #fff;
+    color: #000;
 }
 
 .button {
@@ -165,13 +247,21 @@ main {
     justify-content: center;
     min-height: 48px;
     margin-top: 18px;
-    padding: 13px 22px;
+    padding: 13px 28px;
     border: 1px solid var(--ink);
-    border-radius: 4px;
+    border-radius: 100px;
+    background: var(--sage);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    text-decoration: none;
+}
+
+.button:hover {
     background: var(--ink);
     color: var(--white);
-    font-weight: 800;
-    cursor: pointer;
 }
 
 .button--wide {
@@ -182,6 +272,10 @@ main {
     border-color: var(--line);
     background: var(--white);
     color: var(--ink);
+}
+
+.button--light:hover {
+    background: var(--soft);
 }
 
 .hero-product {
@@ -231,8 +325,10 @@ main {
 .section-heading h2,
 .newsletter-band h2 {
     margin: 0;
-    font-size: clamp(30px, 8vw, 58px);
-    line-height: 1;
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.25rem, 4.8vw, 3rem);
+    line-height: 1.1;
     letter-spacing: 0;
 }
 
@@ -251,9 +347,14 @@ main {
 .product-card {
     min-width: 0;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
     background: var(--white);
+    transition: box-shadow 0.2s;
+}
+
+.product-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
 .content-card {
@@ -400,11 +501,17 @@ main {
     align-items: center;
     justify-content: center;
     border: 1px solid var(--line);
-    border-radius: 4px;
+    border-radius: 100px;
     background: var(--white);
     color: var(--ink);
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 600;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.product-card__actions a:hover {
+    background: var(--soft);
+    border-color: var(--ink);
 }
 
 .product-card__actions form {
@@ -412,7 +519,14 @@ main {
 }
 
 .product-card__actions button {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: var(--ink);
+}
+
+.product-card__actions button:hover {
     background: var(--ink);
+    border-color: var(--ink);
     color: var(--white);
 }
 
@@ -789,9 +903,10 @@ main {
     display: grid;
     gap: 18px;
     margin: 20px 16px 42px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--white);
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 12px;
+    background: var(--blush);
+    padding: 34px 16px;
 }
 
 .newsletter-form {
@@ -801,19 +916,26 @@ main {
 
 .newsletter-form input {
     min-height: 48px;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 12px;
-    background: var(--paper);
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 100px;
+    padding: 12px 20px;
+    background: rgba(255,255,255,0.8);
+    font-size: 14px;
 }
 
 .newsletter-form button {
     min-height: 48px;
     border: 1px solid var(--ink);
-    border-radius: 4px;
+    border-radius: 100px;
     background: var(--ink);
     color: var(--white);
-    font-weight: 800;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.newsletter-form button:hover {
+    background: #333;
 }
 
 .page-shell {
@@ -881,11 +1003,11 @@ main {
 
 .site-footer {
     display: grid;
-    gap: 6px;
-    padding: 32px 16px;
-    border-top: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 14px;
+    gap: 16px;
+    padding: 40px 16px;
+    background: #000000;
+    color: rgba(255,255,255,0.65);
+    font-size: 13px;
 }
 
 .site-footer p {
@@ -893,9 +1015,21 @@ main {
 }
 
 .site-footer__brand {
-    color: var(--ink);
-    font-weight: 900;
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.footer-links a {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: #ffffff;
 }
 
 .message-list {
@@ -1456,12 +1590,7 @@ main {
 .footer-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px 16px;
-}
-
-.footer-links a {
-    color: var(--muted);
-    font-size: 13px;
+    gap: 8px 16px;
 }
 
 @media (min-width: 720px) {
@@ -1495,16 +1624,27 @@ main {
         display: flex;
         justify-content: center;
         gap: 28px;
-        padding: 12px 36px;
+        padding: 11px 36px;
         color: var(--muted);
         font-size: 13px;
-        font-weight: 800;
+        font-weight: 500;
+    }
+
+    .desktop-subnav nav a {
+        color: var(--muted);
+        transition: color 0.2s;
+    }
+
+    .desktop-subnav nav a:hover {
+        color: var(--ink);
     }
 
     .hero {
-        grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
-        align-items: center;
-        padding: 72px 36px 52px;
+        min-height: 85vh;
+    }
+
+    .hero__overlay {
+        padding: 80px 56px;
     }
 
     .section-block,
@@ -1550,15 +1690,15 @@ main {
 
     .newsletter-band {
         grid-template-columns: 1fr minmax(280px, 420px);
-        align-items: end;
+        align-items: center;
         margin-left: 36px;
         margin-right: 36px;
-        padding: 28px;
+        padding: 40px 36px;
     }
 
     .site-footer {
         grid-template-columns: 1fr 1fr;
-        padding: 34px 36px;
+        padding: 40px 36px;
     }
 
     .page-shell {
@@ -1647,5 +1787,9 @@ main {
     .site-footer {
         padding-left: 56px;
         padding-right: 56px;
+    }
+
+    .hero__overlay {
+        padding: 100px 80px;
     }
 }
