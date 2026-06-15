@@ -16,6 +16,53 @@ def money(value):
     return f"{value:.2f}".replace(".", ",") + " zł"
 
 
+@register.simple_tag(takes_context=True)
+def qs_set(context, **kwargs):
+    """Buduje query string na bazie bieżących parametrów GET z nadpisaniami.
+
+    Pusty string jako wartość usuwa parametr. Parametr `page` jest zawsze resetowany.
+    """
+    request = context.get("request")
+    params = request.GET.copy() if request else {}
+    if hasattr(params, "copy"):
+        params = params.copy()
+    for key, value in kwargs.items():
+        if value in (None, ""):
+            params.pop(key, None)
+        else:
+            params[key] = value
+    params.pop("page", None)
+    encoded = params.urlencode()
+    return "?" + encoded if encoded else "?"
+
+
+@register.filter
+def discount_percent(product):
+    """Procentowa wartość rabatu (np. 20 dla -20%)."""
+    if product is None or not getattr(product, "has_sale_price", False):
+        return None
+    try:
+        regular = float(product.regular_price)
+        sale = float(product.sale_price)
+        if regular <= 0:
+            return None
+        return round((1 - sale / regular) * 100)
+    except (TypeError, ValueError):
+        return None
+
+
+@register.filter
+def secondary_image(product):
+    """Drugie zdjęcie produktu (do efektu crossfade na hover)."""
+    if product is None:
+        return None
+    main = product.main_image
+    for image in product.images.all():
+        if not main or image.pk != main.pk:
+            return image
+    return None
+
+
 @register.filter
 def formatted_text(value):
     if not value:

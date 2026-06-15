@@ -1,0 +1,185 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Ustawienia strony | Spooky Admin{% endblock %}
+
+{% block content %}
+<style>
+.ss-wrap{max-width:880px}
+.ss-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.ss-head .eyebrow{color:var(--rose-deep);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase}
+.ss-head h1{font-family:var(--f-display);font-size:34px;font-weight:500;color:var(--ink);margin-top:4px}
+.ss-preview{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--rose-deep);text-decoration:none;border:1.5px solid var(--line-2);padding:9px 16px;border-radius:999px;background:#fff}
+.ss-preview:hover{border-color:var(--rose-deep);background:var(--blush)}
+
+.ss-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 3px rgba(26,17,24,.05);padding:22px 24px;margin-bottom:18px}
+.ss-card__title{font-family:var(--f-display);font-size:19px;font-weight:500;color:var(--ink)}
+.ss-card__hint{font-size:13px;color:var(--muted);margin:3px 0 16px}
+.ss-card__sep{border:none;border-top:1px solid var(--line);margin:18px 0}
+
+.ss-row{margin-bottom:16px}
+.ss-row:last-child{margin-bottom:0}
+.ss-label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:7px}
+.ss-help{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.5}
+.ss-card .dashboard-input,.ss-card input[type=text],.ss-card input[type=number],.ss-card input[type=datetime-local]{
+  width:100%;padding:12px 14px;border:1.5px solid var(--line-2);border-radius:12px;font-family:var(--f-body);font-size:14px;background:#fff;color:var(--ink)}
+.ss-card .dashboard-input:focus,.ss-card input:focus{outline:none;border-color:var(--rose-deep);box-shadow:0 0 0 3px rgba(212,93,138,.13)}
+.ss-num{max-width:140px}
+
+/* przełącznik */
+.ss-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--blush);border-radius:12px;padding:13px 16px;margin-bottom:16px}
+.ss-toggle .ss-label{margin:0}
+.ss-switch{position:relative;display:inline-flex;width:48px;height:27px;flex:none}
+.ss-switch input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;z-index:2}
+.ss-track{position:absolute;inset:0;background:var(--line-2);border-radius:999px;transition:.2s}
+.ss-track::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.ss-switch input:checked ~ .ss-track{background:var(--rose-deep)}
+.ss-switch input:checked ~ .ss-track::after{transform:translateX(21px)}
+
+/* picker produktów */
+.ss-picker__bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.ss-search{flex:1;min-width:200px;padding:11px 14px;border:1.5px solid var(--line-2);border-radius:999px;font-size:13.5px;font-family:var(--f-body)}
+.ss-search:focus{outline:none;border-color:var(--rose-deep);box-shadow:0 0 0 3px rgba(212,93,138,.13)}
+.ss-count{font-size:12.5px;font-weight:700;color:var(--rose-deep);white-space:nowrap}
+.ss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;max-height:430px;overflow-y:auto;padding:4px;border:1px solid var(--line);border-radius:14px;background:#FCFAFB}
+.ss-prod{display:flex;align-items:center;gap:11px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;position:relative;transition:.14s}
+.ss-prod:hover{border-color:var(--rose)}
+.ss-prod input{position:absolute;opacity:0;pointer-events:none}
+.ss-prod.is-sel{border-color:var(--rose-deep);background:var(--blush);box-shadow:0 0 0 1px var(--rose-deep)}
+.ss-prod-thumb{width:46px;height:46px;border-radius:9px;overflow:hidden;flex:none;background:linear-gradient(150deg,var(--blush),#fff);display:flex;align-items:center;justify-content:center}
+.ss-prod-thumb img{width:100%;height:100%;object-fit:cover}
+.ss-prod-name{font-size:12.5px;font-weight:600;line-height:1.3;color:var(--ink);flex:1;min-width:0}
+.ss-prod-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex:none}
+.ss-prod.is-sel .ss-prod-check{background:var(--rose-deep);border-color:var(--rose-deep)}
+.ss-prod .ss-prod-check span{opacity:0}
+.ss-prod.is-sel .ss-prod-check span{opacity:1}
+.ss-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;padding:24px}
+
+/* pasek zapisu */
+.ss-actions{position:sticky;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:14px 0;margin-top:8px;display:flex;gap:12px;align-items:center}
+.ss-save{background:var(--rose-deep);color:#fff;border:none;border-radius:999px;padding:13px 28px;font-size:14.5px;font-weight:700;font-family:var(--f-body);cursor:pointer}
+.ss-save:hover{background:var(--rose-press)}
+.ss-errors{color:var(--berry);font-size:12.5px}
+</style>
+
+<div class="ss-wrap">
+    <div class="ss-head">
+        <div>
+            <p class="eyebrow">Treści sklepu</p>
+            <h1>Ustawienia strony</h1>
+        </div>
+        <a href="{% url 'core:home' %}" class="ss-preview" target="_blank">Podgląd sklepu ↗</a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="ss-card">
+            <div class="ss-card__title">Pasek zapowiedzi</div>
+            <p class="ss-card__hint">Czarny pasek nad nagłówkiem sklepu.</p>
+            <div class="ss-toggle">
+                <span class="ss-label">{{ form.announcement_is_active.label }}</span>
+                <label class="ss-switch">{{ form.announcement_is_active }}<span class="ss-track"></span></label>
+            </div>
+            <div class="ss-row">
+                <label class="ss-label" for="{{ form.announcement_text.id_for_label }}">{{ form.announcement_text.label }}</label>
+                {{ form.announcement_text }}
+                {% if form.announcement_text.help_text %}<p class="ss-help">{{ form.announcement_text.help_text }}</p>{% endif %}
+                {{ form.announcement_text.errors }}
+            </div>
+        </div>
+
+        <div class="ss-card">
+            <div class="ss-card__title">Oznaczanie „ostatnie sztuki”</div>
+            <p class="ss-card__hint">To są <strong>wartości domyślne dla nowo dodawanych produktów</strong> — nie zmieniają produktów już dodanych. Każdy produkt ma własne ustawienie i własny próg w swojej karcie.</p>
+            <div class="ss-toggle">
+                <span class="ss-label">{{ form.low_stock_default_enabled.label }}</span>
+                <label class="ss-switch">{{ form.low_stock_default_enabled }}<span class="ss-track"></span></label>
+            </div>
+            <div class="ss-row">
+                <label class="ss-label" for="{{ form.low_stock_threshold.id_for_label }}">{{ form.low_stock_threshold.label }}</label>
+                <div class="ss-num">{{ form.low_stock_threshold }}</div>
+                {% if form.low_stock_threshold.help_text %}<p class="ss-help">{{ form.low_stock_threshold.help_text }}</p>{% endif %}
+                {{ form.low_stock_threshold.errors }}
+            </div>
+        </div>
+
+        <div class="ss-card">
+            <div class="ss-card__title">Najnowszy drop (strona główna)</div>
+            <p class="ss-card__hint">Data dropu na hero oraz produkty w sekcji „Najnowszy drop”.</p>
+            <div class="ss-toggle">
+                <span class="ss-label">{{ form.drop_is_active.label }}</span>
+                <label class="ss-switch">{{ form.drop_is_active }}<span class="ss-track"></span></label>
+            </div>
+            <div class="ss-row">
+                <label class="ss-label" for="{{ form.drop_eyebrow.id_for_label }}">{{ form.drop_eyebrow.label }}</label>
+                {{ form.drop_eyebrow }}
+                {% if form.drop_eyebrow.help_text %}<p class="ss-help">{{ form.drop_eyebrow.help_text }}</p>{% endif %}
+            </div>
+            <div class="ss-row">
+                <label class="ss-label" for="{{ form.drop_heading.id_for_label }}">{{ form.drop_heading.label }}</label>
+                {{ form.drop_heading }}
+            </div>
+            <div class="ss-row">
+                <label class="ss-label" for="{{ form.drop_date.id_for_label }}">{{ form.drop_date.label }}</label>
+                {{ form.drop_date }}
+                {% if form.drop_date.help_text %}<p class="ss-help">{{ form.drop_date.help_text }}</p>{% endif %}
+                {{ form.drop_date.errors }}
+            </div>
+
+            <hr class="ss-card__sep">
+            <div class="ss-picker">
+                <div class="ss-picker__bar">
+                    <span class="ss-label" style="margin:0">Produkty w dropie</span>
+                    <span class="ss-count"><span id="ssDropCount">{{ drop_selected_count }}</span> wybrano</span>
+                </div>
+                <div class="ss-picker__bar">
+                    <input type="text" class="ss-search" placeholder="🔍 Szukaj produktu po nazwie..." oninput="ssFilterDrop(this.value)">
+                </div>
+                <div class="ss-grid" id="ssDropGrid">
+                    {% for item in drop_products %}
+                        <label class="ss-prod {% if item.selected %}is-sel{% endif %}" data-name="{{ item.product.name|lower }}">
+                            <input type="checkbox" name="drop_products" value="{{ item.product.id }}" {% if item.selected %}checked{% endif %} onchange="ssToggleProd(this)">
+                            <span class="ss-prod-thumb">{% if item.thumb %}<img src="{{ item.thumb }}" alt="">{% endif %}</span>
+                            <span class="ss-prod-name">{{ item.product.name }}</span>
+                            <span class="ss-prod-check"><span>✓</span></span>
+                        </label>
+                    {% empty %}
+                        <p class="ss-empty">Brak aktywnych produktów do wyboru.</p>
+                    {% endfor %}
+                    <p class="ss-empty" id="ssNoResults" style="display:none">Brak produktów pasujących do wyszukiwania.</p>
+                </div>
+                <p class="ss-help">Wybrane produkty trafią do sekcji „Najnowszy drop” na stronie głównej. Lista posortowana od ostatnio dodanych. Jeśli nic nie wybierzesz — pokażemy automatycznie najnowsze produkty.</p>
+            </div>
+        </div>
+
+        <div class="ss-actions">
+            <button type="submit" class="ss-save">Zapisz ustawienia</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function ssToggleProd(input){
+    input.closest('.ss-prod').classList.toggle('is-sel', input.checked);
+    var grid = document.getElementById('ssDropGrid');
+    var count = grid.querySelectorAll('input[type=checkbox]:checked').length;
+    document.getElementById('ssDropCount').textContent = count;
+}
+function ssFilterDrop(q){
+    q = (q || '').trim().toLowerCase();
+    var grid = document.getElementById('ssDropGrid');
+    var items = grid.querySelectorAll('.ss-prod');
+    var visible = 0;
+    items.forEach(function(el){
+        var match = el.getAttribute('data-name').indexOf(q) !== -1;
+        el.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    var none = document.getElementById('ssNoResults');
+    if (none) none.style.display = (visible === 0 && items.length) ? 'block' : 'none';
+}
+</script>
+{% endblock %}

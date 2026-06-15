@@ -154,14 +154,101 @@ def product_detail(request, slug):
         .order_by("sort_order", "-created_at")[:3]
     )
 
+    color_options, size_options = build_variant_matrix(product, selected_variant)
+
     return render(
         request,
         "catalog/product_detail.html",
         {
             "product": product,
             "selected_variant": selected_variant,
+            "color_options": color_options,
+            "size_options": size_options,
             "related_products": related_products,
             "related_outfits": related_outfits,
+        },
+    )
+
+
+def build_variant_matrix(product, selected_variant):
+    """Buduje listy opcji koloru i rozmiaru z docelowym wariantem dla każdej opcji."""
+    variants = [v for v in product.variants.all() if v.is_active]
+    selected_color_id = selected_variant.color_id if selected_variant else None
+    selected_size_id = selected_variant.size_id if selected_variant else None
+
+    color_options = []
+    seen_colors = []
+    for variant in variants:
+        if variant.color and variant.color_id not in seen_colors:
+            seen_colors.append(variant.color_id)
+            # wariant tego koloru pasujący do wybranego rozmiaru, jeśli istnieje
+            target = next(
+                (v for v in variants if v.color_id == variant.color_id and v.size_id == selected_size_id),
+                variant,
+            )
+            color_options.append(
+                {
+                    "color": variant.color,
+                    "variant_id": target.id,
+                    "selected": variant.color_id == selected_color_id,
+                }
+            )
+
+    size_options = []
+    seen_sizes = []
+    for variant in variants:
+        if variant.size and variant.size_id not in seen_sizes:
+            seen_sizes.append(variant.size_id)
+            match = next(
+                (v for v in variants if v.size_id == variant.size_id and v.color_id == selected_color_id),
+                None,
+            )
+            available = bool(match and match.is_in_stock)
+            size_options.append(
+                {
+                    "size": variant.size,
+                    "variant_id": match.id if match else None,
+                    "selected": variant.size_id == selected_size_id,
+                    "available": available,
+                }
+            )
+
+    return color_options, size_options
+
+
+def aesthetic_list(request):
+    aesthetics = Aesthetic.objects.filter(is_active=True).order_by("-is_featured", "sort_order", "name")
+    return render(request, "catalog/aesthetic_list.html", {"aesthetics": aesthetics})
+
+
+def aesthetic_detail(request, slug):
+    aesthetic = get_object_or_404(Aesthetic, slug=slug, is_active=True)
+    products = (
+        Product.objects.filter(status=Product.STATUS_ACTIVE, aesthetics=aesthetic)
+        .prefetch_related("images", "aesthetics", "variants__color", "variants__size")
+        .order_by("sort_order", "-created_at")[:8]
+    )
+    outfits = (
+        Outfit.objects.filter(status=Outfit.STATUS_ACTIVE, aesthetics=aesthetic)
+        .prefetch_related("images", "aesthetics", "items")
+        .order_by("-is_featured", "sort_order", "-created_at")[:5]
+    )
+    from blog.models import Article
+
+    articles = (
+        Article.objects.filter(status=Article.STATUS_PUBLISHED, aesthetics=aesthetic)
+        .select_related("category")
+        .order_by("-published_at", "-created_at")[:3]
+    )
+    return render(
+        request,
+        "catalog/aesthetic_detail.html",
+        {
+            "aesthetic": aesthetic,
+            "products": products,
+            "outfits": outfits,
+            "articles": articles,
+            "product_count": Product.objects.filter(status=Product.STATUS_ACTIVE, aesthetics=aesthetic).count(),
         },
     )
 

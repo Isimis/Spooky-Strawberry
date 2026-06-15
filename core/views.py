@@ -5,8 +5,10 @@ from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from analytics.services import track_event
-from catalog.models import Product
-from .models import NewsletterSubscriber
+from blog.models import Article
+from catalog.models import Aesthetic, Product
+from outfits.models import Outfit
+from .models import NewsletterSubscriber, SiteSettings
 
 
 POLICIES = {
@@ -42,29 +44,76 @@ POLICIES = {
 
 
 def home_view(request):
-    new_drop_products = (
-        Product.objects.filter(status=Product.STATUS_ACTIVE)
+    settings_obj = SiteSettings.load()
+
+    drop_products = list(
+        settings_obj.drop_products.filter(status=Product.STATUS_ACTIVE)
         .prefetch_related("images", "aesthetics", "variants__color")
         .order_by("sort_order", "-created_at")[:8]
     )
-    featured_products = (
+    if not drop_products:
+        drop_products = list(
+            Product.objects.filter(status=Product.STATUS_ACTIVE)
+            .prefetch_related("images", "aesthetics", "variants__color")
+            .order_by("sort_order", "-created_at")[:4]
+        )
+
+    hero_product = drop_products[0] if drop_products else None
+    hero_mini_product = (
         Product.objects.filter(status=Product.STATUS_ACTIVE, is_featured=True)
-        .prefetch_related("images", "aesthetics", "variants__color")
-        .order_by("sort_order", "-created_at")[:4]
+        .prefetch_related("images")
+        .order_by("sort_order", "-created_at")
+        .first()
+    )
+    if hero_mini_product is None and len(drop_products) > 1:
+        hero_mini_product = drop_products[1]
+
+    outfits = (
+        Outfit.objects.filter(status=Outfit.STATUS_ACTIVE)
+        .prefetch_related("images", "aesthetics", "items")
+        .order_by("-is_featured", "sort_order", "-created_at")[:5]
+    )
+    aesthetics = (
+        Aesthetic.objects.filter(is_active=True)
+        .order_by("-is_featured", "sort_order", "name")[:8]
+    )
+    articles = (
+        Article.objects.filter(status=Article.STATUS_PUBLISHED)
+        .select_related("category")
+        .order_by("-published_at", "-created_at")[:3]
     )
 
     return render(
         request,
         "core/home.html",
         {
-            "new_drop_products": new_drop_products,
-            "featured_products": featured_products,
+            "drop_products": drop_products,
+            "hero_product": hero_product,
+            "hero_mini_product": hero_mini_product,
+            "outfits": outfits,
+            "aesthetics": aesthetics,
+            "articles": articles,
         },
     )
 
 
 def contact_view(request):
     return render(request, "core/contact.html")
+
+
+def design_system_view(request):
+    demo_product = (
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
+        .prefetch_related("images", "aesthetics", "variants__color")
+        .order_by("sort_order", "-created_at")
+        .first()
+    )
+    demo_aesthetic = Aesthetic.objects.filter(is_active=True).order_by("sort_order", "name").first()
+    return render(
+        request,
+        "core/design_system.html",
+        {"demo_product": demo_product, "demo_aesthetic": demo_aesthetic},
+    )
 
 
 def search_view(request):

@@ -66,6 +66,21 @@ class Outfit(models.Model):
             total += item.unit_price * item.quantity
         return total
 
+    @property
+    def main_image(self):
+        images = list(self.images.all())
+        for image in images:
+            if image.is_main:
+                return image
+        return images[0] if images else None
+
+    @property
+    def display_price(self):
+        """Cena zestawu: pakietowa, jeśli ustawiona, w innym wypadku suma produktów."""
+        if self.bundle_price is not None:
+            return self.bundle_price
+        return self.products_total
+
 
 class OutfitItem(models.Model):
     outfit = models.ForeignKey(

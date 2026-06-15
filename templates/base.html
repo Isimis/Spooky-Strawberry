@@ -1,87 +1,121 @@
-{% load static %}
-
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Spooky Strawberry | Dark Coquette & Jirai Kei Butik{% endblock %}</title>
+    <title>{% block title %}Spooky Strawberry — akcesoria alternatywne · soft goth, dark coquette, jirai kei{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}Butik akcesoriów dla dziewczyn w stylu alternatywnym. Dark coquette, jirai kei, soft goth i więcej.{% endblock %}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260615-gutters2">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <div class="announcement-bar">
-        <a href="{% url 'catalog:product_list' %}">🦇 Darmowa dostawa od 50 zł! ✨ Zamów już teraz!</a>
-    </div>
 
-    <header class="site-header">
-        <nav class="site-nav site-nav--primary" aria-label="Główna nawigacja">
-            <a href="{% url 'core:home' %}">Strona główna</a>
+{% if site_settings.announcement_is_active and site_settings.announcement_text %}
+    <div class="anns">{{ site_settings.announcement_text }}</div>
+{% endif %}
+
+<header class="hdr">
+    <div class="hdr-in">
+        <button class="icobtn burger" aria-label="Menu" onclick="ssToggleDrawer(true)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <a class="logo" href="{% url 'core:home' %}">
+            <img class="logo-mark" src="{% static 'img/ssmodernbr.png' %}" alt="Spooky Strawberry">
+            <span class="logo-txt">Spooky <span class="berry">Strawberry</span></span>
+        </a>
+        <nav class="hdr-nav" aria-label="Główna nawigacja">
             <a href="{% url 'catalog:product_list' %}">Katalog</a>
-            <a href="{% url 'outfits:list' %}">Gotowe kreacje</a>
-            <a href="{% url 'blog:list' %}">Poradniki</a>
+            <a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+            <a href="{% url 'blog:list' %}">Lifestyle</a>
             <a href="{% url 'core:contact' %}">Kontakt</a>
         </nav>
-
-        <a href="{% url 'core:home' %}" class="site-logo">
-            <img src="{% static 'img/logo.png' %}" alt="Spooky Strawberry" class="site-logo__img">
-        </a>
-
-        <nav class="site-nav site-nav--utility" aria-label="Narzędzia">
-            <a href="{% url 'core:search' %}">Szukaj</a>
-            <a href="{% url 'core:account' %}">Konto</a>
-            <a href="{% url 'cart:detail' %}">Koszyk{% if cart_item_count %} ({{ cart_item_count }}){% endif %}</a>
-            {% if request.user.is_staff %}
-                <a href="{% url 'dashboard:home' %}">Panel</a>
-            {% endif %}
-        </nav>
-
-        <form class="header-search" action="{% url 'core:search' %}" method="get">
-            <input type="search" name="q" placeholder="Szukaj produktów..." aria-label="Szukaj produktów">
-        </form>
-    </header>
-
-    <div class="desktop-subnav">
-        <nav aria-label="Kategorie sklepu">
-            <a href="{% url 'outfits:list' %}">Gotowe kreacje</a>
-            <a href="{% url 'blog:list' %}">Poradniki</a>
-            <a href="{% url 'catalog:product_list' %}?aesthetic=dark-coquette">Dark coquette</a>
-            <a href="{% url 'catalog:product_list' %}?aesthetic=jirai-kei">Jirai kei</a>
-            <a href="{% url 'catalog:product_list' %}?aesthetic=grunge">Grunge</a>
-        </nav>
-    </div>
-
-    <main>
-        {% if messages %}
-            <div class="message-list" aria-live="polite">
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
-        {% block content %}{% endblock %}
-    </main>
-
-    {% include "core/includes/newsletter.html" %}
-
-    <footer class="site-footer">
-        <div>
-            <p class="site-footer__brand">Spooky Strawberry</p>
-            <p>Dark coquette, goth, jirai kei i małe akcesoria z charakterem.</p>
+        <div class="hdr-ico">
+            <a class="icobtn search-ico" href="{% url 'core:search' %}" aria-label="Szukaj">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.2-4.2"/></svg>
+            </a>
+            <a class="icobtn" href="{% url 'cart:detail' %}" aria-label="Koszyk">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6.5V20a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6.5L18 2z"/><path d="M3 6.5h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                {% if cart_item_count %}<span class="cart-dot">{{ cart_item_count }}</span>{% endif %}
+            </a>
         </div>
+    </div>
+</header>
 
-        <nav class="footer-links" aria-label="Warunki i polityki">
-            <a href="{% url 'core:policy' 'polityka-prywatnosci' %}">Polityka prywatności</a>
-            <a href="{% url 'core:policy' 'polityka-zwrotow' %}">Polityka zwrotów</a>
-            <a href="{% url 'core:policy' 'regulamin' %}">Regulamin</a>
-            <a href="{% url 'core:policy' 'polityka-wysylki' %}">Polityka wysyłki</a>
-            <a href="{% url 'core:policy' 'dane-kontaktowe' %}">Dane kontaktowe</a>
-            <a href="{% url 'core:policy' 'nota-prawna' %}">Nota prawna</a>
-            <a href="{% url 'core:policy' 'preferencje-cookie' %}">Preferencje cookie</a>
-        </nav>
-    </footer>
+<div class="mobile-drawer" id="mobileDrawer">
+    <div class="md-back" onclick="ssToggleDrawer(false)"></div>
+    <div class="md-panel">
+        <div class="md-head">
+            <span class="logo-txt">Spooky <span class="berry">Strawberry</span></span>
+            <button class="md-close" aria-label="Zamknij" onclick="ssToggleDrawer(false)">&times;</button>
+        </div>
+        <a href="{% url 'core:home' %}">Strona główna</a>
+        <a href="{% url 'catalog:product_list' %}">Katalog</a>
+        <a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+        <a href="{% url 'outfits:list' %}">Stylizacje</a>
+        <a href="{% url 'blog:list' %}">Lifestyle</a>
+        <a href="{% url 'core:contact' %}">Kontakt</a>
+        <a href="{% url 'core:account' %}">Konto</a>
+        <a href="{% url 'core:search' %}">Szukaj</a>
+        {% if request.user.is_staff %}<a href="{% url 'dashboard:home' %}">Panel admina</a>{% endif %}
+    </div>
+</div>
+
+<main>
+    {% if messages %}
+        <div class="message-list" aria-live="polite">
+            {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+        </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="ft">
+    <div class="ft-main">
+        <div>
+            <a href="{% url 'core:home' %}" class="flogo"><img src="{% static 'img/ssmodernbginvert.png' %}" alt=""> Spooky Strawberry</a>
+            <p class="tag">Butik akcesoriów dla dziewczyn w stylu alternatywnym. Dark coquette, jirai kei, soft goth i więcej.</p>
+            <div class="ft-soc">
+                <a href="https://instagram.com/spookystrawberry" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg></a>
+                <a href="https://tiktok.com/@spookystrawberry" aria-label="TikTok" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.1 1.6 3.6 3.7 3.9v2.6c-1.4 0-2.7-.4-3.8-1.1v5.7c0 2.9-2.1 5.2-5 5.2s-5-2.3-5-5.1c0-3 2.5-5.2 5.6-4.9v2.7c-.4-.1-.8-.2-1.1-.2-1.3 0-2.3 1.1-2.3 2.5s1 2.5 2.3 2.5c1.4 0 2.4-1.1 2.4-2.6V3z"/></svg></a>
+            </div>
+        </div>
+        <div class="ft-cols">
+            <div>
+                <h5>Sklep</h5>
+                <a href="{% url 'catalog:product_list' %}">Wszystko</a>
+                <a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+                <a href="{% url 'catalog:product_list' %}?sort=newest">Nowości</a>
+                <a href="{% url 'catalog:product_list' %}?sort=featured">Bestsellery</a>
+            </div>
+            <div>
+                <h5>Pomoc</h5>
+                <a href="{% url 'core:contact' %}">Kontakt</a>
+                <a href="{% url 'core:policy' 'polityka-wysylki' %}">Dostawa</a>
+                <a href="{% url 'core:policy' 'polityka-zwrotow' %}">Zwroty</a>
+                <a href="{% url 'core:policy' 'regulamin' %}">Regulamin</a>
+            </div>
+            <div>
+                <h5>Lifestyle</h5>
+                <a href="{% url 'blog:list' %}">Poradniki</a>
+                <a href="{% url 'outfits:list' %}">Stylizacje</a>
+                <a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+            </div>
+            <div>
+                <h5>Info</h5>
+                <a href="{% url 'core:policy' 'polityka-prywatnosci' %}">Polityka prywatności</a>
+                <a href="{% url 'core:policy' 'nota-prawna' %}">Nota prawna</a>
+                <a href="{% url 'core:policy' 'preferencje-cookie' %}">Preferencje cookie</a>
+            </div>
+        </div>
+    </div>
+    <div class="ft-base">© {% now "Y" %} Spooky Strawberry · Zrobione z 🖤 w Polsce</div>
+</footer>
+
+<script src="{% static 'js/storefront.js' %}?v=20260615-gutters2"></script>
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>

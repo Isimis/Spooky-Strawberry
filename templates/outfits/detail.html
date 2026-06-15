@@ -1,90 +1,75 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}{{ outfit.name }} | Spooky Strawberry{% endblock %}
+{% block title %}{{ outfit.name }} — Stylizacje — Spooky Strawberry{% endblock %}
 
 {% block content %}
-<article class="page-shell outfit-detail">
-    <div class="page-heading">
-        <p class="eyebrow">Gotowa kreacja</p>
-        <h1>{{ outfit.name }}</h1>
-        {% if outfit.short_description %}
-            <p>{{ outfit.short_description }}</p>
-        {% endif %}
+<div class="look-split">
+    <div>
+        <div class="look-hero" style="{% with main=outfit.main_image %}{% if main %}background-image:url('{{ main.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ outfit.aesthetics.all.0.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}{% endwith %}">
+            {% if outfit.is_featured %}<span class="ltag">Polecana stylizacja</span>{% endif %}
+            {% for item in outfit.items.all|slice:":3" %}
+                <a class="dot" href="{{ item.product.get_absolute_url }}" style="top:{{ forloop.counter0|add:2 }}5%;left:{{ forloop.counter|add:2 }}0%">+</a>
+            {% endfor %}
+        </div>
     </div>
+    <div>
+        <div class="bcrumb" style="margin:0 0 6px"><a href="{% url 'core:home' %}">Start</a> / <a href="{% url 'outfits:list' %}">Stylizacje</a> / {{ outfit.name }}</div>
+        <div class="eyebrow">{% for a in outfit.aesthetics.all %}{{ a.name }}{% if not forloop.last %} · {% endif %}{% endfor %} · {{ outfit.items.count }} {% if outfit.items.count == 1 %}element{% else %}elementy{% endif %}</div>
+        <h1 class="h-md" style="font-size:28px;margin:6px 0 10px">{{ outfit.name }}</h1>
+        {% if outfit.short_description %}<p class="serif-it muted" style="font-size:15px;margin-bottom:6px">„{{ outfit.short_description }}”</p>{% endif %}
+        {% if outfit.mood_description %}<div class="serif-it muted" style="font-size:15px;margin-bottom:6px">{{ outfit.mood_description|formatted_text }}</div>{% endif %}
+        {% if outfit.styling_tips %}<div style="font-size:14px;color:var(--ink-soft);margin-bottom:6px">{{ outfit.styling_tips|formatted_text }}</div>{% endif %}
 
-    <section class="outfit-layout">
-        <div class="product-gallery">
-            {% for image in outfit.images.all %}
-                <figure class="product-gallery__item">
-                    <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
-                </figure>
-            {% empty %}
-                <div class="product-gallery__fallback">Spooky Strawberry</div>
+        <h2 class="h-md" style="font-size:16px;margin:14px 0 2px">Produkty w zestawie</h2>
+        <div class="lk-rows">
+            {% for item in outfit.items.all %}
+            <div class="lk-row">
+                {% with main=item.product.main_image %}
+                    {% if main %}<img src="{{ main.image.url }}" alt="{{ item.product.name }}">{% else %}<img src="" alt="" style="background:var(--blush)">{% endif %}
+                {% endwith %}
+                <div class="lk-meta"><b><a href="{{ item.product.get_absolute_url }}" style="text-decoration:none;color:inherit">{{ item.product.name }}</a></b><div class="lt">{{ item.product.category.name }}</div></div>
+                <span class="price">{{ item.unit_price|money }}</span>
+                <form method="post" action="{% url 'cart:add' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="variant_id" value="{% if item.variant %}{{ item.variant.id }}{% elif item.product.default_variant %}{{ item.product.default_variant.id }}{% endif %}">
+                    <input type="hidden" name="quantity" value="{{ item.quantity }}">
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="addmini" aria-label="Dodaj">+</button>
+                </form>
+            </div>
             {% endfor %}
         </div>
 
-        <div class="outfit-panel">
-            <div class="product-tags">
-                {% for aesthetic in outfit.aesthetics.all %}
-                    <span>{{ aesthetic.name }}</span>
-                {% endfor %}
-            </div>
+        <div class="lk-total"><span class="muted" style="font-size:13px">Razem za zestaw</span><span class="big">{{ outfit.display_price|money }}</span></div>
+        <a class="btn btn-primary btn-block btn-lg" href="{% url 'catalog:product_list' %}{% if outfit.aesthetics.all %}?aesthetic={{ outfit.aesthetics.all.0.slug }}{% endif %}">Skompletuj cały look</a>
 
-            {% if outfit.mood_description %}
-                <div class="product-copy">
-                    <h2>Opis kreacji</h2>
-                    {{ outfit.mood_description|formatted_text }}
-                </div>
-            {% endif %}
-
-            {% if outfit.styling_tips %}
-                <div class="product-copy">
-                    <h2>Jak stylizować</h2>
-                    {{ outfit.styling_tips|formatted_text }}
-                </div>
-            {% endif %}
-
-            <div class="product-copy">
-                <h2>Produkty w zestawie</h2>
-                <div class="outfit-items">
-                    {% for item in outfit.items.all %}
-                        <article>
-                            <a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a>
-                            <span>{{ item.quantity }} x {{ item.unit_price|money }}</span>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="cart-summary">
-                <div>
-                    <span>Cena produktów osobno</span>
-                    <strong>{{ outfit.products_total|money }}</strong>
-                </div>
-                {% if outfit.bundle_price %}
-                    <div>
-                        <span>Cena promocyjna zestawu</span>
-                        <strong>{{ outfit.bundle_price|money }}</strong>
-                    </div>
-                {% endif %}
-                <p>Dodawanie całego zestawu jednym kliknięciem dodamy później, po dopracowaniu koszyka.</p>
-            </div>
+        <div class="trust-row">
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg></span><b>Wysyłka 24h</b><span>Pakujemy z sercem</span></div>
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 0 1 15-5.5L21 8"/><path d="M21 3v5h-5"/><path d="M21 13a9 9 0 0 1-15 5.5L3 16"/><path d="M3 21v-5h5"/></svg></span><b>30 dni zwrotu</b><span>Bez tłumaczenia</span></div>
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span><b>Bezpiecznie</b><span>BLIK, karta, P24</span></div>
         </div>
-    </section>
-</article>
-
-{% if related_outfits %}
-<section class="section-block">
-    <div class="section-heading">
-        <p class="eyebrow">Więcej inspiracji</p>
-        <h2>Podobne kreacje</h2>
     </div>
-    <div class="content-grid">
-        {% for outfit in related_outfits %}
-            {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
-        {% endfor %}
+</div>
+
+{% if similar_products %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Dokończ look</div><h2 class="h-lg">Pasuje do tej stylizacji</h2></div></div>
+    <div class="pgrid">
+        {% for product in similar_products %}{% include "catalog/includes/product_card.html" %}{% endfor %}
     </div>
 </section>
 {% endif %}
+
+{% if related_outfits %}
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">Więcej inspiracji</div><h2 class="h-lg">Inne stylizacje</h2></div>
+        <a class="link" href="{% url 'outfits:list' %}">Wszystkie →</a></div>
+    <div class="looks-art">
+        {% for outfit in related_outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% include "core/includes/newsletter.html" with nl_title="Nowe stylizacje co tydzień" nl_text="Zapisz się, by dostawać gotowe zestawy prosto na maila." %}
 {% endblock %}

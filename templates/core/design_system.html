@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Design System — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<div class="ds">
+    <div class="eyebrow">Spooky Strawberry</div>
+    <h1 class="h-lg" style="margin:8px 0 6px">Design System</h1>
+    <p class="lead">Spójny język wizualny marki: pastelowy róż, czerń i biel. Mroczny, ale dziewczęcy. Estetyczny, nigdy infantylny.</p>
+
+    <h2>Logo</h2>
+    <p class="lead">Znak strawberry-bat. Czarny na jasnym tle, biały na ciemnym. Stosowany w navbarze, stopce i jako delikatny znak wodny.</p>
+    <div class="ds-row" style="align-items:center">
+        <div style="background:var(--cream);border:1px solid var(--line);border-radius:var(--r-md);padding:16px"><img src="{% static 'img/ssmodernbr.png' %}" style="height:54px" alt=""></div>
+        <div style="background:var(--ink);border-radius:var(--r-md);padding:16px"><img src="{% static 'img/ssmodernbginvert.png' %}" style="height:54px" alt=""></div>
+    </div>
+
+    <h2>Kolory</h2>
+    <p class="lead">Baza: kremowa biel i atramentowa czerń. Akcent: malinowy róż dla CTA. Maliny używamy oszczędnie — do promocji i „ostatnich sztuk”.</p>
+    <div class="ds-row">
+        <div class="swcard"><div class="sw" style="background:var(--ink)"></div><div class="lbl"><b>Ink</b><code>#1A1118</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--cream);border-bottom:1px solid var(--line)"></div><div class="lbl"><b>Cream</b><code>#FFFCFD</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--blush)"></div><div class="lbl"><b>Blush</b><code>#FBE9F0</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--rose)"></div><div class="lbl"><b>Rose</b><code>#E89AB9</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--rose-deep)"></div><div class="lbl"><b>Rose Deep</b><code>#D45D8A</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--berry)"></div><div class="lbl"><b>Berry</b><code>#C0354F</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--muted)"></div><div class="lbl"><b>Muted</b><code>#8C7E87</code></div></div>
+    </div>
+
+    <h2>Typografia</h2>
+    <p class="lead">Fraunces (serif, editorial coquette) do nagłówków. Manrope (sans) do treści i UI.</p>
+    <div class="demo-panel">
+        <div class="type-spec"><span style="font-family:var(--f-display);font-size:34px">Nagłówek H1</span><span class="meta">Fraunces · 34–66px · 500</span></div>
+        <div class="type-spec"><span style="font-family:var(--f-display);font-size:26px">Nagłówek H2</span><span class="meta">Fraunces · 27–36px · 500</span></div>
+        <div class="type-spec"><span style="font-family:var(--f-display);font-size:20px">Nagłówek H3</span><span class="meta">Fraunces · 20px · 500</span></div>
+        <div class="type-spec"><span class="serif-it" style="font-size:18px">Cytat klimatyczny</span><span class="meta">Fraunces italic · 400</span></div>
+        <div class="type-spec"><span style="font-size:15px">Tekst podstawowy — Manrope dba o czytelność.</span><span class="meta">Manrope · 15–16px · 400</span></div>
+        <div class="type-spec"><span class="eyebrow">Eyebrow / nadtytuł</span><span class="meta">Manrope · 11.5px · 700 · 0.18em</span></div>
+    </div>
+
+    <h2>Przyciski</h2>
+    <div class="demo-panel ds-row" style="align-items:center">
+        <button class="btn btn-primary">Dodaj do koszyka</button>
+        <button class="btn btn-ghost">Drugorzędny</button>
+        <button class="btn btn-soft">Miękki</button>
+        <button class="btn btn-primary btn-sm">Mały</button>
+        <a style="color:var(--rose-deep);font-weight:700;text-decoration:none;align-self:center">Link tekstowy →</a>
+    </div>
+
+    <h2>Etykiety / badge</h2>
+    <div class="demo-panel ds-row" style="align-items:center">
+        <span class="badge badge-new">Nowość</span>
+        <span class="badge badge-best">Bestseller</span>
+        <span class="badge badge-last">Ostatnie sztuki</span>
+        <span class="badge badge-sale">-20%</span>
+    </div>
+
+    {% if demo_product %}
+    <h2>Karta produktu</h2>
+    <div class="demo-panel"><div class="pgrid" style="max-width:340px">{% include "catalog/includes/product_card.html" with product=demo_product %}</div></div>
+    {% endif %}
+
+    {% if demo_aesthetic %}
+    <h2>Karta estetyki</h2>
+    <div class="demo-panel"><div class="coll-grid" style="max-width:340px">{% include "catalog/includes/aesthetic_card.html" with aesthetic=demo_aesthetic mosaic=False %}</div></div>
+    {% endif %}
+
+    <h2>Formularze i filtry</h2>
+    <div class="demo-panel" style="max-width:360px">
+        <div class="field"><label>E-mail</label><input class="input" placeholder="twoj@email.pl"></div>
+        <div class="field"><label>Rozmiar</label><div class="var-opts"><button class="vopt">S</button><button class="vopt sel">M</button><button class="vopt">L</button></div></div>
+        <div class="opts"><span class="opt sel">Wybrany filtr</span><span class="opt">Filtr</span></div>
+    </div>
+
+    <h2>Spacing i radius</h2>
+    <div class="tok-grid">
+        <div class="tok"><div class="box" style="height:4px"></div><code>4px · xs</code></div>
+        <div class="tok"><div class="box" style="height:8px"></div><code>8px · sm</code></div>
+        <div class="tok"><div class="box" style="height:16px"></div><code>16px · md</code></div>
+        <div class="tok"><div class="box" style="height:24px"></div><code>24px · lg</code></div>
+        <div class="tok"><div class="box" style="height:40px;border-radius:8px"></div><code>radius 8</code></div>
+        <div class="tok"><div class="box" style="height:40px;border-radius:12px"></div><code>radius 12</code></div>
+        <div class="tok"><div class="box" style="height:40px;border-radius:18px"></div><code>radius 18</code></div>
+        <div class="tok"><div class="box" style="height:40px;border-radius:999px"></div><code>radius pill</code></div>
+    </div>
+
+    <h2>Zasady zdjęć</h2>
+    <p class="lead">Produkty na jednolitym, jasnym tle (blush→biel). Lifestyle/stylizacje w mrocznym, ciepłym świetle. Format kart produktu 1:1, stylizacje 3:4, estetyki 16:10. Spójny, lekko zamglony klimat — nigdy ostre, zimne studio.</p>
+</div>
+{% endblock %}

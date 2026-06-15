@@ -1,21 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Gotowe kreacje | Spooky Strawberry{% endblock %}
+{% block title %}Stylizacje — Spooky Strawberry{% endblock %}
 
 {% block content %}
-<section class="page-shell">
-    <div class="page-heading">
-        <p class="eyebrow">Gotowe kreacje</p>
-        <h1>Stylizacje do złożenia</h1>
-        <p>Zestawy produktów dobrane pod konkretny klimat. Na razie bez zakupu całego zestawu jednym kliknięciem.</p>
+<section class="phero">
+    <div class="aes-words">
+        <span style="top:18%;left:8%;font-size:26px;transform:rotate(-6deg)">soft goth</span>
+        <span style="bottom:18%;right:10%;font-size:30px;transform:rotate(5deg)">coquette</span>
+        <span style="top:50%;right:30%;font-size:20px;transform:rotate(-4deg)">grunge</span>
     </div>
-
-    <div class="content-grid">
-        {% for outfit in outfits %}
-            {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
-        {% empty %}
-            <p class="empty-state">Kreacje pojawią się tutaj po dodaniu pierwszych zestawów.</p>
-        {% endfor %}
+    <div class="ph-in">
+        <div class="eyebrow">Gotowe na Ciebie</div>
+        <h1>Stylizacje do skopiowania</h1>
+        <p>Gotowe zestawy akcesoriów. Kliknij stylizację, by zobaczyć każdy element i dodać całość do koszyka.</p>
     </div>
 </section>
+
+<section class="sec">
+    <div class="looks-art">
+        {% for outfit in outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}
+        {% empty %}<p class="muted">Wkrótce dodamy stylizacje.</p>{% endfor %}
+    </div>
+</section>
+
+{% include "core/includes/newsletter.html" with nl_title="Nowe stylizacje co tydzień" nl_text="Zapisz się, by dostawać gotowe zestawy prosto na maila." %}
 {% endblock %}

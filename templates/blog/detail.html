@@ -1,67 +1,53 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}{{ article.title }} | Spooky Strawberry{% endblock %}
+{% block title %}{{ article.seo_title|default:article.title }} — Spooky Strawberry{% endblock %}
+{% block meta_description %}{{ article.seo_description|default:article.intro|truncatechars:160 }}{% endblock %}
 
 {% block content %}
-<article class="page-shell article-detail">
-    <div class="page-heading">
-        <p class="eyebrow">{% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</p>
+<section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
+    <div class="ph-in">
+        <div class="bcrumb" style="color:#C9A9BC;margin-bottom:8px"><a href="{% url 'blog:list' %}" style="color:#C9A9BC">Lifestyle</a> / {% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</div>
+        <div class="eyebrow">{% if article.category %}{{ article.category.name }}{% else %}Lifestyle{% endif %}{% if article.published_at %} · {{ article.published_at|date:"j E Y" }}{% endif %}</div>
         <h1>{{ article.title }}</h1>
-        {% if article.intro %}
-            <p>{{ article.intro }}</p>
+        {% if article.intro %}<p>{{ article.intro }}</p>{% endif %}
+    </div>
+</section>
+
+<section class="sec" style="padding-top:24px">
+    <div style="max-width:720px;margin:0 auto">
+        {% if article.cover_image %}
+            <div class="pdp-main" style="aspect-ratio:16/9;margin-bottom:22px"><img src="{{ article.cover_image.url }}" alt="{{ article.title }}"></div>
         {% endif %}
-    </div>
-
-    {% if article.cover_image %}
-        <div class="article-cover">
-            <img src="{{ article.cover_image.url }}" alt="{{ article.title }}">
+        <div class="article-body" style="font-size:15.5px;line-height:1.7;color:var(--ink-soft)">
+            {{ article.body|formatted_text }}
         </div>
-    {% endif %}
-
-    <div class="article-body">
-        {{ article.body|formatted_text }}
     </div>
+</section>
 
-    {% if article.products.all %}
-        <section class="section-block section-block--nested">
-            <div class="section-heading">
-                <p class="eyebrow">Produkty z poradnika</p>
-                <h2>Pasujące dodatki</h2>
-            </div>
-            <div class="product-grid">
-                {% for product in article.products.all %}
-                    {% include "catalog/includes/product_card.html" with product=product %}
-                {% endfor %}
-            </div>
-        </section>
-    {% endif %}
+{% if article.products.all %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Produkty z poradnika</div><h2 class="h-lg">Pasujące dodatki</h2></div></div>
+    <div class="pgrid">
+        {% for product in article.products.all %}{% include "catalog/includes/product_card.html" with product=product %}{% endfor %}
+    </div>
+</section>
+{% endif %}
 
-    {% if article.outfits.all %}
-        <section class="section-block section-block--nested">
-            <div class="section-heading">
-                <p class="eyebrow">Gotowe kreacje</p>
-                <h2>Inspiracje</h2>
-            </div>
-            <div class="content-grid">
-                {% for outfit in article.outfits.all %}
-                    {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
-                {% endfor %}
-            </div>
-        </section>
-    {% endif %}
-</article>
+{% if article.outfits.all %}
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">Gotowe stylizacje</div><h2 class="h-lg">Inspiracje</h2></div></div>
+    <div class="looks-art">
+        {% for outfit in article.outfits.all %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
+    </div>
+</section>
+{% endif %}
 
 {% if related_articles %}
-<section class="section-block">
-    <div class="section-heading">
-        <p class="eyebrow">Czytaj też</p>
-        <h2>Podobne poradniki</h2>
-    </div>
-    <div class="content-grid">
-        {% for article in related_articles %}
-            {% include "blog/includes/article_card.html" with article=article %}
-        {% endfor %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Czytaj też</div><h2 class="h-lg">Podobne poradniki</h2></div></div>
+    <div class="art-grid">
+        {% for article in related_articles %}{% include "blog/includes/article_card.html" with article=article %}{% endfor %}
     </div>
 </section>
 {% endif %}

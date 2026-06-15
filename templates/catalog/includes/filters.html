@@ -1,0 +1,64 @@
+{% load catalog_extras %}
+<div class="fgroup" style="border-top:1px solid var(--line)">
+    <h5>Sortowanie</h5>
+    <div class="opts">
+        {% for key, opt in sort_options.items %}
+            <a class="opt {% if selected_sort == key %}sel{% endif %}" href="{% qs_set sort=key %}">{{ opt.0 }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% if aesthetics %}
+<div class="fgroup">
+    <h5>Estetyka</h5>
+    <div class="opts">
+        {% for a in aesthetics %}
+            <a class="opt {% if selected_aesthetic == a.slug %}sel{% endif %}" href="{% if selected_aesthetic == a.slug %}{% qs_set aesthetic='' %}{% else %}{% qs_set aesthetic=a.slug %}{% endif %}">{{ a.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% if categories %}
+<div class="fgroup">
+    <h5>Typ produktu</h5>
+    <div class="opts">
+        {% for c in categories %}
+            <a class="opt {% if selected_category == c.slug %}sel{% endif %}" href="{% if selected_category == c.slug %}{% qs_set category='' %}{% else %}{% qs_set category=c.slug %}{% endif %}">{{ c.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% if colors %}
+<div class="fgroup">
+    <h5>Kolor</h5>
+    <div class="opts">
+        {% for col in colors %}
+            <a class="opt col-opt {% if selected_color == col.slug %}sel{% endif %}" href="{% if selected_color == col.slug %}{% qs_set color='' %}{% else %}{% qs_set color=col.slug %}{% endif %}"><span class="col-dot" style="background:{{ col.hex_code|default:'#1A1118' }}"></span>{{ col.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% if sizes %}
+<div class="fgroup">
+    <h5>Rozmiar</h5>
+    <div class="opts">
+        {% for s in sizes %}
+            <a class="opt {% if selected_size == s.slug %}sel{% endif %}" href="{% if selected_size == s.slug %}{% qs_set size='' %}{% else %}{% qs_set size=s.slug %}{% endif %}">{{ s.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+<div class="fgroup">
+    <h5>Dostępność</h5>
+    <div class="opts">
+        <a class="opt {% if availability == 'in_stock' %}sel{% endif %}" href="{% if availability == 'in_stock' %}{% qs_set availability='' %}{% else %}{% qs_set availability='in_stock' %}{% endif %}">W magazynie</a>
+        <a class="opt {% if availability == 'sold_out' %}sel{% endif %}" href="{% if availability == 'sold_out' %}{% qs_set availability='' %}{% else %}{% qs_set availability='sold_out' %}{% endif %}">Wyprzedane</a>
+    </div>
+</div>
+<div class="fgroup" style="border:none">
+    <h5>Cena</h5>
+    <div class="opts">
+        <a class="opt {% if max_price == '15' and not min_price %}sel{% endif %}" href="{% qs_set min_price='' max_price='15' %}">do 15 zł</a>
+        <a class="opt {% if min_price == '15' and max_price == '25' %}sel{% endif %}" href="{% qs_set min_price='15' max_price='25' %}">15–25 zł</a>
+        <a class="opt {% if min_price == '25' and not max_price %}sel{% endif %}" href="{% qs_set min_price='25' max_price='' %}">25 zł+</a>
+    </div>
+</div>

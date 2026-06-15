@@ -1,30 +1,54 @@
 {% extends "base.html" %}
 
-{% block title %}Poradniki | Spooky Strawberry{% endblock %}
+{% block title %}Lifestyle — Spooky Strawberry{% endblock %}
 
 {% block content %}
-<section class="page-shell">
-    <div class="page-heading">
-        <p class="eyebrow">Poradniki</p>
-        <h1>Styl, klimat i detale</h1>
-        <p>Artykuły SEO powiązane z produktami, estetykami i gotowymi kreacjami.</p>
+<section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
+    <div class="aes-words">
+        <span style="top:18%;left:8%;font-size:26px;transform:rotate(-6deg)">stylizacje</span>
+        <span style="bottom:18%;right:10%;font-size:30px;transform:rotate(5deg)">lifestyle</span>
+        <span style="top:50%;right:30%;font-size:20px;transform:rotate(-4deg)">poradniki</span>
     </div>
-
-    {% if categories %}
-        <div class="active-filters">
-            <a href="{% url 'blog:list' %}">Wszystkie</a>
-            {% for category in categories %}
-                <a href="{% url 'blog:list' %}?category={{ category.slug }}">{{ category.name }}</a>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <div class="content-grid">
-        {% for article in articles %}
-            {% include "blog/includes/article_card.html" with article=article %}
-        {% empty %}
-            <p class="empty-state">Pierwsze poradniki pojawią się tutaj po dodaniu treści.</p>
-        {% endfor %}
+    <div class="ph-in">
+        <div class="eyebrow">Lifestyle</div>
+        <h1>Magazyn dla alternatywek</h1>
+        <p>Styl alternatywny to coś więcej niż ubrania. Czytaj o estetykach, stylizacjach i życiu po swojemu.</p>
     </div>
 </section>
+
+<div class="sec" style="padding-bottom:0">
+    <div class="filterbar mobileonly" style="position:static;border:none;padding:0 0 4px">
+        <a class="fbtn {% if not selected_category %}on{% endif %}" href="{% url 'blog:list' %}">Wszystkie</a>
+        {% for category in categories %}
+            <a class="fbtn {% if selected_category == category.slug %}on{% endif %}" href="{% url 'blog:list' %}?category={{ category.slug }}">{{ category.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+{% if articles %}
+<section class="sec" style="padding-top:18px">
+    {% with featured=articles.0 %}
+    <a class="art art-feat" href="{{ featured.get_absolute_url }}">
+        <div class="aimg" style="{% if featured.cover_image %}background-image:url('{{ featured.cover_image.url }}'){% else %}background:linear-gradient(160deg,#2a1622,#7a3d5a){% endif %}"></div>
+        <div class="ainfo">
+            <div class="acat">{% if featured.category %}{{ featured.category.name }}{% else %}Lifestyle{% endif %}</div>
+            <h2 class="h-md" style="font-size:24px;margin:2px 0 6px">{{ featured.title }}</h2>
+            {% if featured.intro %}<p class="muted" style="font-size:14px">{{ featured.intro }}</p>{% endif %}
+            <span class="link" style="margin-top:12px;display:inline-block">Czytaj artykuł →</span>
+        </div>
+    </a>
+    {% endwith %}
+</section>
+
+<section class="sec" style="padding-top:6px">
+    <div class="sec-head"><div><h2 class="h-md">Najnowsze wpisy</h2></div></div>
+    <div class="art-grid">
+        {% for article in articles|slice:"1:" %}{% include "blog/includes/article_card.html" %}{% endfor %}
+    </div>
+</section>
+{% else %}
+<section class="sec"><p class="muted">Wkrótce pojawią się pierwsze wpisy.</p></section>
+{% endif %}
+
+{% include "core/includes/newsletter.html" with nl_title="Nowy wpis co tydzień 🖤" nl_text="Zapisz się, by dostawać poradniki i inspiracje prosto na maila." %}
 {% endblock %}

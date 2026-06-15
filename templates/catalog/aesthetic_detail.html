@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ aesthetic.name }} — Estetyki — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="coll-hero">
+    <div class="chero-grid">
+        <div class="chero-copy">
+            <div class="bcrumb" style="margin-bottom:8px"><a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a> <span style="color:#9d7e8f">/ {{ aesthetic.name }}</span></div>
+            <div class="eyebrow" style="color:var(--rose)">Estetyka · {{ product_count }} {% if product_count == 1 %}produkt{% else %}produktów{% endif %}</div>
+            <h1 style="color:#fff;font-size:38px;margin:10px 0 12px">{{ aesthetic.name }}</h1>
+            {% if aesthetic.description %}<p style="color:#EAD7E2;max-width:420px">{{ aesthetic.description }}</p>{% elif aesthetic.tagline %}<p style="color:#EAD7E2;max-width:420px">{{ aesthetic.tagline }}</p>{% endif %}
+            <div style="margin-top:20px"><a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}?aesthetic={{ aesthetic.slug }}">Przeglądaj produkty</a></div>
+        </div>
+        <div class="chero-img" style="{% if aesthetic.image %}background-image:linear-gradient(160deg,#2a1622aa,#7a3d5aaa),url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
+    </div>
+</section>
+
+{% if products %}
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">W tej estetyce</div><h2 class="h-lg">Produkty {{ aesthetic.name }}</h2></div>
+        <a class="link" href="{% url 'catalog:product_list' %}?aesthetic={{ aesthetic.slug }}">Wszystkie →</a></div>
+    <div class="pgrid">
+        {% for product in products %}{% include "catalog/includes/product_card.html" %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if outfits %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Złap inspirację</div><h2 class="h-lg">Stylizacje {{ aesthetic.name }}</h2></div></div>
+    <div class="looks-art">
+        {% for outfit in outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if articles %}
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">Lifestyle</div><h2 class="h-lg">Poradniki do tej estetyki</h2></div></div>
+    <div class="art-grid">
+        {% for article in articles %}{% include "blog/includes/article_card.html" %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% include "core/includes/newsletter.html" with nl_title=aesthetic.name|add:" prosto na maila" nl_text="Zapisz się, a damy znać, gdy dorzucimy nowości do tej estetyki." %}
+{% endblock %}

@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}Panel | Spooky Strawberry{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260615-gutters2">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20260608-analytics-workspaces">
 </head>
 <body class="dashboard-body">
@@ -29,6 +29,10 @@
                 <nav class="dashboard-sidebar__nav" aria-label="Modele panelu">
                     <a href="{% url 'dashboard:home' %}" class="dashboard-sidebar__home {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">
                         Dashboard
+                    </a>
+                    {% url 'dashboard:site_settings' as settings_url %}
+                    <a href="{{ settings_url }}" class="dashboard-sidebar__home {% if request.path == settings_url %}is-active{% endif %}">
+                        Ustawienia strony
                     </a>
                     {% for section, configs in sections.items %}
                         <section>

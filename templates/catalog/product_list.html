@@ -1,131 +1,55 @@
 {% extends "base.html" %}
+{% load catalog_extras %}
 
-{% block title %}Sklep | Spooky Strawberry{% endblock %}
+{% block title %}Katalog — Spooky Strawberry{% endblock %}
 
 {% block content %}
-<section class="catalog-hero">
-    <p class="eyebrow">Katalog</p>
-    <h1>Produkty</h1>
-    <p>Akcesoria, rajstopy, skarpetki i dodatki do alt stylizacji.</p>
-</section>
+<div class="cat-top">
+    <div class="bcrumb"><a href="{% url 'core:home' %}">Start</a> / Katalog</div>
+    <h1 class="h-lg">Wszystkie produkty</h1>
+    <p class="muted" style="font-size:13.5px;margin-top:4px">{{ product_count }} {% if product_count == 1 %}produkt{% else %}produktów{% endif %} · akcesoria, które robią całą stylizację</p>
+</div>
 
-<section class="catalog-layout">
-    <form class="filter-panel" method="get">
-        <div class="filter-panel__head">
-            <h2>Filtry</h2>
-            <a href="{% url 'catalog:product_list' %}">Wyczyść</a>
-        </div>
+<div class="filterbar mobileonly">
+    <button class="fbtn sheet-trigger" onclick="ssToggleSheet(true)">⚙ Filtry{% if selected_filters %} <span class="ct">{{ selected_filters|length }}</span>{% endif %}</button>
+    <button class="fbtn" onclick="ssToggleSheet(true)">Sortuj: {{ selected_sort_label }} ▾</button>
+</div>
 
-        <label>
-            Typ produktu
-            <select name="category">
-                <option value="">Wszystkie</option>
-                {% for category in categories %}
-                    <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-
-        <label>
-            Estetyka
-            <select name="aesthetic">
-                <option value="">Wszystkie</option>
-                {% for aesthetic in aesthetics %}
-                    <option value="{{ aesthetic.slug }}" {% if selected_aesthetic == aesthetic.slug %}selected{% endif %}>{{ aesthetic.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-
-        <label>
-            Kolor
-            <select name="color">
-                <option value="">Wszystkie</option>
-                {% for color in colors %}
-                    <option value="{{ color.slug }}" {% if selected_color == color.slug %}selected{% endif %}>{{ color.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-
-        <label>
-            Rozmiar
-            <select name="size">
-                <option value="">Wszystkie</option>
-                {% for size in sizes %}
-                    <option value="{{ size.slug }}" {% if selected_size == size.slug %}selected{% endif %}>{{ size.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-
-        <div class="price-fields">
-            <label>
-                Cena od
-                <input type="number" name="min_price" min="0" step="1" value="{{ min_price }}" placeholder="{{ price_range.min_price|default:'' }}">
-            </label>
-            <label>
-                Cena do
-                <input type="number" name="max_price" min="0" step="1" value="{{ max_price }}" placeholder="{{ price_range.max_price|default:'' }}">
-            </label>
-        </div>
-
-        <label>
-            Dostępność
-            <select name="availability">
-                {% for value, label in availability_options.items %}
-                    <option value="{{ value }}" {% if availability == value %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
-        </label>
-
-        <label>
-            Sortuj
-            <select name="sort">
-                {% for value, option in sort_options.items %}
-                    <option value="{{ value }}" {% if selected_sort == value %}selected{% endif %}>{{ option.0 }}</option>
-                {% endfor %}
-            </select>
-        </label>
-
-        <button type="submit" class="button button--wide">Zobacz produkty</button>
-    </form>
-
-    <div class="catalog-results" id="produkty">
-        <div class="catalog-results__bar">
-            <p>{{ product_count }} produktów</p>
-            <p>Sortuj: {{ selected_sort_label }}</p>
-        </div>
-
+<div class="catalog-split">
+    <aside class="cat-aside">
+        {% include "catalog/includes/filters.html" %}
+    </aside>
+    <div>
         {% if selected_filters %}
-            <div class="active-filters">
-                {% for filter in selected_filters %}
-                    <span>{{ filter }}</span>
-                {% endfor %}
-                <a href="{% url 'catalog:product_list' %}">Wyczyść wszystko</a>
-            </div>
+        <div class="chips">
+            {% for label in selected_filters %}<span class="chip">{{ label }}</span>{% endfor %}
+            <a class="chip" style="background:none;color:var(--rose-deep)" href="{% url 'catalog:product_list' %}">Wyczyść wszystko</a>
+        </div>
         {% endif %}
-
-        <div class="product-grid">
-            {% for product in products %}
-                {% include "catalog/includes/product_card.html" with product=product %}
-            {% empty %}
-                <div class="empty-state">
-                    <h2>Nie znaleziono produktów</h2>
-                    <p>Zmień filtry albo wróć do pełnego katalogu.</p>
-                    <a href="{% url 'catalog:product_list' %}" class="button">Pokaż wszystko</a>
-                </div>
-            {% endfor %}
+        <div class="pgrid cat" style="margin-top:14px;padding:0 18px 30px">
+            {% for product in products %}{% include "catalog/includes/product_card.html" %}
+            {% empty %}<p class="muted" style="grid-column:1/-1">Brak produktów dla wybranych filtrów.</p>{% endfor %}
         </div>
 
-        {% if page_obj.paginator.num_pages > 1 %}
-            <nav class="pagination" aria-label="Paginacja katalogu">
-                {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
-                {% endif %}
-                <span>Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
-                {% endif %}
-            </nav>
+        {% if page_obj.has_other_pages %}
+        <div class="chips" style="padding:0 18px 40px;gap:10px">
+            {% if page_obj.has_previous %}<a class="fbtn" href="{% qs_set %}&page={{ page_obj.previous_page_number }}">← Poprzednia</a>{% endif %}
+            <span class="fbtn on">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}<a class="fbtn" href="{% qs_set %}&page={{ page_obj.next_page_number }}">Następna →</a>{% endif %}
+        </div>
         {% endif %}
     </div>
-</section>
+</div>
+
+<div class="sheet-back" id="filterSheet">
+    <div class="sheet">
+        <div class="sheet-grab"></div>
+        <h4>Filtruj i sortuj</h4>
+        {% include "catalog/includes/filters.html" %}
+        <div class="sheet-foot">
+            <a class="btn btn-ghost" style="flex:1" href="{% url 'catalog:product_list' %}">Wyczyść</a>
+            <button class="btn btn-primary" style="flex:2" onclick="ssToggleSheet(false)">Pokaż produkty</button>
+        </div>
+    </div>
+</div>
 {% endblock %}

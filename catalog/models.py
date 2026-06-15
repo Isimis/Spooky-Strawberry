@@ -55,7 +55,22 @@ class Category(models.Model):
 class Aesthetic(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
+    tagline = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Krótki podtytuł na kafelku estetyki, np. „Mrok, ale delikatny”.",
+    )
     description = models.TextField(blank=True)
+    image = models.ImageField(upload_to="aesthetics/", blank=True)
+    card_gradient = models.CharField(
+        max_length=80,
+        blank=True,
+        help_text="Opcjonalny gradient tła kafelka, np. „#2a1622,#7a3d5a”.",
+    )
+    is_featured = models.BooleanField(
+        default=False,
+        help_text="Większy kafelek w mozaice estetyk.",
+    )
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
 
@@ -66,6 +81,9 @@ class Aesthetic(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self):
+        return reverse("catalog:aesthetic_detail", kwargs={"slug": self.slug})
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -153,6 +171,16 @@ class Product(models.Model):
         blank=True,
     )
     is_featured = models.BooleanField(default=False)
+    is_new = models.BooleanField(default=False)
+    is_bestseller = models.BooleanField(default=False)
+    disable_low_stock_badge = models.BooleanField(
+        default=False,
+        help_text="Zaznacz, aby NIE pokazywać oznaczenia „ostatnie sztuki” dla tego produktu.",
+    )
+    low_stock_threshold = models.PositiveIntegerField(
+        default=3,
+        help_text="Etykieta „ostatnie sztuki” pojawia się, gdy łączny stan spadnie do tej liczby lub niżej.",
+    )
     sort_order = models.PositiveIntegerField(default=0)
 
     seo_title = models.CharField(max_length=180, blank=True)
@@ -219,6 +247,19 @@ class Product(models.Model):
         if self.has_sale_price:
             return self.sale_price
         return self.regular_price
+
+    @property
+    def total_stock(self):
+        """Łączny stan magazynowy z aktywnych wariantów (korzysta z prefetcha)."""
+        return sum(v.stock_quantity for v in self.variants.all() if v.is_active)
+
+    @property
+    def is_low_stock(self):
+        """Czy produkt powinien dostać oznaczenie „ostatnie sztuki” (na bazie własnego progu)."""
+        if self.disable_low_stock_badge:
+            return False
+        stock = self.total_stock
+        return 0 < stock <= (self.low_stock_threshold or 0)
 
 
 class ProductVariant(models.Model):

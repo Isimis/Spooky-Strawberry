@@ -1,24 +1,8 @@
-<article class="content-card">
-    <a href="{{ article.get_absolute_url }}" class="content-card__image">
-        {% if article.cover_image %}
-            <img src="{{ article.cover_image.url }}" alt="{{ article.title }}">
-        {% else %}
-            <span>SS</span>
-        {% endif %}
-    </a>
-    <div class="content-card__body">
-        <div class="product-card__meta">
-            {% if article.category %}
-                <span>{{ article.category.name }}</span>
-            {% endif %}
-            {% for aesthetic in article.aesthetics.all|slice:":1" %}
-                <span>{{ aesthetic.name }}</span>
-            {% endfor %}
-        </div>
-        <h3><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></h3>
-        {% if article.intro %}
-            <p>{{ article.intro }}</p>
-        {% endif %}
-        <a href="{{ article.get_absolute_url }}">Czytaj dalej</a>
+<a class="art" href="{{ article.get_absolute_url }}">
+    <div class="aimg" style="{% if article.cover_image %}background-image:url('{{ article.cover_image.url }}'){% else %}background-image:linear-gradient(150deg,#2a1622,#7a3d5a){% endif %}"></div>
+    <div class="ainfo">
+        <div class="acat">{% if article.category %}{{ article.category.name }}{% else %}Lifestyle{% endif %}</div>
+        <h4>{{ article.title }}</h4>
+        <div class="meta">{% if article.published_at %}{{ article.published_at|date:"j E Y" }}{% else %}Wkrótce{% endif %}</div>
     </div>
-</article>
+</a>

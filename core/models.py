@@ -2,6 +2,51 @@ from django.db import models
 from django.utils.text import slugify
 
 
+class SiteSettings(models.Model):
+    """Pojedynczy rekord z globalnymi ustawieniami treści sterowanymi z panelu."""
+
+    # Pasek zapowiedzi nad nagłówkiem
+    announcement_is_active = models.BooleanField(default=True)
+    announcement_text = models.CharField(
+        max_length=255,
+        default="🦇 Darmowa dostawa od 50 zł · 30 dni na zwrot",
+        blank=True,
+    )
+
+    # Globalne zachowanie oznaczania "ostatnie sztuki"
+    low_stock_default_enabled = models.BooleanField(default=True)
+    low_stock_threshold = models.PositiveIntegerField(default=3)
+
+    # Sekcja "Najnowszy drop" na stronie głównej
+    drop_is_active = models.BooleanField(default=True)
+    drop_eyebrow = models.CharField(max_length=120, blank=True, default="Najnowszy drop")
+    drop_heading = models.CharField(max_length=180, blank=True, default="Najnowszy drop")
+    drop_date = models.DateTimeField(null=True, blank=True)
+    drop_products = models.ManyToManyField(
+        "catalog.Product",
+        blank=True,
+        related_name="drop_settings",
+    )
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Ustawienia strony"
+        verbose_name_plural = "Ustawienia strony"
+
+    def __str__(self):
+        return "Ustawienia strony"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class SitePage(models.Model):
     STATUS_DRAFT = "draft"
     STATUS_PUBLISHED = "published"

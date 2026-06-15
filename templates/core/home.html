@@ -2,64 +2,93 @@
 {% load static %}
 {% load catalog_extras %}
 
-{% block title %}Spooky Strawberry | Dark Coquette & Jirai Kei Butik{% endblock %}
+{% block title %}Spooky Strawberry — akcesoria alternatywne dla dziewczyn{% endblock %}
 
 {% block content %}
 <section class="hero">
-    <div class="hero__bg">
-        <img src="{% static 'img/hero.png' %}" alt="" class="hero__bg-image" fetchpriority="high">
-    </div>
-    <div class="hero__overlay">
-        <div class="hero__content">
-            <p class="eyebrow">Odkryj swój styl</p>
-            <h1>Spooky<br>Strawberry</h1>
-            <p><em>Czerń w oczach a róż w sercu. Świat może być szalony, ale my jesteśmy tutaj, aby dodać odrobinę magii do Twojego dnia.</em></p>
-            <a href="{% url 'catalog:product_list' %}" class="button">Zobacz sklep</a>
+    <img class="hero-wm" src="{% static 'img/ssmodernblack.png' %}" alt="">
+    <div class="hero-grid">
+        <div class="hero-copy">
+            <div class="eyebrow">{{ site_settings.drop_eyebrow|default:"Najnowszy drop" }}{% if site_settings.drop_is_active and site_settings.drop_date %} · {{ site_settings.drop_date|date:"l G:i" }}{% endif %}</div>
+            <h1>Czerń w oczach,<br><em>róż</em> w sercu.</h1>
+            <p>Akcesoria dla dziewczyn, które wyrażają siebie. Soft goth, dark coquette i jirai kei — w jednym miejscu.</p>
+            <div class="hero-cta">
+                <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Zobacz drop</a>
+                <a class="btn btn-ghost btn-lg" href="{% url 'catalog:aesthetic_list' %}">Odkryj estetyki</a>
+            </div>
+            <div class="hero-tags"><span>Soft Goth</span><span>Dark Coquette</span><span>Jirai Kei</span><span>Grunge</span></div>
+        </div>
+        <div class="hero-art">
+            <div class="hero-halo"></div>
+            <svg class="hero-spark" style="top:12%;left:14%;width:26px;height:26px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.5L20 10l-6.2 1.5L12 18l-1.8-6.5L4 10l6.2-1.5z"/></svg>
+            <svg class="hero-spark" style="bottom:8%;right:12%;width:18px;height:18px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.5L20 10l-6.2 1.5L12 18l-1.8-6.5L4 10l6.2-1.5z"/></svg>
+            <div class="hero-frame">
+                {% if hero_product and hero_product.main_image %}
+                    <img src="{{ hero_product.main_image.image.url }}" alt="{{ hero_product.name }}">
+                {% else %}
+                    <img src="{% static 'img/hero.png' %}" alt="Najnowszy drop">
+                {% endif %}
+            </div>
+            <div class="hero-sticker">Nowy<br>drop</div>
+            {% if hero_mini_product %}
+            <a class="hero-mini" href="{{ hero_mini_product.get_absolute_url }}">
+                {% if hero_mini_product.main_image %}<img src="{{ hero_mini_product.main_image.image.url }}" alt="">{% else %}<img src="{% static 'img/sspfp.jpg' %}" alt="">{% endif %}
+                <div><b>{{ hero_mini_product.name|truncatechars:24 }}</b><span>{{ hero_mini_product.current_price|money }}</span></div>
+            </a>
+            {% endif %}
         </div>
     </div>
 </section>
 
-<section class="section-block">
-    <div class="section-heading">
-        <p class="eyebrow">Make Your Style Yours</p>
-        <h2>Nasz najnowszy drop</h2>
-    </div>
+<section class="trust"><div class="trust-in">
+    <div class="trust-it"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg></span><b>Wysyłka 24h</b></div>
+    <div class="trust-it"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 0 1 15-5.5L21 8"/><path d="M21 3v5h-5"/><path d="M21 13a9 9 0 0 1-15 5.5L3 16"/><path d="M3 21v-5h5"/></svg></span><b>30 dni na zwrot</b></div>
+    <div class="trust-it"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span><b>Bezpieczne płatności</b></div>
+    <div class="trust-it"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7z"/></svg></span><b>Pakowane z sercem</b></div>
+</div></section>
 
-    <div class="product-grid">
-        {% for product in new_drop_products %}
-            {% include "catalog/includes/product_card.html" with product=product %}
-        {% empty %}
-            <p class="empty-state">Produkty pojawią się tutaj po imporcie katalogu.</p>
-        {% endfor %}
+{% if drop_products %}
+<section class="sec">
+    <div class="sec-head">
+        <div><div class="eyebrow">Świeżo z pudełka</div><h2 class="h-lg">{{ site_settings.drop_heading|default:"Najnowszy drop" }}</h2></div>
+        <a class="link" href="{% url 'catalog:product_list' %}">Zobacz wszystko →</a>
     </div>
-</section>
-
-<section class="section-block aesthetic-section">
-    <div class="section-heading">
-        <p class="eyebrow">Kolekcje / estetyki</p>
-        <h2>Znajdź swój klimat</h2>
-    </div>
-
-    <div class="aesthetic-grid">
-        <a href="{% url 'catalog:product_list' %}?aesthetic=dark-coquette">Dark coquette</a>
-        <a href="{% url 'catalog:product_list' %}?aesthetic=jirai-kei">Jirai kei</a>
-        <a href="{% url 'catalog:product_list' %}?aesthetic=goth">Goth</a>
-        <a href="{% url 'catalog:product_list' %}?aesthetic=grunge">Grunge</a>
-        <a href="{% url 'catalog:product_list' %}?aesthetic=y2k">Y2K</a>
-    </div>
-</section>
-
-{% if blog_articles %}
-<section class="section-block guide-preview">
-    <div class="section-heading">
-        <p class="eyebrow">Poradniki</p>
-        <h2>Stylizacje, warstwy i detale</h2>
-    </div>
-    <div class="content-grid">
-        {% for article in blog_articles %}
-            {% include "blog/includes/article_card.html" with article=article %}
-        {% endfor %}
+    <div class="pgrid">
+        {% for product in drop_products|slice:":4" %}{% include "catalog/includes/product_card.html" %}{% endfor %}
     </div>
 </section>
 {% endif %}
+
+{% if outfits %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Gotowe na Ciebie</div><h2 class="h-lg">Stylizacje do skopiowania</h2></div>
+        <a class="link" href="{% url 'outfits:list' %}">Zobacz wszystkie →</a></div>
+    <p class="muted" style="margin:-10px 0 18px;max-width:460px">Najnowsza stylizacja na dużym kafelku, reszta dookoła. Kliknij, by zobaczyć cały zestaw.</p>
+    <div class="looks-art">
+        {% for outfit in outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if aesthetics %}
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">Znajdź swój klimat</div><h2 class="h-lg">Estetyki</h2></div>
+        <a class="link" href="{% url 'catalog:aesthetic_list' %}">Wszystkie →</a></div>
+    <div class="coll-mosaic">
+        {% for aesthetic in aesthetics %}{% include "catalog/includes/aesthetic_card.html" with aesthetic=aesthetic mosaic=True %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if articles %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Lifestyle</div><h2 class="h-lg">Poradniki i inspiracje</h2></div>
+        <a class="link" href="{% url 'blog:list' %}">Czytaj więcej →</a></div>
+    <div class="art-grid">
+        {% for article in articles %}{% include "blog/includes/article_card.html" %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% include "core/includes/newsletter.html" %}
 {% endblock %}

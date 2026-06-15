@@ -1,13 +1,21 @@
-<section class="newsletter-band">
-    <div>
-        <p class="eyebrow">Newsletter</p>
-        <h2>Nowe dropy i soczyste promocje</h2>
+{% load static %}
+<section class="sec">
+    <div class="nl">
+        <div class="nl-deco"></div>
+        <img class="nl-berry" src="{% static 'img/ssmodernbginvert.png' %}" alt="">
+        <div class="nl-chip">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7z"/></svg>
+            Klub Spooky
+        </div>
+        <h3>{{ nl_title|default:"Dołącz do klubu 🍓" }}</h3>
+        <p>{{ nl_text|default:"Najnowsze dropy, kody rabatowe i porady stylowe. Zero spamu, tylko soczyste treści." }}</p>
+        <form class="nl-form" action="{% url 'core:newsletter_subscribe' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="source" value="{{ nl_source|default:'home' }}">
+            <input type="email" name="email" placeholder="Twój e-mail" aria-label="Twój e-mail" required>
+            <button type="submit" class="btn btn-primary">Zapisz</button>
+        </form>
+        <div class="fine">-10% na pierwsze zamówienie po zapisie.</div>
     </div>
-    <form class="newsletter-form" action="{% url 'core:newsletter_subscribe' %}" method="post">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <input type="hidden" name="source" value="footer">
-        <input type="email" name="email" placeholder="E-mail" aria-label="E-mail" required>
-        <button type="submit">Dołącz</button>
-    </form>
 </section>

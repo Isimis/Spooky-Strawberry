@@ -1,170 +1,120 @@
 {% extends "base.html" %}
+{% load static %}
 {% load catalog_extras %}
 
-{% block title %}{% if product.seo_title %}{{ product.seo_title }}{% else %}{{ product.name }} | Spooky Strawberry{% endif %}{% endblock %}
+{% block title %}{{ product.seo_title|default:product.name }} — Spooky Strawberry{% endblock %}
+{% block meta_description %}{{ product.seo_description|default:product.description|truncatechars:160 }}{% endblock %}
 
 {% block content %}
-<article class="product-detail">
-    <section class="product-gallery" aria-label="Galeria produktu">
-        {% for image in product.images.all %}
-            <figure class="product-gallery__item {% if image.variant_id == selected_variant.id %}product-gallery__item--variant{% endif %}">
-                <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}">
-                {% if image.caption %}
-                    <figcaption>{{ image.caption }}</figcaption>
-                {% endif %}
-            </figure>
-        {% empty %}
-            <div class="product-gallery__fallback">Spooky Strawberry</div>
-        {% endfor %}
-    </section>
+<div class="pdp-split">
+    <div class="pdp-media">
+        <div class="pdp-main">
+            <div class="pbadges">
+                {% if product.is_new %}<span class="badge badge-new">Nowość</span>{% endif %}
+                {% if product.is_bestseller %}<span class="badge badge-best">Bestseller</span>{% endif %}
+                {% if product.is_low_stock %}<span class="badge badge-last">Ostatnie {{ product.total_stock }} szt.</span>{% endif %}
+                {% if product.has_sale_price %}<span class="badge badge-sale">-{{ product|discount_percent }}%</span>{% endif %}
+            </div>
+            {% with main=product.main_image %}
+                {% if main %}<img id="pdpMain" src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}">{% else %}<img id="pdpMain" src="{% load static %}{% static 'img/hero.png' %}" alt="{{ product.name }}">{% endif %}
+            {% endwith %}
+        </div>
+        {% if product.images.all %}
+        <div class="pdp-grid">
+            {% for image in product.images.all|slice:":6" %}
+                <div class="t" data-gallery-thumb data-full="{{ image.image.url }}"><img src="{{ image.image.url }}" alt="{{ image.alt_text }}"></div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
 
-    <section class="product-info">
-        <div class="product-info__sticky">
-            <p class="eyebrow">{{ product.category.name }}</p>
-            <h1>{{ product.name }}</h1>
-            <p class="product-price">
-                {% if selected_variant.price %}
-                    {{ selected_variant.price|money }}
-                {% else %}
-                    {{ product.current_price|money }}
-                {% endif %}
-                {% if product.has_sale_price %}
-                    <span>{{ product.regular_price|money }}</span>
-                {% endif %}
-            </p>
+    <div class="pdp-body">
+        <div class="bcrumb" style="margin:14px 0 6px"><a href="{% url 'catalog:product_list' %}">Katalog</a> / {{ product.category.name }}</div>
+        {% if product.aesthetics.all %}<div class="eyebrow">{% for a in product.aesthetics.all %}{{ a.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+        <h1 class="h-md" style="font-size:25px;margin:6px 0 10px">{{ product.name }}</h1>
 
-            <div class="product-tags">
-                {% for aesthetic in product.aesthetics.all %}
-                    <span>{{ aesthetic.name }}</span>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="font-size:27px;font-weight:700">{{ product.current_price|money }}</span>
+            {% if product.has_sale_price %}<s class="muted" style="font-size:15px">{{ product.regular_price|money }}</s>
+            <span class="badge badge-sale">-{{ product|discount_percent }}%</span>{% endif %}
+        </div>
+
+        {% if product.styling_tips %}<p class="serif-it muted" style="font-size:14.5px;margin:10px 0 4px">„{{ product.styling_tips|truncatechars:120 }}”</p>{% endif %}
+
+        {% if color_options %}
+        <div class="varrow">
+            <div class="vlabel">Kolor: <span>{% if selected_variant.color %}{{ selected_variant.color.name }}{% endif %}</span></div>
+            <div class="var-opts">
+                {% for opt in color_options %}
+                    <a class="vcol {% if opt.selected %}sel{% endif %}" style="background:{{ opt.color.hex_code|default:'#1A1118' }}" href="?variant={{ opt.variant_id }}" aria-label="{{ opt.color.name }}"></a>
                 {% endfor %}
             </div>
+        </div>
+        {% endif %}
 
-            <p class="tax-note">Z wliczonymi podatkami. Checkout i płatności są jeszcze wyłączone na tym etapie projektu.</p>
-
-            <form method="post" action="{% url 'cart:add' %}" class="add-to-cart-form">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-
-                <div class="variant-list">
-                    <div class="variant-list__head">
-                        <strong>Wariant</strong>
-                        {% if selected_variant %}
-                            <span>Wybrano: {{ selected_variant }}</span>
-                        {% endif %}
-                    </div>
-                    {% for variant in product.variants.all %}
-                        <label class="variant-row {% if selected_variant.id == variant.id %}is-selected{% endif %} {% if not variant.is_in_stock %}is-disabled{% endif %}">
-                            <input
-                                type="radio"
-                                name="variant_id"
-                                value="{{ variant.id }}"
-                                {% if selected_variant.id == variant.id %}checked{% endif %}
-                                {% if not variant.is_in_stock %}disabled{% endif %}
-                            >
-                            <div>
-                                <strong>
-                                    {% if variant.color %}{{ variant.color.name }}{% else %}Klasyczna wersja{% endif %}
-                                </strong>
-                                <span>{% if variant.size %}{{ variant.size.name }}{% else %}One Size{% endif %}</span>
-                            </div>
-                            <span>
-                                {% if variant.is_in_stock %}
-                                    {{ variant.stock_quantity }} szt.
-                                {% else %}
-                                    Brak
-                                {% endif %}
-                            </span>
-                        </label>
-                    {% empty %}
-                        <p class="empty-state">Ten produkt nie ma jeszcze wariantów.</p>
-                    {% endfor %}
-                </div>
-
-                <label class="quantity-control">
-                    <span>Ilość</span>
-                    <input
-                        type="number"
-                        name="quantity"
-                        value="1"
-                        min="1"
-                        {% if selected_variant %}max="{{ selected_variant.stock_quantity }}"{% endif %}
-                        aria-label="Ilość"
-                    >
-                </label>
-
-                <button class="button button--wide" type="submit" {% if not selected_variant or not selected_variant.is_in_stock %}disabled{% endif %}>
-                    {% if selected_variant and selected_variant.is_in_stock %}Dodaj do koszyka{% else %}Chwilowo niedostępne{% endif %}
-                </button>
-            </form>
-
-            <div class="trust-grid">
-                <div>
-                    <strong>Selekcja pod alt styl</strong>
-                    <span>Dodatki dobrane pod konkretne estetyki.</span>
-                </div>
-                <div>
-                    <strong>Bez checkoutu teraz</strong>
-                    <span>Koszyk działa testowo, płatności dojdą później.</span>
-                </div>
-                <div>
-                    <strong>Małe detale</strong>
-                    <span>Cute, mrocznie, ale bez przesady.</span>
-                </div>
-                <div>
-                    <strong>Warianty</strong>
-                    <span>Kolory, rozmiary i stany są trzymane osobno.</span>
-                </div>
-            </div>
-
-            {% if product.description %}
-                <div class="product-copy">
-                    <h2>Opis</h2>
-                    {{ product.description|formatted_text }}
-                </div>
-            {% endif %}
-
-            {% if product.styling_tips %}
-                <div class="product-copy">
-                    <h2>Jak stylizować</h2>
-                    {{ product.styling_tips|formatted_text }}
-                </div>
-            {% endif %}
-
-            <div class="product-copy">
-                <h2>Dostawa i zwroty</h2>
-                <p>
-                    Informacje o dostawie i zwrotach zostają jako sekcja informacyjna.
-                    Checkout, PayU i Przelewy24 są celowo odłożone do czasu działalności.
-                </p>
+        {% if size_options %}
+        <div class="varrow">
+            <div class="vlabel">Rozmiar</div>
+            <div class="var-opts">
+                {% for opt in size_options %}
+                    {% if opt.available %}<a class="vopt {% if opt.selected %}sel{% endif %}" href="?variant={{ opt.variant_id }}">{{ opt.size.name }}</a>
+                    {% else %}<span class="vopt dis">{{ opt.size.name }}</span>{% endif %}
+                {% endfor %}
             </div>
         </div>
-    </section>
-</article>
+        {% endif %}
+
+        <form method="post" action="{% url 'cart:add' %}">
+            {% csrf_token %}
+            <input type="hidden" name="variant_id" value="{% if selected_variant %}{{ selected_variant.id }}{% endif %}">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="sticky-buy">
+                <div class="qty" data-input="#qtyInput">
+                    <button type="button" data-qty="dec">–</button><span>1</span><button type="button" data-qty="inc">+</button>
+                </div>
+                <input type="hidden" name="quantity" id="qtyInput" value="1">
+                <button type="submit" class="btn btn-primary btn-block" {% if not selected_variant or not selected_variant.is_in_stock %}disabled{% endif %}>
+                    {% if selected_variant and selected_variant.is_in_stock %}Dodaj do koszyka · {{ selected_variant.price|money }}{% else %}Wyprzedane{% endif %}
+                </button>
+            </div>
+        </form>
+
+        <div class="trust-row">
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg></span><b>Wysyłka 24h</b><span>Pakujemy z sercem</span></div>
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 0 1 15-5.5L21 8"/><path d="M21 3v5h-5"/><path d="M21 13a9 9 0 0 1-15 5.5L3 16"/><path d="M3 21v-5h5"/></svg></span><b>30 dni zwrotu</b><span>Bez tłumaczenia</span></div>
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span><b>Bezpiecznie</b><span>BLIK, karta, P24</span></div>
+        </div>
+
+        <div class="acc">
+            {% if product.description %}
+            <div class="acc-i"><div class="acc-h">Szczegóły produktu <span class="acc-ic">+</span></div>
+                <div class="acc-c">{{ product.description|formatted_text }}</div></div>
+            {% endif %}
+            {% if product.styling_tips %}
+            <div class="acc-i"><div class="acc-h">Jak stylizować? <span class="acc-ic">+</span></div>
+                <div class="acc-c">{{ product.styling_tips|formatted_text }}</div></div>
+            {% endif %}
+            <div class="acc-i"><div class="acc-h">Dostawa i zwroty <span class="acc-ic">+</span></div>
+                <div class="acc-c">Wysyłka w 24h. Darmowa dostawa od 50 zł. Paczkomat, kurier lub poczta. 30 dni na zwrot bez podawania przyczyny.</div></div>
+        </div>
+    </div>
+</div>
 
 {% if related_outfits %}
-<section class="section-block">
-    <div class="section-heading">
-        <p class="eyebrow">Gotowe kreacje</p>
-        <h2>Stylizacje z tym produktem</h2>
-    </div>
-    <div class="content-grid">
-        {% for outfit in related_outfits %}
-            {% include "outfits/includes/outfit_card.html" with outfit=outfit %}
-        {% endfor %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Pełny look</div><h2 class="h-lg">Noś to w stylizacji</h2></div></div>
+    <div class="looks-art">
+        {% for outfit in related_outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
     </div>
 </section>
 {% endif %}
 
 {% if related_products %}
-<section class="section-block">
-    <div class="section-heading">
-        <p class="eyebrow">Pełna kolekcja</p>
-        <h2>Podobne produkty</h2>
-    </div>
-    <div class="product-grid">
-        {% for product in related_products %}
-            {% include "catalog/includes/product_card.html" with product=product %}
-        {% endfor %}
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">Może Ci się spodobać</div><h2 class="h-lg">Podobne produkty</h2></div>
+        <a class="link" href="{% url 'catalog:product_list' %}">Wszystkie →</a></div>
+    <div class="pgrid">
+        {% for product in related_products %}{% include "catalog/includes/product_card.html" %}{% endfor %}
     </div>
 </section>
 {% endif %}

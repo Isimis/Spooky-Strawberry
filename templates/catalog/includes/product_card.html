@@ -1,49 +1,42 @@
 {% load catalog_extras %}
-
-{% with image=product.main_image variant=product.default_variant %}
-<article class="product-card {% if not product.is_available %}product-card--sold-out{% endif %}">
-    <a href="{{ product.get_absolute_url }}" class="product-card__image">
-        {% if image %}
-            <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
+{% with main=product.main_image second=product|secondary_image variant=product.default_variant %}
+<div class="pcard">
+    <a class="ph" href="{{ product.get_absolute_url }}">
+        <div class="pbadges">
+            {% if product.is_new %}<span class="badge badge-new">Nowość</span>{% endif %}
+            {% if product.is_bestseller %}<span class="badge badge-best">Bestseller</span>{% endif %}
+            {% if product.is_low_stock %}<span class="badge badge-last">Ostatnie sztuki</span>{% endif %}
+            {% if product.has_sale_price %}<span class="badge badge-sale">-{{ product|discount_percent }}%</span>{% endif %}
+        </div>
+        {% if main %}
+            <img class="pimg pimg1" loading="lazy" src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}">
+            {% if second %}<img class="pimg pimg2" loading="lazy" src="{{ second.image.url }}" alt="">{% endif %}
         {% else %}
-            <span>Spooky Strawberry</span>
+            <span class="ph-placeholder">Spooky Strawberry</span>
         {% endif %}
-        {% if not product.is_available %}
-            <strong class="product-card__badge">Brak</strong>
-        {% endif %}
+        <div class="quick">
+            <span class="btn btn-primary btn-sm btn-block">Podgląd</span>
+        </div>
     </a>
-    <div class="product-card__body">
-        <div class="product-card__meta">
-            {% for aesthetic in product.aesthetics.all|slice:":1" %}
-                <span>{{ aesthetic.name }}</span>
-            {% endfor %}
-        </div>
-        <h3><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></h3>
-        <p>
-            {{ product.current_price|money }}
-            {% if product.has_sale_price %}
-                <span>{{ product.regular_price|money }}</span>
-            {% endif %}
-        </p>
-        <div class="product-card__swatches" aria-label="Dostępne kolory">
-            {% for item in product.variants.all %}
-                {% if item.color %}
-                    <span style="--swatch: {{ item.color.hex_code|default:'#111111' }}" title="{{ item.color.name }}"></span>
-                {% endif %}
-            {% endfor %}
-        </div>
-        <div class="product-card__actions">
-            <a href="{{ product.get_absolute_url }}">Wybierz</a>
+    <div class="pinfo">
+        <div class="ptype">{% if product.aesthetics.all %}{{ product.aesthetics.all.0.name }}{% else %}{{ product.category.name }}{% endif %}</div>
+        <a class="pname" href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+        <div class="pbottom">
+            <span class="price">
+                {% if product.has_sale_price %}<s>{{ product.regular_price|money }}</s>{% endif %}
+                {{ product.current_price|money }}
+            </span>
             <form method="post" action="{% url 'cart:add' %}">
                 {% csrf_token %}
                 <input type="hidden" name="variant_id" value="{% if variant %}{{ variant.id }}{% endif %}">
                 <input type="hidden" name="quantity" value="1">
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" {% if not variant or not variant.is_in_stock %}disabled{% endif %}>
-                    {% if variant and variant.is_in_stock %}Dodaj{% else %}Brak{% endif %}
-                </button>
+                <button type="submit" class="addmini" aria-label="Dodaj do koszyka" {% if not variant or not variant.is_in_stock %}disabled{% endif %}>+</button>
             </form>
         </div>
+        <div class="swatches" aria-label="Dostępne kolory">
+            {% for v in product.variants.all %}{% if v.color %}<span class="swatch" style="background:{{ v.color.hex_code|default:'#1A1118' }}" title="{{ v.color.name }}"></span>{% endif %}{% endfor %}
+        </div>
     </div>
-</article>
+</div>
 {% endwith %}

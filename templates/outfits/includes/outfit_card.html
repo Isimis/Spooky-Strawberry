@@ -1,31 +1,13 @@
 {% load catalog_extras %}
-
-{% with image=outfit.images.all.0 %}
-<article class="content-card">
-    <a href="{{ outfit.get_absolute_url }}" class="content-card__image">
-        {% if image %}
-            <img src="{{ image.image.url }}" alt="{{ image.alt_text }}">
-        {% else %}
-            <span>Spooky Strawberry</span>
-        {% endif %}
-    </a>
-    <div class="content-card__body">
-        <div class="product-card__meta">
-            {% for aesthetic in outfit.aesthetics.all|slice:":2" %}
-                <span>{{ aesthetic.name }}</span>
-            {% endfor %}
-        </div>
-        <h3><a href="{{ outfit.get_absolute_url }}">{{ outfit.name }}</a></h3>
-        {% if outfit.short_description %}
-            <p>{{ outfit.short_description }}</p>
-        {% endif %}
-        <strong>
-            {% if outfit.bundle_price %}
-                Cena promocyjna: {{ outfit.bundle_price|money }}
-            {% else %}
-                Produkty osobno: {{ outfit.products_total|money }}
-            {% endif %}
-        </strong>
+{% with main=outfit.main_image grad=outfit.aesthetics.all.0.card_gradient %}
+<a class="lookcard{% if feat %} feat{% endif %}" href="{{ outfit.get_absolute_url }}">
+    <div class="lbg" style="{% if main %}background-image:url('{{ main.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ grad|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
+    <div class="lov"></div>
+    {% if outfit.is_featured %}<span class="ltag">Polecana</span>{% endif %}
+    <div class="lci">
+        <div class="k">Stylizacja</div>
+        <h4>{{ outfit.name }}</h4>
+        <p>{{ outfit.items.count }} {% if outfit.items.count == 1 %}produkt{% else %}produkty{% endif %} · {{ outfit.display_price|money }}</p>
     </div>
-</article>
+</a>
 {% endwith %}

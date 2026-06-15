@@ -24,7 +24,7 @@ from django.views.decorators.http import require_http_methods
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
-from core.models import NewsletterSubscriber
+from core.models import NewsletterSubscriber, SiteSettings
 from dashboard.models import DataQualityIssue
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitImage, OutfitItem
@@ -39,6 +39,7 @@ from .forms import (
     ProductDashboardForm,
     ProductImageFormSet,
     ProductVariantFormSet,
+    SiteSettingsDashboardForm,
     build_model_form,
 )
 from .registry import MODEL_REGISTRY, get_model_config, get_sections
@@ -95,6 +96,44 @@ def home(request):
             "sections": get_sections(),
             "analytics": get_dashboard_analytics(),
             "open_quality_issues": open_quality_issues,
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def site_settings(request):
+    settings_obj = SiteSettings.load()
+    form = SiteSettingsDashboardForm(request.POST or None, instance=settings_obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Ustawienia strony zapisane.")
+        return redirect("dashboard:site_settings")
+
+    selected_ids = set(settings_obj.drop_products.values_list("id", flat=True))
+    drop_products = []
+    for product in (
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
+        .prefetch_related("images")
+        .order_by("-created_at", "name")
+    ):
+        image = product.main_image
+        drop_products.append(
+            {
+                "product": product,
+                "thumb": image.image.url if image else "",
+                "selected": product.id in selected_ids,
+            }
+        )
+
+    return render(
+        request,
+        "dashboard/site_settings.html",
+        {
+            "form": form,
+            "drop_products": drop_products,
+            "drop_selected_count": len(selected_ids),
+            "sections": get_sections(),
         },
     )
 
@@ -261,6 +300,15 @@ def model_list(request, model_slug):
     )
 
 
+def seed_product_low_stock_defaults(form):
+    """Ustawia początkowe wartości „ostatnich sztuk” dla nowego produktu na bazie Ustawień strony."""
+    settings_obj = SiteSettings.load()
+    if "disable_low_stock_badge" in form.fields:
+        form.initial.setdefault("disable_low_stock_badge", not settings_obj.low_stock_default_enabled)
+    if "low_stock_threshold" in form.fields:
+        form.initial.setdefault("low_stock_threshold", settings_obj.low_stock_threshold)
+
+
 @staff_required
 @require_http_methods(["GET", "POST"])
 def model_create(request, model_slug):
@@ -276,6 +324,8 @@ def model_create(request, model_slug):
         return redirect("dashboard:order_create_workspace")
     form_class = build_model_form(config.model)
     form = form_class(request.POST or None, request.FILES or None)
+    if config.model is Product and request.method != "POST":
+        seed_product_low_stock_defaults(form)
     if request.method == "POST" and form.is_valid():
         obj = form.save()
         messages.success(request, f"Zapisano: {obj}")
@@ -2681,6 +2731,11 @@ def build_product_fieldsets(form):
                     "sale_price",
                 ]
             ],
+        },
+        {
+            "title": "Oznaczenia i etykiety",
+            "description": "Etykiety na karcie produktu. „Promocja” pojawia się automatycznie, gdy ustawisz cenę promocyjną. „Ostatnie sztuki” pojawia się automatycznie, gdy stan spadnie do progu poniżej — chyba że je wyłączysz.",
+            "fields": [form[name] for name in ["is_new", "is_bestseller", "disable_low_stock_badge", "low_stock_threshold"]],
         },
         {
             "title": "SEO",

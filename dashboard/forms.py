@@ -8,7 +8,7 @@ from django.utils.text import slugify
 
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size, unique_slug_for
-from core.models import NewsletterSubscriber
+from core.models import NewsletterSubscriber, SiteSettings
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitImage, OutfitItem
 
@@ -117,21 +117,30 @@ class CategoryDashboardForm(AutoSlugDashboardForm):
 class AestheticDashboardForm(AutoSlugDashboardForm):
     class Meta:
         model = Aesthetic
-        fields = ["name", "description", "sort_order", "is_active"]
+        fields = ["name", "tagline", "description", "image", "card_gradient", "is_featured", "sort_order", "is_active"]
         labels = {
             "name": "Nazwa estetyki",
+            "tagline": "Podtytuł kafelka",
             "description": "Opis estetyki",
+            "image": "Zdjęcie estetyki",
+            "card_gradient": "Gradient tła (fallback)",
+            "is_featured": "Wyróżniona (większy kafelek)",
             "sort_order": "Kolejność wyświetlania",
             "is_active": "Widoczna w sklepie",
         }
         help_texts = {
             "name": "Nazwa stylu używana w filtrach i sekcjach sklepu.",
+            "tagline": "Krótkie hasło na kafelku, np. „Mrok, ale delikatny”.",
             "description": "Krótki opis klimatu, który później może trafić do kolekcji albo SEO.",
+            "image": "Zdjęcie tła kafelka i hero estetyki. Jeśli puste, użyty zostanie gradient.",
+            "card_gradient": "Dwa kolory rozdzielone przecinkiem, np. „#2a1622,#7a3d5a”.",
+            "is_featured": "Wyróżnione estetyki dostają większy kafelek w mozaice.",
             "sort_order": "Niższa liczba oznacza wcześniejsze miejsce na listach.",
             "is_active": "Wyłącz, jeśli estetyka ma zostać w panelu, ale nie ma być używana w sklepie.",
         }
         widgets = {
             "description": forms.Textarea(attrs={"rows": 6, "placeholder": "Np. soft goth, dark coquette, grunge..."}),
+            "card_gradient": forms.TextInput(attrs={"placeholder": "#2a1622,#7a3d5a"}),
             "sort_order": forms.NumberInput(attrs={"min": 0}),
         }
 
@@ -599,6 +608,10 @@ class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
             "regular_price",
             "sale_price",
             "is_featured",
+            "is_new",
+            "is_bestseller",
+            "disable_low_stock_badge",
+            "low_stock_threshold",
             "seo_title",
             "seo_description",
             "status",
@@ -612,6 +625,10 @@ class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
             "regular_price": "Cena regularna",
             "sale_price": "Cena promocyjna",
             "is_featured": "Polecany produkt",
+            "is_new": "Oznacz jako nowość",
+            "is_bestseller": "Oznacz jako bestseller",
+            "disable_low_stock_badge": "Nie pokazuj „ostatnie sztuki”",
+            "low_stock_threshold": "Próg „ostatnich sztuk” (szt.)",
             "seo_title": "Tytuł SEO",
             "seo_description": "Opis SEO",
             "status": "Status produktu",
@@ -621,6 +638,10 @@ class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
             "styling_tips": "Krótka inspiracja: do czego pasuje produkt i jak go nosić.",
             "regular_price": "Podstawowa cena produktu.",
             "sale_price": "Cena po obniżce. Zostaw puste, jeśli produkt nie jest w promocji.",
+            "is_new": "Pokazuje etykietę „Nowość” na karcie produktu.",
+            "is_bestseller": "Pokazuje etykietę „Bestseller” na karcie produktu.",
+            "disable_low_stock_badge": "Wyłącza automatyczne „ostatnie sztuki” dla tego produktu, nawet gdy stan jest niski.",
+            "low_stock_threshold": "Od jakiego stanu pokazywać „ostatnie sztuki” dla tego produktu. Wartość początkowa pochodzi z Ustawień strony.",
             "seo_title": "Opcjonalny tytuł do wyszukiwarki.",
             "seo_description": "Opcjonalny opis do wyszukiwarki.",
         }
@@ -629,6 +650,7 @@ class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 8, "data-rich-text-input": "description"}),
             "styling_tips": forms.Textarea(attrs={"rows": 4}),
             "seo_description": forms.Textarea(attrs={"rows": 3}),
+            "low_stock_threshold": forms.NumberInput(attrs={"min": 0}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -928,3 +950,52 @@ OrderItemFormSet = inlineformset_factory(
     extra=0,
     can_delete=True,
 )
+
+
+class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = [
+            "announcement_is_active",
+            "announcement_text",
+            "low_stock_default_enabled",
+            "low_stock_threshold",
+            "drop_is_active",
+            "drop_eyebrow",
+            "drop_heading",
+            "drop_date",
+            "drop_products",
+        ]
+        labels = {
+            "announcement_is_active": "Pokaż pasek zapowiedzi",
+            "announcement_text": "Tekst paska zapowiedzi",
+            "low_stock_default_enabled": "Domyślnie pokazuj „ostatnie sztuki” dla nowych produktów",
+            "low_stock_threshold": "Domyślny próg „ostatnich sztuk” (szt.)",
+            "drop_is_active": "Pokaż datę dropu na stronie głównej",
+            "drop_eyebrow": "Nadtytuł dropu (nad hasłem hero)",
+            "drop_heading": "Nagłówek sekcji „Najnowszy drop”",
+            "drop_date": "Data i godzina dropu",
+            "drop_products": "Produkty w dropie",
+        }
+        help_texts = {
+            "announcement_text": "Tekst na czarnym pasku nad nagłówkiem. Możesz użyć emoji.",
+            "low_stock_default_enabled": "Wartość domyślna dla NOWO dodawanych produktów: czy mają od razu mieć włączoną etykietę „ostatnie sztuki”. Nie zmienia produktów już dodanych — każdy produkt ma własne ustawienie.",
+            "low_stock_threshold": "Domyślny próg dla NOWO dodawanych produktów. Każdy produkt ma własny próg, który możesz później zmienić w jego ustawieniach.",
+            "drop_eyebrow": "Tekst widoczny nad hasłem na stronie głównej, np. „Najnowszy drop”.",
+            "drop_date": "Wyświetlana na hero, np. „piątek 20:00”. Zostaw puste, by nie pokazywać godziny.",
+            "drop_products": "Produkty pokazywane w sekcji „Najnowszy drop”. Jeśli nic nie wybierzesz, pokażemy najnowsze produkty.",
+        }
+        widgets = {
+            "announcement_text": forms.TextInput(),
+            "low_stock_threshold": forms.NumberInput(attrs={"min": 1}),
+            "drop_date": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+            "drop_products": forms.CheckboxSelectMultiple(attrs={"class": "dashboard-choice-list"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["drop_date"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"]
+        self.fields["drop_products"].queryset = Product.objects.filter(
+            status=Product.STATUS_ACTIVE
+        ).order_by("sort_order", "name")
+        self.apply_dashboard_widgets()

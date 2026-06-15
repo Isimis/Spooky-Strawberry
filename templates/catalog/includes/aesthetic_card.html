@@ -1,0 +1,10 @@
+<a class="coll{% if mosaic and aesthetic.is_featured %} tall{% endif %}" href="{{ aesthetic.get_absolute_url }}">
+    <div class="cbg" style="{% if aesthetic.image %}background-image:url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
+    <div class="cov"></div>
+    <div class="arrow">→</div>
+    <div class="ctxt">
+        <div class="k">Estetyka</div>
+        <h3>{{ aesthetic.name }}</h3>
+        {% if aesthetic.tagline %}<p>{{ aesthetic.tagline }}</p>{% endif %}
+    </div>
+</a>

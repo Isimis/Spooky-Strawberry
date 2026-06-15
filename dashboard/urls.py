@@ -6,6 +6,7 @@ app_name = "dashboard"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("ustawienia/", views.site_settings, name="site_settings"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("jakosc-danych/odswiez/", views.refresh_quality, name="refresh_quality"),
