@@ -5,21 +5,30 @@
 {% block content %}
 <section class="phero">
     <div class="aes-words">
-        <span style="top:18%;left:8%;font-size:26px;transform:rotate(-6deg)">soft goth</span>
-        <span style="bottom:18%;right:10%;font-size:30px;transform:rotate(5deg)">coquette</span>
-        <span style="top:50%;right:30%;font-size:20px;transform:rotate(-4deg)">grunge</span>
+        <span style="top:16%;left:7%;font-size:28px;transform:rotate(-7deg)">soft goth</span>
+        <span style="bottom:16%;right:12%;font-size:30px;transform:rotate(6deg)">coquette</span>
+        <span style="top:48%;right:32%;font-size:20px;transform:rotate(-4deg)">grunge</span>
     </div>
     <div class="ph-in">
         <div class="eyebrow">Gotowe na Ciebie</div>
-        <h1>Stylizacje do skopiowania</h1>
-        <p>Gotowe zestawy akcesoriów. Kliknij stylizację, by zobaczyć każdy element i dodać całość do koszyka.</p>
+        <h1>Stylizacje</h1>
+        <p>Gotowe zestawy do skopiowania. Wybierz look, dodaj cały zestaw jednym kliknięciem albo pojedyncze elementy.</p>
     </div>
 </section>
 
-<section class="sec">
-    <div class="looks-art">
+<div class="sec" style="padding-top:24px;padding-bottom:0">
+    <div class="filterbar" style="position:static;border:none;padding:0 0 4px;background:none">
+        <a class="fbtn {% if not selected_aesthetic %}on{% endif %}" href="{% url 'outfits:list' %}">Wszystkie</a>
+        {% for aesthetic in aesthetics %}
+            <a class="fbtn {% if selected_aesthetic == aesthetic.slug %}on{% endif %}" href="{% url 'outfits:list' %}?aesthetic={{ aesthetic.slug }}">{{ aesthetic.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<section class="sec" style="padding-top:18px">
+    <div class="looks-list">
         {% for outfit in outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}
-        {% empty %}<p class="muted">Wkrótce dodamy stylizacje.</p>{% endfor %}
+        {% empty %}<p class="muted">Brak stylizacji dla tej estetyki.</p>{% endfor %}
     </div>
 </section>
 

@@ -5777,3 +5777,121 @@ select.dashboard-input,
 .chart-tooltip.is-visible {
     opacity: 1;
 }
+
+/* =========================================================================
+   LEKKI LIFTING (2026-06) — spójność z frontem sklepu.
+   Fraunces w nagłówkach, Manrope w treści, miększe narożniki,
+   różowe pill-przyciski i akcenty. Dopisane na końcu → nadpisuje powyższe.
+   ========================================================================= */
+.dashboard-body {
+    font-family: var(--f-body, 'Manrope', system-ui, sans-serif);
+    --admin-shadow: 0 10px 30px rgba(16, 12, 16, 0.08);
+}
+.dashboard-body input[type="checkbox"],
+.dashboard-body input[type="radio"] {
+    accent-color: var(--admin-accent);
+}
+
+/* Nagłówki — prawdziwa Fraunces, lżejsza waga, mniej krzykliwe rozmiary */
+.dashboard-heading h1,
+.dashboard-login h1,
+.dashboard-overview-hero h1,
+.stats-header h1,
+.dashboard-card__head h2,
+.dashboard-form-panel__heading h2 {
+    font-family: var(--f-display, 'Fraunces', Georgia, serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+.dashboard-heading h1,
+.dashboard-login h1 {
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.05;
+}
+.dashboard-overview-hero h1 {
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1.02;
+}
+
+/* Karty — miększe narożniki */
+.dashboard-metrics article,
+.dashboard-section-card,
+.dashboard-form,
+.dashboard-login,
+.dashboard-search,
+.dashboard-table-wrap,
+.dashboard-period-card,
+.dashboard-kpi-card,
+.dashboard-card,
+.dashboard-form-panel {
+    border-radius: 16px;
+}
+
+/* Inputy — miększe i czysto białe */
+.dashboard-search input,
+.dashboard-search select,
+.dashboard-input,
+.dashboard-form input,
+.dashboard-form select,
+.dashboard-form textarea {
+    border-radius: 12px;
+    background: #fff;
+    min-height: 44px;
+}
+select.dashboard-input,
+.dashboard-form select,
+.dashboard-search select {
+    background-color: #fff;
+}
+
+/* Przyciski — różowy pill */
+.dashboard-body .button,
+.dashboard-search button,
+.dashboard-search a,
+.dashboard-actions button,
+.dashboard-actions a {
+    border-radius: 999px;
+    background: var(--admin-accent);
+    color: #fff;
+    min-height: 44px;
+    padding: 11px 20px;
+    font-weight: 800;
+}
+.dashboard-body .button:hover,
+.dashboard-search button:hover,
+.dashboard-search a:hover,
+.dashboard-actions button:hover,
+.dashboard-actions a:hover {
+    background: #c64e85;
+    color: #fff;
+}
+.dashboard-body .button--secondary {
+    background: #fff;
+    color: var(--admin-ink);
+    border: 1.5px solid var(--admin-line);
+}
+.dashboard-body .button--secondary:hover {
+    background: var(--admin-soft);
+    border-color: var(--admin-accent);
+    color: #a83a6e;
+}
+
+/* Tabele — pill-owe akcje, lżejszy nagłówek */
+.dashboard-table th {
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+.dashboard-table a {
+    border-radius: 999px;
+    font-weight: 800;
+}
+
+/* Nawigacja i pill-listy — miększe narożniki */
+.dashboard-topbar__nav a,
+.dashboard-sidebar a,
+.dashboard-sidebar__home {
+    border-radius: 10px;
+}
+.dashboard-choice-list label {
+    border-radius: 999px;
+}

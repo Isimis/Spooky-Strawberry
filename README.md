@@ -33,7 +33,7 @@ Spooky Strawberry
 ├── Strona główna
 │   ├── Hero / najnowszy drop
 │   ├── Polecane produkty
-│   ├── Gotowe kreacje
+│   ├── Gotowe stylizacje
 │   ├── Kolekcje / estetyki
 │   │   ├── Soft goth
 │   │   ├── Dark coquette
@@ -66,12 +66,12 @@ Spooky Strawberry
 │   ├── Opis klimatyczny
 │   ├── Szczegóły produktu
 │   ├── Jak stylizować
-│   ├── Powiązane kreacje
+│   ├── Powiązane stylizacje
 │   └── Podobne produkty
 │
-├── Gotowe kreacje
-│   ├── Lista kreacji
-│   └── Szczegóły kreacji
+├── Gotowe stylizacje
+│   ├── Lista stylizacji
+│   └── Szczegóły stylizacji
 │       ├── Zdjęcie/modelka/outfit
 │       ├── Produkty w zestawie
 │       ├── Cena osobno
@@ -84,7 +84,7 @@ Spooky Strawberry
 │   └── Artykuł
 │       ├── Treść SEO
 │       ├── Produkty powiązane
-│       └── Kreacje powiązane
+│       └── Stylizacje powiązane
 │
 ├── Koszyk
 │   ├── Produkty
@@ -110,7 +110,7 @@ Spooky Strawberry
     ├── Warianty
     ├── Zdjęcia
     ├── Kolekcje
-    ├── Gotowe kreacje
+    ├── Gotowe stylizacje
     ├── Zamówienia
     ├── Artykuły SEO
     ├── Statystyki

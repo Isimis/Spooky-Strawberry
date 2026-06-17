@@ -539,9 +539,9 @@ def outfit_create_workspace(request):
     if request.method == "POST":
         if outfit_form.is_valid():
             outfit = outfit_form.save()
-            messages.success(request, "Kreacja utworzona. Teraz możesz dodać produkty i zdjęcia.")
+            messages.success(request, "Stylizacja utworzona. Teraz możesz dodać produkty i zdjęcia.")
             return redirect("dashboard:outfit_workspace", pk=outfit.pk)
-        messages.error(request, "Nie udało się utworzyć kreacji. Sprawdź błędy w formularzu.")
+        messages.error(request, "Nie udało się utworzyć stylizacji. Sprawdź błędy w formularzu.")
 
     return render(
         request,
@@ -607,9 +607,9 @@ def outfit_workspace(request, pk):
                     delete_workspace_outfit_items(outfit, request.POST.get("deleted_item_ids", ""))
                     create_outfit_images(outfit, new_image_files)
                     sync_outfit_main_image(outfit)
-                messages.success(request, "Kreacja zapisana razem z produktami i zdjęciami.")
+                messages.success(request, "Stylizacja zapisana razem z produktami i zdjęciami.")
                 return redirect("dashboard:outfit_workspace", pk=outfit.pk)
-        messages.error(request, "Nie udało się zapisać kreacji. Sprawdź błędy w formularzu.")
+        messages.error(request, "Nie udało się zapisać stylizacji. Sprawdź błędy w formularzu.")
 
     return render(
         request,
@@ -2748,13 +2748,13 @@ def build_product_fieldsets(form):
 def build_outfit_fieldsets(form):
     return [
         {
-            "title": "Podstawy kreacji",
+            "title": "Podstawy stylizacji",
             "description": "Nazwa, estetyki i widoczność w sklepie. Slug tworzy się automatycznie z nazwy.",
             "fields": [form[name] for name in ["name", "aesthetics", "status"]],
         },
         {
-            "title": "Treść kreacji",
-            "description": "Opis widoczny na liście, karcie kreacji i w inspiracjach stylizacyjnych.",
+            "title": "Treść stylizacji",
+            "description": "Opis widoczny na liście, karcie stylizacji i w inspiracjach stylizacyjnych.",
             "fields": [form[name] for name in ["short_description", "mood_description", "styling_tips"]],
         },
         {
@@ -2784,7 +2784,7 @@ def build_article_fieldsets(form):
         },
         {
             "title": "3. Powiązania",
-            "description": "Połącz poradnik z estetykami, produktami i gotowymi kreacjami.",
+            "description": "Połącz poradnik z estetykami, produktami i gotowymi stylizacjami.",
             "fields": [form[name] for name in ["aesthetics", "products", "outfits"]],
         },
     ]

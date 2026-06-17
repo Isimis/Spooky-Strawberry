@@ -1,24 +1,24 @@
 {% extends "dashboard/base.html" %}
 {% load catalog_extras %}
 
-{% block title %}{% if outfit %}{{ outfit.name }}{% else %}Nowa kreacja{% endif %} | Spooky Admin{% endblock %}
+{% block title %}{% if outfit %}{{ outfit.name }}{% else %}Nowa stylizacja{% endif %} | Spooky Admin{% endblock %}
 
 {% block content %}
 <section class="dashboard-heading dashboard-heading--row">
     <div>
-        <p class="eyebrow">Kreacja</p>
-        <h1>{% if outfit %}{{ outfit.name }}{% else %}Nowa gotowa kreacja{% endif %}</h1>
+        <p class="eyebrow">Stylizacja</p>
+        <h1>{% if outfit %}{{ outfit.name }}{% else %}Nowa gotowa stylizacja{% endif %}</h1>
         <p>Edytuj stylizację, produkty w zestawie, zdjęcia i cenę promocyjną w jednym miejscu.</p>
     </div>
     <div class="dashboard-heading__actions">
         {% if outfit %}
             <a href="{{ outfit.get_absolute_url }}" class="button button--secondary">Podgląd w sklepie</a>
         {% endif %}
-        <a href="{% url 'dashboard:model_list' 'outfits' %}" class="button button--secondary">Lista kreacji</a>
+        <a href="{% url 'dashboard:model_list' 'outfits' %}" class="button button--secondary">Lista stylizacji</a>
     </div>
 </section>
 
-<section class="dashboard-product-summary dashboard-outfit-summary" aria-label="Podsumowanie kreacji">
+<section class="dashboard-product-summary dashboard-outfit-summary" aria-label="Podsumowanie stylizacji">
     <article>
         <span>Status</span>
         <strong>{{ outfit_summary.status_label }}</strong>
@@ -63,7 +63,7 @@
                             {% elif field.name == "mood_description" or field.name == "styling_tips" %}
                                 <div class="dashboard-field dashboard-field--rich-text" data-rich-text>
                                     <span>{{ field.label }}</span>
-                                    <div class="dashboard-rich-toolbar" aria-label="Formatowanie tekstu kreacji">
+                                    <div class="dashboard-rich-toolbar" aria-label="Formatowanie tekstu stylizacji">
                                         <button type="button" data-rich-action="bold">B</button>
                                         <button type="button" data-rich-action="italic">I</button>
                                         <button type="button" data-rich-action="heading">Nagłówek</button>
@@ -139,7 +139,7 @@
             <div class="dashboard-form-panel__heading dashboard-heading--row">
                 <div>
                     <p class="eyebrow">Produkty</p>
-                    <h2>Produkty w kreacji</h2>
+                    <h2>Produkty w stylizacji</h2>
                     <p>Dodaj produkty, warianty i ilości, które tworzą gotowy zestaw.</p>
                 </div>
                 <button type="button" class="button" data-add-form="items">Dodaj produkt</button>
@@ -158,10 +158,10 @@
                                 {% if form.instance.pk %}
                                     <small>{{ form.instance.product }}</small>
                                 {% else %}
-                                    <small>Nowy produkt w kreacji</small>
+                                    <small>Nowy produkt w stylizacji</small>
                                 {% endif %}
                             </div>
-                            <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń produkt z kreacji">×</button>
+                            <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń produkt z stylizacji">×</button>
                         </div>
                         <div class="dashboard-variant-fields dashboard-outfit-item-fields">
                             {% for field in form.visible_fields %}
@@ -189,9 +189,9 @@
                     <div class="dashboard-variant-card__top">
                         <div>
                             <strong>Pozycja <span data-form-index></span></strong>
-                            <small>Nowy produkt w kreacji</small>
+                            <small>Nowy produkt w stylizacji</small>
                         </div>
-                        <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń produkt z kreacji">×</button>
+                        <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń produkt z stylizacji">×</button>
                     </div>
                     <div class="dashboard-variant-fields dashboard-outfit-item-fields">
                         {% for field in item_formset.empty_form.visible_fields %}
@@ -213,7 +213,7 @@
 
         <section class="dashboard-form-panel dashboard-image-panel">
             <div class="dashboard-form-panel__heading">
-                <p class="eyebrow">Zdjęcia kreacji</p>
+                <p class="eyebrow">Zdjęcia stylizacji</p>
                 <h2>Galeria i kolejność zdjęć</h2>
                 <p>Pierwsze zdjęcie w kolejności będzie zdjęciem głównym. Możesz wybrać pliki, przeciągnąć je albo wkleić obraz przez Ctrl+V.</p>
             </div>
@@ -247,7 +247,7 @@
                         {{ form.non_field_errors }}
                     </article>
                 {% empty %}
-                    <p class="dashboard-empty-note" data-empty-images>Ta kreacja nie ma jeszcze zdjęć.</p>
+                    <p class="dashboard-empty-note" data-empty-images>Ta stylizacja nie ma jeszcze zdjęć.</p>
                 {% endfor %}
             </div>
         </section>
@@ -255,16 +255,16 @@
         <section class="dashboard-quality-panel dashboard-quality-panel--ok">
             <div>
                 <p class="eyebrow">Następny krok</p>
-                <h2>Zapisz kreację, żeby dodać produkty i zdjęcia</h2>
+                <h2>Zapisz stylizację, żeby dodać produkty i zdjęcia</h2>
             </div>
             <p>Po pierwszym zapisie pojawi się sekcja produktów w zestawie oraz galeria zdjęć.</p>
         </section>
     {% endif %}
 
     <div class="dashboard-save-bar">
-        <button type="submit" class="button">{% if outfit %}Zapisz kreację{% else %}Utwórz kreację{% endif %}</button>
+        <button type="submit" class="button">{% if outfit %}Zapisz stylizację{% else %}Utwórz stylizację{% endif %}</button>
         {% if outfit %}
-            <a href="{% url 'dashboard:model_delete' 'outfits' outfit.pk %}">Usuń kreację</a>
+            <a href="{% url 'dashboard:model_delete' 'outfits' outfit.pk %}">Usuń stylizację</a>
         {% endif %}
     </div>
 </form>

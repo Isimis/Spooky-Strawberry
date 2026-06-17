@@ -34,9 +34,9 @@ MODEL_REGISTRY = [
     AdminModelConfig("sizes", "Rozmiary", Size, "Katalog", ("name", "sort_order", "is_active"), ("name",)),
     AdminModelConfig(
         "outfits",
-        "Gotowe kreacje",
+        "Gotowe stylizacje",
         Outfit,
-        "Kreacje",
+        "Stylizacje",
         ("name", "status", "is_featured", "bundle_price", "sort_order"),
         ("name", "short_description", "mood_description"),
     ),

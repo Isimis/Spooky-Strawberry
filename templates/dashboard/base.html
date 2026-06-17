@@ -6,8 +6,11 @@
     <meta charset="UTF-8">
     <title>{% block title %}Panel | Spooky Strawberry{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260615-gutters2">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20260608-analytics-workspaces">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260616-stylizacje">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20260616-polish">
 </head>
 <body class="dashboard-body">
     <header class="dashboard-topbar">
@@ -33,6 +36,9 @@
                     {% url 'dashboard:site_settings' as settings_url %}
                     <a href="{{ settings_url }}" class="dashboard-sidebar__home {% if request.path == settings_url %}is-active{% endif %}">
                         Ustawienia strony
+                    </a>
+                    <a href="{% url 'core:design_system' %}" class="dashboard-sidebar__home" target="_blank" rel="noopener">
+                        Design System ↗
                     </a>
                     {% for section, configs in sections.items %}
                         <section>

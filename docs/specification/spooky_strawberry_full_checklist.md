@@ -57,7 +57,7 @@ Checkout, platnosci PayU/Przelewy24 i finalne procesowanie zamowien sa celowo od
 - [x] `P0` Istnieje widok `/sklep/`.
 - [x] `P0` Istnieje widok `/produkt/<slug>/`.
 - [x] `P0` Istnieja placeholdery: kontakt, wyszukiwanie, koszyk, konto, polityki.
-- [x] `P0` Istnieja pierwsze modele domenowe dla kont, kreacji, bloga, zamowien, checkout draft, dashboardu, AI i tresci core.
+- [x] `P0` Istnieja pierwsze modele domenowe dla kont, stylizacji, bloga, zamowien, checkout draft, dashboardu, AI i tresci core.
 - [ ] `P0` Uporzadkowac obecne zmiany w Git i zrobic commit bazowy po zakonczeniu tego etapu.
 - [ ] `P1` Dodac minimalne testy regresji dla home, katalogu, produktu, kontaktu, wyszukiwania, koszyka i polityk.
 - [ ] `P1` Dodac dokument "jak odpalic projekt lokalnie" dla przyszlego siebie.
@@ -99,7 +99,7 @@ Checkout, platnosci PayU/Przelewy24 i finalne procesowanie zamowien sa celowo od
 - [ ] `P0` Dopasowac sekcje "Nasz najnowszy drop" do obecnej strony.
 - [ ] `P0` Pokazac wszystkie produkty nowego dropu albo kontrolowana liczbe z przyciskiem "Wyswietl wszystko".
 - [ ] `P1` Dodac sekcje polecanych produktow.
-- [x] `P1` Dodac sekcje gotowych kreacji jako placeholder do czasu modeli `outfits`.
+- [x] `P1` Dodac sekcje gotowych stylizacji jako placeholder do czasu modeli `outfits`.
 - [ ] `P1` Dodac sekcje kolekcji/estetyk: Soft goth, Dark coquette, Jirai kei, Grunge, Y2K/emo.
 - [ ] `P1` Dodac sekcje poradnikowa SEO z linkami do przyszlych artykulow.
 - [ ] `P1` Dodac newsletter z tekstem inspirowanym Shopify: nowe dropy i promocje.
@@ -151,29 +151,29 @@ Checkout, platnosci PayU/Przelewy24 i finalne procesowanie zamowien sa celowo od
 - [ ] `P1` Dodac realna obsluge ilosci po stronie JS.
 - [ ] `P1` Dodac sekcje "Dostawa i zwroty" jako accordion.
 - [ ] `P1` Dodac sekcje "Materialy i pielegnacja", jesli dane beda dostepne.
-- [x] `P1` Dodac powiazane gotowe kreacje.
+- [x] `P1` Dodac powiazane gotowe stylizacje.
 - [ ] `P1` Dodac podobne produkty po estetyce, nie tylko po kategorii.
 - [ ] `P1` Dodac meta tagi produktu: title, description, OG, product price, image.
 - [ ] `P1` Dodac JSON-LD Product schema.
 - [ ] `P2` Dodac rekomendacje oparte o analityke: ogladane razem, dodawane razem, kupowane razem.
 - [ ] `P2` Dodac testy: produkt aktywny, produkt draft, warianty, brak zdjec, podobne produkty.
 
-## 5. Gotowe kreacje
+## 5. Gotowe stylizacje
 
 - [x] `P0` Ustalic minimalny model `Outfit`: nazwa, slug, opis, estetyki, glowne zdjecie, status.
 - [x] `P0` Ustalic model produktow w zestawie: outfit, produkt/wariant, ilosc, sort_order.
-- [x] `P1` Dodac liste gotowych kreacji.
-- [x] `P1` Dodac szczegoly kreacji.
+- [x] `P1` Dodac liste gotowych stylizacji.
+- [x] `P1` Dodac szczegoly stylizacji.
 - [x] `P1` Pokazac zdjecie/modelke/outfit.
 - [x] `P1` Pokazac produkty w zestawie.
 - [x] `P1` Pokazac cene osobno.
 - [x] `P1` Pokazac cene zestawu.
 - [ ] `P1` Dodac CTA "Dodaj caly zestaw" dopiero po koszyku sesyjnym.
 - [x] `P1` Dodac linki do pojedynczych produktow.
-- [x] `P1` Powiazac kreacje z karta produktu.
-- [ ] `P1` Powiazac kreacje z poradnikami SEO.
+- [x] `P1` Powiazac stylizacje z karta produktu.
+- [ ] `P1` Powiazac stylizacje z poradnikami SEO.
 - [ ] `P2` Dodac rabaty zestawowe.
-- [ ] `P2` Dodac analityke skutecznosci kreacji: views, clicks, add_to_cart, conversion.
+- [ ] `P2` Dodac analityke skutecznosci stylizacji: views, clicks, add_to_cart, conversion.
 
 ## 6. Poradniki SEO
 
@@ -181,7 +181,7 @@ Checkout, platnosci PayU/Przelewy24 i finalne procesowanie zamowien sa celowo od
 - [x] `P1` Dodac liste poradnikow.
 - [x] `P1` Dodac widok artykulu.
 - [x] `P1` Powiazac artykuly z produktami.
-- [x] `P1` Powiazac artykuly z gotowymi kreacjami.
+- [x] `P1` Powiazac artykuly z gotowymi stylizacjami.
 - [ ] `P1` Dodac sekcje poradnikowa na home.
 - [x] `P1` Dodac sekcje produktow pod artykulem.
 - [ ] `P1` Dodac linkowanie z produktu do poradnika.
@@ -227,7 +227,7 @@ Checkout, platnosci PayU/Przelewy24 i finalne procesowanie zamowien sa celowo od
 - [x] `P1` Dodac edycje wariantow.
 - [x] `P1` Dodac zarzadzanie zdjeciami.
 - [x] `P1` Dodac zarzadzanie kategoriami i estetykami.
-- [x] `P1` Dodac zarzadzanie gotowymi kreacjami.
+- [x] `P1` Dodac zarzadzanie gotowymi stylizacjami.
 - [x] `P1` Dodac zarzadzanie artykulami SEO.
 - [ ] `P1` Dodac ekran importu/synchronizacji z Shopify jako narzedzie robocze.
 - [x] `P1` Dodac walidator brakow produktu: brak SEO, brak zdjec, brak wariantow, brak opisu.
@@ -263,7 +263,7 @@ Checkout, platnosci PayU/Przelewy24 i finalne procesowanie zamowien sa celowo od
 - [ ] `P2` Proponowac tagi i estetyki na podstawie nazwy/zdjec/opisu.
 - [ ] `P2` Wykrywac brakujace dane produktu.
 - [ ] `P2` Proponowac SEO title i SEO description.
-- [ ] `P2` Proponowac podobne produkty i kreacje.
+- [ ] `P2` Proponowac podobne produkty i stylizacje.
 - [ ] `P2` Analizowac statystyki i sugerowac produkty do dokupienia.
 - [ ] `P2` Pomagac przy grafikach dopiero po ustaleniu realnego workflow.
 - [ ] `P2` Wymagac recznej akceptacji kazdej tresci generowanej przez AI.

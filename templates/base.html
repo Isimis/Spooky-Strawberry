@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260615-gutters2">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260616-stylizacje">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -30,6 +30,7 @@
         <nav class="hdr-nav" aria-label="Główna nawigacja">
             <a href="{% url 'catalog:product_list' %}">Katalog</a>
             <a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+            <a href="{% url 'outfits:list' %}">Stylizacje</a>
             <a href="{% url 'blog:list' %}">Lifestyle</a>
             <a href="{% url 'core:contact' %}">Kontakt</a>
         </nav>
@@ -115,7 +116,7 @@
     <div class="ft-base">© {% now "Y" %} Spooky Strawberry · Zrobione z 🖤 w Polsce</div>
 </footer>
 
-<script src="{% static 'js/storefront.js' %}?v=20260615-gutters2"></script>
+<script src="{% static 'js/storefront.js' %}?v=20260616-stylizacje"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

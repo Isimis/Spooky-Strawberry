@@ -8,7 +8,7 @@
     <div>
         <p class="eyebrow">Poradniki SEO</p>
         <h1>Poradniki</h1>
-        <p>Zarządzaj artykułami, okładkami, kategoriami, SEO i powiązaniami z produktami oraz kreacjami.</p>
+        <p>Zarządzaj artykułami, okładkami, kategoriami, SEO i powiązaniami z produktami oraz stylizacjami.</p>
     </div>
     <div class="dashboard-heading__actions">
         <a href="{% url 'dashboard:article_create_workspace' %}" class="button">Dodaj poradnik</a>
@@ -113,7 +113,7 @@
                         <dd>{{ row.product_count }}</dd>
                     </div>
                     <div>
-                        <dt>Kreacje</dt>
+                        <dt>Stylizacje</dt>
                         <dd>{{ row.outfit_count }}</dd>
                     </div>
                     <div>
@@ -145,7 +145,7 @@
     {% empty %}
         <article class="dashboard-empty-card">
             <h2>Brak poradników</h2>
-            <p>Dodaj pierwszy artykuł SEO i połącz go z produktami, kreacjami oraz estetykami.</p>
+            <p>Dodaj pierwszy artykuł SEO i połącz go z produktami, stylizacjami oraz estetykami.</p>
             <a href="{% url 'dashboard:article_create_workspace' %}" class="button">Dodaj poradnik</a>
         </article>
     {% endfor %}

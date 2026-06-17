@@ -696,21 +696,21 @@ class OutfitDashboardForm(AutoSlugDashboardForm):
             "seo_description",
         ]
         labels = {
-            "name": "Nazwa kreacji",
+            "name": "Nazwa stylizacji",
             "short_description": "Krótki opis",
             "mood_description": "Opis klimatu",
             "styling_tips": "Porady stylizacyjne",
             "aesthetics": "Estetyki",
             "bundle_price": "Cena promocyjna zestawu",
-            "status": "Status kreacji",
-            "is_featured": "Polecana kreacja",
+            "status": "Status stylizacji",
+            "is_featured": "Polecana stylizacja",
             "seo_title": "Tytuł SEO",
             "seo_description": "Opis SEO",
         }
         help_texts = {
-            "short_description": "Jedno krótkie zdanie widoczne na karcie kreacji.",
+            "short_description": "Jedno krótkie zdanie widoczne na karcie stylizacji.",
             "mood_description": "Główny opis nastroju i stylu zestawu.",
-            "styling_tips": "Jak nosić tę kreację i z czym ją łączyć.",
+            "styling_tips": "Jak nosić tę stylizację i z czym ją łączyć.",
             "bundle_price": "Cena promocyjna za cały zestaw. Zostaw puste, jeśli nie ma rabatu.",
             "seo_title": "Opcjonalny tytuł do wyszukiwarki.",
             "seo_description": "Opcjonalny opis do wyszukiwarki.",
@@ -749,7 +749,7 @@ class OutfitItemInlineForm(DashboardFormMixin, forms.ModelForm):
         }
         help_texts = {
             "variant": "Opcjonalnie wybierz konkretny wariant produktu.",
-            "quantity": "Liczba sztuk tego produktu w kreacji.",
+            "quantity": "Liczba sztuk tego produktu w stylizacji.",
         }
         widgets = {
             "sort_order": forms.HiddenInput(),
@@ -871,7 +871,7 @@ class ArticleDashboardForm(AutoSlugDashboardForm):
             "cover_image": "Okładka",
             "aesthetics": "Estetyki",
             "products": "Powiązane produkty",
-            "outfits": "Powiązane kreacje",
+            "outfits": "Powiązane stylizacje",
             "status": "Status publikacji",
             "is_featured": "Wyróżniony poradnik",
             "published_at": "Data publikacji",
@@ -884,7 +884,7 @@ class ArticleDashboardForm(AutoSlugDashboardForm):
             "body": "Obsługuje proste formatowanie i wklejanie sformatowanego tekstu.",
             "cover_image": "Opcjonalna grafika widoczna na liście i karcie poradnika.",
             "products": "Produkty, które będą pokazane pod artykułem.",
-            "outfits": "Gotowe kreacje powiązane z poradnikiem.",
+            "outfits": "Gotowe stylizacje powiązane z poradnikiem.",
             "published_at": "Możesz zostawić puste. Przy publikacji uzupełni się automatycznie.",
             "seo_title": "Opcjonalny tytuł do wyszukiwarki.",
             "seo_description": "Opcjonalny opis do wyszukiwarki.",

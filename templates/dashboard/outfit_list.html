@@ -1,25 +1,25 @@
 {% extends "dashboard/base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Gotowe kreacje | Spooky Admin{% endblock %}
+{% block title %}Gotowe stylizacje | Spooky Admin{% endblock %}
 
 {% block content %}
 <section class="dashboard-heading dashboard-heading--row dashboard-outfit-heading">
     <div>
-        <p class="eyebrow">Kreacje</p>
-        <h1>Gotowe kreacje</h1>
+        <p class="eyebrow">Stylizacje</p>
+        <h1>Gotowe stylizacje</h1>
         <p>Zarządzaj stylizacjami, zdjęciami, produktami w zestawie i ceną promocyjną.</p>
     </div>
     <div class="dashboard-heading__actions">
-        <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj kreację</a>
+        <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj stylizację</a>
     </div>
 </section>
 
-<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie kreacji">
+<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie stylizacji">
     <article>
         <span>Wszystkie</span>
         <strong>{{ outfit_summary.total_count }}</strong>
-        <small>kreacje w panelu</small>
+        <small>stylizacje w panelu</small>
     </article>
     <article>
         <span>Aktywne</span>
@@ -68,7 +68,7 @@
     </div>
 {% endif %}
 
-<section class="dashboard-outfit-grid" aria-label="Lista kreacji">
+<section class="dashboard-outfit-grid" aria-label="Lista stylizacji">
     {% for row in rows %}
         <article class="dashboard-outfit-card">
             <a href="{{ row.admin_url }}" class="dashboard-outfit-card__image">
@@ -81,7 +81,7 @@
             <div class="dashboard-outfit-card__body">
                 <div class="dashboard-outfit-card__head">
                     <div>
-                        <p class="eyebrow">Kreacja</p>
+                        <p class="eyebrow">Stylizacja</p>
                         <h2><a href="{{ row.admin_url }}">{{ row.name }}</a></h2>
                     </div>
                     <span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span>
@@ -90,7 +90,7 @@
                 {% if row.short_description %}
                     <p>{{ row.short_description }}</p>
                 {% else %}
-                    <p class="dashboard-muted">Brak krótkiego opisu. Warto uzupełnić tekst widoczny na karcie kreacji.</p>
+                    <p class="dashboard-muted">Brak krótkiego opisu. Warto uzupełnić tekst widoczny na karcie stylizacji.</p>
                 {% endif %}
 
                 <div class="dashboard-outfit-tags">
@@ -129,9 +129,9 @@
         </article>
     {% empty %}
         <article class="dashboard-empty-card">
-            <h2>Brak kreacji</h2>
+            <h2>Brak stylizacji</h2>
             <p>Dodaj pierwszą stylizację i przypisz do niej produkty oraz zdjęcia.</p>
-            <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj kreację</a>
+            <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj stylizację</a>
         </article>
     {% endfor %}
 </section>

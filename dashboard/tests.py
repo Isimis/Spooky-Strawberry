@@ -550,8 +550,8 @@ class DashboardAccessTests(TestCase):
         self.assertContains(response, "Dark Coquette Set")
         self.assertContains(response, "Cena promocyjna")
         self.assertContains(response, "49,00")
-        self.assertNotContains(response, "Produkty w kreacjach")
-        self.assertNotContains(response, "Zdjęcia kreacji")
+        self.assertNotContains(response, "Produkty w stylizacjach")
+        self.assertNotContains(response, "Zdjęcia stylizacji")
 
     def test_staff_user_can_create_outfit_workspace(self):
         self.client.login(username="staff", password="pass")

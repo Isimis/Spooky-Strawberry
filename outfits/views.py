@@ -1,16 +1,33 @@
 from django.shortcuts import get_object_or_404, render
 
-from catalog.models import Product
+from catalog.models import Aesthetic, Product
 from .models import Outfit
 
 
 def outfit_list(request):
+    selected_aesthetic = request.GET.get("aesthetic", "")
     outfits = (
         Outfit.objects.filter(status=Outfit.STATUS_ACTIVE)
         .prefetch_related("aesthetics", "images", "items__product__images")
-        .order_by("sort_order", "-created_at")
+        .order_by("-is_featured", "sort_order", "-created_at")
     )
-    return render(request, "outfits/list.html", {"outfits": outfits})
+    if selected_aesthetic:
+        outfits = outfits.filter(aesthetics__slug=selected_aesthetic)
+
+    aesthetics = (
+        Aesthetic.objects.filter(is_active=True, outfits__status=Outfit.STATUS_ACTIVE)
+        .distinct()
+        .order_by("sort_order", "name")
+    )
+    return render(
+        request,
+        "outfits/list.html",
+        {
+            "outfits": outfits,
+            "aesthetics": aesthetics,
+            "selected_aesthetic": selected_aesthetic,
+        },
+    )
 
 
 def outfit_detail(request, slug):
