@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Śledzenie zamówienia — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#2a1622,#4a2236)">
+    <div class="ph-in"><div class="eyebrow">Twoje zamówienie</div><h1>Śledzenie zamówienia</h1><p>Wpisz numer zamówienia i e-mail, by sprawdzić status. Nie musisz mieć konta.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <form class="track-form" method="get" action="{% url 'core:order_status' %}">
+            <div class="field" style="margin:0"><label>Numer zamówienia</label><input class="input" name="number" value="{{ q_number }}" placeholder="np. SS-10001"></div>
+            <div class="field" style="margin:0"><label>E-mail</label><input class="input" type="email" name="email" value="{{ q_email }}" placeholder="twoj@email.pl"></div>
+            <button class="btn btn-primary btn-block" type="submit">Sprawdź status</button>
+        </form>
+
+        {% if not_found %}
+            <div class="ship-note" style="background:#fff4f9">Nie znaleźliśmy zamówienia o podanym numerze i adresie e-mail. Sprawdź dane lub <a href="{% url 'core:contact' %}">napisz do nas</a>.</div>
+        {% endif %}
+
+        {% if order %}
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+                <h2 style="margin:0">Zamówienie #{{ order.order_number }}</h2>
+                <span class="badge badge-best" style="background:var(--blush)">
+                    {% if order.status == 'shipped' %}W drodze{% elif order.status == 'packed' %}Spakowane{% elif order.status == 'confirmed' %}Potwierdzone{% elif order.status == 'cancelled' %}Anulowane{% else %}Przyjęte{% endif %}
+                </span>
+            </div>
+            <p class="muted" style="font-size:13px;margin-bottom:16px">
+                {% if order.placed_at %}Złożone {{ order.placed_at|date:"j E Y, H:i" }}{% endif %}
+                {% if order.shipping_method %} · {{ order.shipping_method.name }}{% endif %}
+            </p>
+
+            <div class="timeline">
+                {% for step in timeline %}
+                <div class="tl-step {{ step.state }}">
+                    <span class="tl-dot">{% if step.state == 'done' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>{% else %}{{ step.index }}{% endif %}</span>
+                    <div><b>{{ step.label }}</b>{% if forloop.first and order.placed_at %}<span>{{ order.placed_at|date:"j.m, H:i" }}</span>{% endif %}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <h2>Produkty w zamówieniu</h2>
+            <div class="summary" style="max-width:480px">
+                <div style="margin:0 0 6px">
+                    {% for item in order.items.all %}
+                    <div style="display:flex;gap:10px;align-items:center;padding:6px 0">
+                        {% with img=item.product.main_image %}{% if img %}<img src="{{ img.image.url }}" style="width:44px;height:44px;border-radius:9px;object-fit:cover" alt="">{% else %}<div style="width:44px;height:44px;border-radius:9px;background:var(--blush)"></div>{% endif %}{% endwith %}
+                        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;line-height:1.25">{{ item.product_name }}</div><div style="font-size:11.5px;color:var(--muted)">{% if item.variant_name %}{{ item.variant_name }} · {% endif %}{{ item.quantity }} szt.</div></div>
+                        <span style="font-size:13px;font-weight:700;white-space:nowrap">{{ item.line_total|money }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="sum-row tot"><span>Razem</span><span class="big">{{ order.grand_total|money }}</span></div>
+            </div>
+            <p style="margin-top:18px">Coś nie gra? <a href="{% url 'core:contact' %}">Napisz do nas →</a></p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

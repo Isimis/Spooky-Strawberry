@@ -1,12 +1,33 @@
+from decimal import Decimal
+
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from analytics.services import track_event
 from catalog.models import Product, ProductVariant
+from orders.models import ShippingMethod
 
-from .services import add_to_cart, clear_cart, get_cart_summary, remove_cart_item, update_cart_item
+from .services import (
+    add_to_cart,
+    clear_cart,
+    get_cart_quantity,
+    get_cart_summary,
+    remove_cart_item,
+    update_cart_item,
+)
+
+
+def get_shipping_estimate(subtotal):
+    """Zwraca (koszt dostawy, próg darmowej dostawy, ile brakuje) na bazie najtańszej metody."""
+    method = ShippingMethod.objects.filter(is_active=True).order_by("price").first()
+    base = method.price if method else Decimal("8.99")
+    free_from = method.free_from_amount if method and method.free_from_amount else Decimal("50.00")
+    if subtotal >= free_from:
+        return Decimal("0.00"), free_from, Decimal("0.00")
+    return base, free_from, free_from - subtotal
 
 
 def cart_detail(request):
@@ -18,6 +39,15 @@ def cart_detail(request):
             "quantity": summary["quantity"],
             "subtotal": str(summary["subtotal"]),
         },
+    )
+    shipping_cost, free_from, remaining = get_shipping_estimate(summary["subtotal"])
+    summary.update(
+        {
+            "shipping_cost": shipping_cost,
+            "free_from": free_from,
+            "free_remaining": remaining,
+            "grand_total": summary["subtotal"] + shipping_cost,
+        }
     )
     return render(request, "cart/detail.html", summary)
 
@@ -41,14 +71,50 @@ def add_item(request):
     )
 
     if result["reason"] == "unavailable":
-        messages.error(request, "Ten wariant jest chwilowo niedostępny.")
+        text, level = "Ten wariant jest chwilowo niedostępny.", "error"
     elif result.get("limited"):
-        messages.warning(
-            request,
+        text, level = (
             f"Dodano maksymalną dostępną ilość. W magazynie jest {result['available']} szt.",
+            "warning",
         )
     else:
-        messages.success(request, "Produkt dodany do koszyka.")
+        text, level = "Dodano do koszyka 🍓", "success"
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "ok": result["reason"] != "unavailable",
+                "message": text,
+                "cart_count": get_cart_quantity(request),
+            }
+        )
+
+    getattr(messages, level)(request, text)
+    return redirect(request.POST.get("next") or reverse("cart:detail"))
+
+
+@require_POST
+def add_outfit(request, slug):
+    from outfits.models import Outfit
+
+    outfit = get_object_or_404(
+        Outfit.objects.prefetch_related("items__variant", "items__product__variants"),
+        slug=slug,
+        status=Outfit.STATUS_ACTIVE,
+    )
+    added = 0
+    for item in outfit.items.all():
+        variant = item.variant or item.product.default_variant
+        if variant:
+            result = add_to_cart(request, variant, item.quantity or 1)
+            if result.get("added"):
+                added += 1
+
+    text = "Dodano zestaw do koszyka 🍓" if added else "Nie udało się dodać zestawu — brak dostępnych wariantów."
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"ok": added > 0, "message": text, "cart_count": get_cart_quantity(request)})
+
+    (messages.success if added else messages.warning)(request, text)
     return redirect(request.POST.get("next") or reverse("cart:detail"))
 
 

@@ -5,29 +5,36 @@
 {% block meta_description %}{{ article.seo_description|default:article.intro|truncatechars:160 }}{% endblock %}
 
 {% block content %}
-<section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
-    <div class="ph-in">
-        <div class="bcrumb" style="color:#C9A9BC;margin-bottom:8px"><a href="{% url 'blog:list' %}" style="color:#C9A9BC">Lifestyle</a> / {% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</div>
-        <div class="eyebrow">{% if article.category %}{{ article.category.name }}{% else %}Lifestyle{% endif %}{% if article.published_at %} · {{ article.published_at|date:"j E Y" }}{% endif %}</div>
-        <h1>{{ article.title }}</h1>
-        {% if article.intro %}<p>{{ article.intro }}</p>{% endif %}
-    </div>
-</section>
+<section class="sec" style="padding-bottom:0">
+    <div class="article">
+        <div class="bcrumb"><a href="{% url 'blog:list' %}">Lifestyle</a> / {% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</div>
+        <div class="eyebrow">{% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</div>
+        <h1 class="h-lg" style="margin:8px 0 8px">{{ article.title }}</h1>
+        <div class="art-meta">
+            <span class="art-author"><span class="av"></span> Zespół Spooky Strawberry</span>
+            <span>· {{ reading_minutes }} min czytania</span>
+            {% if article.published_at %}<span>· {{ article.published_at|date:"j E Y" }}</span>{% endif %}
+        </div>
+        <div class="acover">{% if article.cover_image %}<img src="{{ article.cover_image.url }}" alt="{{ article.title }}">{% endif %}</div>
 
-<section class="sec" style="padding-top:24px">
-    <div style="max-width:720px;margin:0 auto">
-        {% if article.cover_image %}
-            <div class="pdp-main" style="aspect-ratio:16/9;margin-bottom:22px"><img src="{{ article.cover_image.url }}" alt="{{ article.title }}"></div>
-        {% endif %}
-        <div class="article-body" style="font-size:15.5px;line-height:1.7;color:var(--ink-soft)">
+        {% if article.intro %}<p class="serif-it muted" style="font-size:17px;margin-bottom:18px">{{ article.intro }}</p>{% endif %}
+        <div class="prose">
             {{ article.body|formatted_text }}
         </div>
+
+        {% if article.aesthetics.all or article.category %}
+        <div class="tags">
+            {% if article.category %}<span># {{ article.category.name|lower }}</span>{% endif %}
+            {% for a in article.aesthetics.all %}<span># {{ a.name|lower }}</span>{% endfor %}
+        </div>
+        {% endif %}
     </div>
 </section>
 
 {% if article.products.all %}
 <section class="sec" style="background:var(--blush)">
-    <div class="sec-head"><div><div class="eyebrow">Produkty z poradnika</div><h2 class="h-lg">Pasujące dodatki</h2></div></div>
+    <div class="sec-head"><div><div class="eyebrow">Z artykułu</div><h2 class="h-lg">Produkty z tego looku</h2></div>
+        <a class="link" href="{% url 'catalog:product_list' %}">Do sklepu →</a></div>
     <div class="pgrid">
         {% for product in article.products.all %}{% include "catalog/includes/product_card.html" with product=product %}{% endfor %}
     </div>
@@ -36,7 +43,7 @@
 
 {% if article.outfits.all %}
 <section class="sec">
-    <div class="sec-head"><div><div class="eyebrow">Gotowe stylizacje</div><h2 class="h-lg">Inspiracje</h2></div></div>
+    <div class="sec-head"><div><div class="eyebrow">Gotowe stylizacje</div><h2 class="h-lg">Z tego looku</h2></div></div>
     <div class="looks-art">
         {% for outfit in article.outfits.all %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
     </div>
@@ -44,11 +51,14 @@
 {% endif %}
 
 {% if related_articles %}
-<section class="sec" style="background:var(--blush)">
-    <div class="sec-head"><div><div class="eyebrow">Czytaj też</div><h2 class="h-lg">Podobne poradniki</h2></div></div>
+<section class="sec">
+    <div class="sec-head"><div><div class="eyebrow">Czytaj dalej</div><h2 class="h-lg">Powiązane artykuły</h2></div>
+        <a class="link" href="{% url 'blog:list' %}">Wszystkie →</a></div>
     <div class="art-grid">
         {% for article in related_articles %}{% include "blog/includes/article_card.html" with article=article %}{% endfor %}
     </div>
 </section>
 {% endif %}
+
+{% include "core/includes/newsletter.html" with nl_title="Nowy wpis co tydzień 🖤" nl_text="Zapisz się, by dostawać poradniki i inspiracje prosto na maila." %}
 {% endblock %}

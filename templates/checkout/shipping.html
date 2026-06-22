@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Dostawa i dane — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="sec">
+    <h1 class="h-lg" style="margin-bottom:16px">Dostawa i dane</h1>
+    <div class="steps">
+        <div class="step done"><span class="n">✓</span> Koszyk</div><span class="step-sep"></span>
+        <div class="step active"><span class="n">2</span> Dostawa</div><span class="step-sep"></span>
+        <div class="step"><span class="n">3</span> Płatność</div><span class="step-sep"></span>
+        <div class="step"><span class="n">4</span> Gotowe</div>
+    </div>
+
+    <form method="post" action="{% url 'checkout:shipping' %}">
+        {% csrf_token %}
+        <div class="cart-split">
+            <div>
+                {% if form.non_field_errors %}<div class="ship-note" style="background:#fff4f9">{{ form.non_field_errors }}</div>{% endif %}
+                <h3 class="h-md" style="font-size:18px;margin-bottom:12px">Dane kontaktowe</h3>
+                <div class="form-grid2">
+                    <div class="field"><label>{{ form.first_name.label }}</label>{{ form.first_name }}{{ form.first_name.errors }}</div>
+                    <div class="field"><label>{{ form.last_name.label }}</label>{{ form.last_name }}{{ form.last_name.errors }}</div>
+                </div>
+                <div class="field"><label>{{ form.email.label }}</label>{{ form.email }}{{ form.email.errors }}</div>
+                <div class="field"><label>{{ form.phone.label }}</label>{{ form.phone }}{{ form.phone.errors }}</div>
+
+                <h3 class="h-md" style="font-size:18px;margin:18px 0 12px">Sposób dostawy</h3>
+                {{ form.shipping_method.errors }}
+                {% for m in shipping_methods %}
+                <label class="radio-card {% if m.id == selected_method_id %}sel{% endif %}">
+                    <input type="radio" name="shipping_method" value="{{ m.id }}" {% if m.id == selected_method_id %}checked{% endif %} required>
+                    <span class="rc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M3 8l3-4h12l3 4"/><path d="M12 4v4"/></svg></span>
+                    <div class="rc-meta"><b>{{ m.name }}</b>{% if m.description %}<span>{{ m.description }}</span>{% endif %}</div>
+                    <span class="rc-price">{% if m.price > 0 %}{{ m.price|money }}{% else %}0 zł{% endif %}</span>
+                    <span class="rc-radio"></span>
+                </label>
+                {% empty %}
+                <p class="muted">Brak skonfigurowanych metod dostawy.</p>
+                {% endfor %}
+
+                <h3 class="h-md" style="font-size:18px;margin:18px 0 12px">Adres</h3>
+                <div class="field"><label>{{ form.address_line_1.label }}</label>{{ form.address_line_1 }}{{ form.address_line_1.errors }}</div>
+                <div class="field"><label>{{ form.address_line_2.label }} <span class="muted" style="font-weight:500">(opcjonalnie)</span></label>{{ form.address_line_2 }}</div>
+                <div class="form-grid2">
+                    <div class="field"><label>{{ form.postal_code.label }}</label>{{ form.postal_code }}{{ form.postal_code.errors }}</div>
+                    <div class="field"><label>{{ form.city.label }}</label>{{ form.city }}{{ form.city.errors }}</div>
+                </div>
+            </div>
+            <div>
+                <div class="summary">
+                    <h3>Twoje zamówienie</h3>
+                    {% include "checkout/includes/mini_items.html" %}
+                    <div class="sum-row"><span>Produkty</span><span>{{ subtotal|money }}</span></div>
+                    <div class="sum-row"><span>Dostawa</span><span>{% if shipping_cost > 0 %}{{ shipping_cost|money }}{% else %}gratis{% endif %}</span></div>
+                    <div class="sum-row tot"><span>Razem</span><span class="big">{{ grand_total|money }}</span></div>
+                    <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:14px">Przejdź do płatności</button>
+                    <a class="link" style="display:block;text-align:center;margin-top:12px" href="{% url 'cart:detail' %}">← Wróć do koszyka</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -64,7 +64,7 @@
         </div>
         {% endif %}
 
-        <form method="post" action="{% url 'cart:add' %}">
+        <form method="post" action="{% url 'cart:add' %}" class="js-cart-add">
             {% csrf_token %}
             <input type="hidden" name="variant_id" value="{% if selected_variant %}{{ selected_variant.id }}{% endif %}">
             <input type="hidden" name="next" value="{{ request.get_full_path }}">

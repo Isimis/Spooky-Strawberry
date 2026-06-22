@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Nie znaleziono strony — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="sec">
+    <div class="nf">
+        <div class="big">404</div>
+        <h1>Ups! Tej strony nie ma 🦇</h1>
+        <p>Może zniknęła w mroku, a może źle wpisany adres. Wróć na znaną ścieżkę albo poszukaj czegoś nowego.</p>
+        <form method="get" action="{% url 'core:search' %}" class="mmenu-search" style="max-width:320px;margin:0 auto 20px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.2-4.2"/></svg>
+            <input type="search" name="q" placeholder="Szukaj produktów…" aria-label="Szukaj" style="border:none;background:none;flex:1;font-family:var(--f-body);font-size:14px;color:var(--ink)">
+        </form>
+        <div class="nf-links">
+            <a class="btn btn-primary btn-lg" href="{% url 'core:home' %}">Strona główna</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'catalog:product_list' %}">Katalog</a>
+            <a class="btn btn-soft btn-lg" href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Dziękujemy za zamówienie — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="sec">
+    <div class="steps" style="justify-content:center">
+        <div class="step done"><span class="n">✓</span> Koszyk</div><span class="step-sep"></span>
+        <div class="step done"><span class="n">✓</span> Dostawa</div><span class="step-sep"></span>
+        <div class="step done"><span class="n">✓</span> Płatność</div><span class="step-sep"></span>
+        <div class="step active"><span class="n">4</span> Gotowe</div>
+    </div>
+    <div class="confirm-wrap">
+        <div class="confirm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h1 class="h-lg" style="margin-bottom:8px">Dziękujemy za zamówienie! 🍓</h1>
+        <p class="muted" style="max-width:420px;margin:0 auto">Potwierdzenie wysłaliśmy na {{ order.email }}. Pakujemy z sercem i wysyłamy w 24h.</p>
+        <div class="order-box">
+            <div class="ob-head"><span class="muted">Numer zamówienia</span><b>#{{ order.order_number }}</b></div>
+            <div style="margin:4px 0 10px">
+                {% for item in order.items.all %}
+                <div style="display:flex;gap:10px;align-items:center;padding:6px 0">
+                    {% with img=item.product.main_image %}
+                        {% if img %}<img src="{{ img.image.url }}" style="width:44px;height:44px;border-radius:9px;object-fit:cover" alt="">{% else %}<div style="width:44px;height:44px;border-radius:9px;background:var(--blush)"></div>{% endif %}
+                    {% endwith %}
+                    <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;line-height:1.25">{{ item.product_name }}</div><div style="font-size:11.5px;color:var(--muted)">{% if item.variant_name %}{{ item.variant_name }} · {% endif %}{{ item.quantity }} szt.</div></div>
+                    <span style="font-size:13px;font-weight:700;white-space:nowrap">{{ item.line_total|money }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="sum-row"><span>Produkty</span><span>{{ order.subtotal|money }}</span></div>
+            <div class="sum-row"><span>Dostawa{% if order.shipping_method %} · {{ order.shipping_method.name }}{% endif %}</span><span>{% if order.shipping_total > 0 %}{{ order.shipping_total|money }}{% else %}gratis{% endif %}</span></div>
+            <div class="sum-row tot"><span>Razem</span><span class="big">{{ order.grand_total|money }}</span></div>
+            <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:12.5px;color:var(--muted)">Dostawa na: {{ order.shipping_address_line_1 }}{% if order.shipping_address_line_2 %}, {{ order.shipping_address_line_2 }}{% endif %}, {{ order.shipping_postal_code }} {{ order.shipping_city }}</div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+            <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Kontynuuj zakupy</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:contact' %}">Status zamówienia</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

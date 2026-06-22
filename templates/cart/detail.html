@@ -1,88 +1,72 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Koszyk | Spooky Strawberry{% endblock %}
+{% block title %}Twój koszyk — Spooky Strawberry{% endblock %}
 
 {% block content %}
-<section class="page-shell cart-page">
-    <div class="page-heading">
-        <p class="eyebrow">Koszyk</p>
-        <h1>Twój koszyk</h1>
-        <p>To koszyk roboczy bez checkoutu i bez płatności. Sprzedaż uruchomimy dopiero później.</p>
+<section class="sec">
+    <h1 class="h-lg" style="margin-bottom:16px">Twój koszyk</h1>
+    <div class="steps">
+        <div class="step active"><span class="n">1</span> Koszyk</div><span class="step-sep"></span>
+        <div class="step"><span class="n">2</span> Dostawa</div><span class="step-sep"></span>
+        <div class="step"><span class="n">3</span> Płatność</div><span class="step-sep"></span>
+        <div class="step"><span class="n">4</span> Gotowe</div>
     </div>
 
     {% if adjustments %}
-        <div class="cart-alerts">
-            {% for adjustment in adjustments %}
-                <p>{{ adjustment }}</p>
-            {% endfor %}
-        </div>
+        <div class="ship-note" style="background:#fff4f9">{% for a in adjustments %}{{ a }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
     {% endif %}
 
     {% if items %}
-        <div class="cart-layout">
-            <div class="cart-items">
+    <div class="cart-split">
+        <div>
+            {% if free_remaining > 0 %}
+                <div class="ship-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg> Dorzuć produkty za <b style="margin:0 3px">{{ free_remaining|money }}</b>, a dostawa będzie gratis!</div>
+            {% else %}
+                <div class="ship-note">🎉 Masz darmową dostawę!</div>
+            {% endif %}
+            <div id="cart-list">
                 {% for item in items %}
-                    <article class="cart-item">
-                        <a href="{{ item.product.get_absolute_url }}" class="cart-item__image">
-                            {% if item.image %}
-                                <img src="{{ item.image.image.url }}" alt="{{ item.image.alt_text }}">
-                            {% else %}
-                                <span>Spooky Strawberry</span>
-                            {% endif %}
-                        </a>
-                        <div class="cart-item__body">
-                            <h2><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></h2>
-                            <p>
-                                {% if item.variant.color %}{{ item.variant.color.name }}{% endif %}
-                                {% if item.variant.size %} / {{ item.variant.size.name }}{% endif %}
-                            </p>
-                            <p>{{ item.unit_price|money }} za sztukę</p>
-                            <p class="cart-stock-note">W magazynie: {{ item.stock_quantity }} szt.</p>
-
-                            <form method="post" action="{% url 'cart:update' item.variant.id %}" class="cart-quantity-form">
-                                {% csrf_token %}
-                                <label>
-                                    <span>Ilość</span>
-                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="{{ item.stock_quantity }}" aria-label="Ilość">
-                                </label>
-                                <button type="submit">Aktualizuj</button>
-                            </form>
-
-                            <form method="post" action="{% url 'cart:remove' item.variant.id %}">
-                                {% csrf_token %}
-                                <button type="submit" class="link-button">Usuń</button>
-                            </form>
+                <div class="cart-item">
+                    {% if item.image %}<img src="{{ item.image.image.url }}" alt="{{ item.product.name }}">{% else %}<div class="ci-img-ph"></div>{% endif %}
+                    <div class="ci-meta">
+                        <div class="ptype">{{ item.product.category.name }}</div>
+                        <b><a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a></b>
+                        {% if item.variant.color or item.variant.size %}
+                            <div class="opt-mini">{% if item.variant.color %}{{ item.variant.color.name }}{% endif %}{% if item.variant.color and item.variant.size %} · {% endif %}{% if item.variant.size %}{{ item.variant.size.name }}{% endif %}</div>
+                        {% endif %}
+                        <div class="qty-sm">
+                            <form method="post" action="{% url 'cart:update' item.variant.id %}" style="display:contents">{% csrf_token %}<input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}"><button type="submit" aria-label="Mniej">–</button></form>
+                            <span>{{ item.quantity }}</span>
+                            <form method="post" action="{% url 'cart:update' item.variant.id %}" style="display:contents">{% csrf_token %}<input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}"><button type="submit" aria-label="Więcej">+</button></form>
                         </div>
-                        <strong>{{ item.line_total|money }}</strong>
-                    </article>
+                    </div>
+                    <div class="ci-right">
+                        <span class="ci-price">{{ item.line_total|money }}</span>
+                        <form method="post" action="{% url 'cart:remove' item.variant.id %}">{% csrf_token %}<button type="submit" class="ci-remove">Usuń</button></form>
+                    </div>
+                </div>
                 {% endfor %}
             </div>
-
-            <aside class="cart-summary">
-                <h2>Podsumowanie</h2>
-                <div>
-                    <span>Produkty</span>
-                    <strong>{{ quantity }}</strong>
-                </div>
-                <div>
-                    <span>Suma</span>
-                    <strong>{{ subtotal|money }}</strong>
-                </div>
-                <p>Checkout i płatności są celowo wyłączone na tym etapie.</p>
-                <a href="{% url 'catalog:product_list' %}" class="button button--wide">Kontynuuj zakupy</a>
-                <form method="post" action="{% url 'cart:clear' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="button button--wide button--light">Wyczyść koszyk</button>
-                </form>
-            </aside>
         </div>
+        <div>
+            <div class="summary">
+                <h3>Podsumowanie</h3>
+                <div class="sum-row"><span>Wartość produktów</span><span>{{ subtotal|money }}</span></div>
+                <div class="sum-row"><span>Dostawa</span><span>{% if shipping_cost > 0 %}{{ shipping_cost|money }}{% else %}gratis{% endif %}</span></div>
+                <div class="sum-row tot"><span>Razem</span><span class="big">{{ grand_total|money }}</span></div>
+                <a class="btn btn-primary btn-block btn-lg" style="margin-top:14px" href="{% url 'checkout:shipping' %}">Przejdź do dostawy</a>
+                <a class="link" style="display:block;text-align:center;margin-top:12px" href="{% url 'catalog:product_list' %}">← Kontynuuj zakupy</a>
+            </div>
+        </div>
+    </div>
     {% else %}
-        <div class="empty-page">
-            <h1>Twój koszyk jest pusty</h1>
-            <p>Dodaj coś z katalogu, żeby przetestować koszyk bez checkoutu.</p>
-            <a href="{% url 'catalog:product_list' %}" class="button">Kontynuuj zakupy</a>
-        </div>
+    <div class="confirm-wrap">
+        <div class="confirm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6.5V20a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6.5L18 2z"/><path d="M3 6.5h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+        <h2 class="h-md" style="margin-bottom:8px">Twój koszyk jest pusty</h2>
+        <p class="muted" style="max-width:380px;margin:0 auto 18px">Czas to zmienić — czarne kabaretki, chokery i kokardy czekają.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Przeglądaj katalog</a>
+    </div>
     {% endif %}
 </section>
 {% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Mapa strony — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Mapa strony</h1><p>Wszystkie sekcje sklepu w jednym miejscu.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <div class="sitemap">
+            <div><h3>Sklep</h3>
+                <a href="{% url 'core:home' %}">Strona główna</a>
+                <a href="{% url 'catalog:product_list' %}">Katalog produktów</a>
+                <a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a>
+            </div>
+            <div><h3>Stylizacje</h3>
+                <a href="{% url 'outfits:list' %}">Lista stylizacji</a>
+            </div>
+            <div><h3>Zakupy</h3>
+                <a href="{% url 'cart:detail' %}">Koszyk</a>
+                <a href="{% url 'checkout:shipping' %}">Dostawa</a>
+                <a href="{% url 'core:order_status' %}">Status zamówienia</a>
+            </div>
+            <div><h3>Lifestyle</h3>
+                <a href="{% url 'blog:list' %}">Magazyn</a>
+            </div>
+            <div><h3>O sklepie</h3>
+                <a href="{% url 'core:about' %}">O nas</a>
+                <a href="{% url 'core:contact' %}">Kontakt</a>
+            </div>
+            <div><h3>Pomoc</h3>
+                <a href="{% url 'core:shipping' %}">Dostawa</a>
+                <a href="{% url 'core:returns' %}">Zwroty</a>
+            </div>
+            <div><h3>Informacje</h3>
+                <a href="{% url 'core:terms' %}">Regulamin</a>
+                <a href="{% url 'core:privacy' %}">Polityka prywatności</a>
+                <a href="{% url 'core:cookies' %}">Ustawienia cookie</a>
+                <a href="{% url 'core:accessibility' %}">Deklaracja dostępności</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

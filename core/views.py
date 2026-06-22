@@ -32,10 +32,6 @@ POLICIES = {
         "title": "Dane kontaktowe",
         "intro": "Miejsce na dane firmy, gdy sklep będzie gotowy do sprzedaży.",
     },
-    "nota-prawna": {
-        "title": "Nota prawna",
-        "intro": "Miejsce na informacje prawne wymagane przed publikacją sklepu.",
-    },
     "preferencje-cookie": {
         "title": "Preferencje dotyczące plików cookie",
         "intro": "Miejsce na ustawienia i opis plików cookie.",
@@ -99,6 +95,97 @@ def home_view(request):
 
 def contact_view(request):
     return render(request, "core/contact.html")
+
+
+def shipping_view(request):
+    return render(request, "core/shipping.html")
+
+
+def returns_view(request):
+    return render(request, "core/returns.html")
+
+
+def terms_view(request):
+    return render(request, "core/terms.html")
+
+
+def privacy_view(request):
+    return render(request, "core/privacy.html")
+
+
+def cookies_view(request):
+    return render(request, "core/cookies.html")
+
+
+def about_view(request):
+    return render(request, "core/about.html")
+
+
+def accessibility_view(request):
+    return render(request, "core/accessibility.html")
+
+
+def sitemap_view(request):
+    return render(request, "core/sitemap.html")
+
+
+def build_status_timeline(order):
+    from orders.models import Order
+
+    labels = [
+        "Zamówienie złożone",
+        "Płatność potwierdzona",
+        "Spakowane z sercem",
+        "W drodze",
+        "Gotowe do odbioru",
+    ]
+    progress = {
+        Order.STATUS_PLACED: 1,
+        Order.STATUS_CONFIRMED: 2,
+        Order.STATUS_PACKED: 3,
+        Order.STATUS_SHIPPED: 4,
+    }.get(order.status, 1)
+
+    steps = []
+    for index, label in enumerate(labels):
+        state = "done" if index < progress else ("active" if index == progress else "")
+        steps.append({"label": label, "state": state, "index": index + 1})
+    return steps
+
+
+def order_status_view(request):
+    from orders.models import Order
+
+    number = request.GET.get("number", "").strip()
+    email = request.GET.get("email", "").strip().lower()
+    order = None
+    not_found = False
+    timeline = None
+
+    if number or email:
+        order = (
+            Order.objects.select_related("shipping_method")
+            .prefetch_related("items__product__images")
+            .filter(order_number__iexact=number, email__iexact=email)
+            .exclude(status=Order.STATUS_DRAFT)
+            .first()
+        )
+        if order:
+            timeline = build_status_timeline(order)
+        else:
+            not_found = True
+
+    return render(
+        request,
+        "core/order_status.html",
+        {
+            "order": order,
+            "timeline": timeline,
+            "not_found": not_found,
+            "q_number": number,
+            "q_email": email,
+        },
+    )
 
 
 def design_system_view(request):

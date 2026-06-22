@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Zwroty i reklamacje — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
+    <div class="ph-in"><div class="eyebrow">Pomoc</div><h1>Zwroty i reklamacje</h1><p>Masz 30 dni na zwrot bez podawania przyczyny. Bez stresu, bez tłumaczenia się.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <h2>Jak zwrócić produkt?</h2>
+        <div class="steps-num">
+            <div class="sn"><span class="num">1</span><div><b>Wypełnij formularz zwrotu</b><span>Dołączony do paczki lub dostępny po zalogowaniu na konto.</span></div></div>
+            <div class="sn"><span class="num">2</span><div><b>Zapakuj produkt</b><span>Najlepiej w oryginalne opakowanie, z metką. Produkt nieużywany.</span></div></div>
+            <div class="sn"><span class="num">3</span><div><b>Nadaj paczkę</b><span>Do paczkomatu lub kurierem na adres podany w formularzu.</span></div></div>
+            <div class="sn"><span class="num">4</span><div><b>Odbierz zwrot pieniędzy</b><span>Do 14 dni od otrzymania paczki, na to samo konto/metodę płatności.</span></div></div>
+        </div>
+        <h2>Warunki zwrotu</h2>
+        <ul>
+            <li>30 dni na odstąpienie od umowy bez podania przyczyny.</li>
+            <li>Produkt nieużywany, kompletny, w stanie nienaruszonym.</li>
+            <li>Ze względów higienicznych biżuteria i bielizna podlegają zwrotowi tylko nieotwarte / nieprzymierzane.</li>
+        </ul>
+        <h2>Reklamacje</h2>
+        <p>Jeśli produkt ma wadę, opisz problem i dołącz zdjęcia przez formularz kontaktowy. Reklamacje rozpatrujemy do 14 dni. W razie uznania wymieniamy produkt lub zwracamy pełną kwotę wraz z kosztem dostawy.</p>
+        <h2>Masz pytania?</h2>
+        <p>Napisz do nas — pomożemy przejść przez proces krok po kroku. <a href="{% url 'core:contact' %}">Przejdź do kontaktu →</a></p>
+    </div>
+</section>
+{% endblock %}

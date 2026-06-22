@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Deklaracja dostępności — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#1c1018,#3a1d2c)">
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Deklaracja dostępności</h1><p>Chcemy, by Spooky Strawberry był wygodny dla każdej osoby — niezależnie od sposobu korzystania z internetu.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <div class="legal-meta">Dokument poglądowy (wzór).</div>
+        <h2>Nasze zobowiązanie</h2>
+        <p>Dokładamy starań, aby sklep spełniał wytyczne WCAG 2.1 na poziomie AA. Oznacza to m.in. czytelny kontrast, obsługę klawiaturą, opisy alternatywne obrazów oraz logiczną strukturę nagłówków.</p>
+        <h2>Co już działa</h2>
+        <ul>
+            <li>Nawigacja klawiaturą i widoczny fokus na elementach interaktywnych.</li>
+            <li>Etykiety przy przyciskach i polach formularzy (czytniki ekranu).</li>
+            <li>Responsywność i czytelne rozmiary tekstu na mobile i desktopie.</li>
+            <li>Kontrast tekstu zgodny z poziomem AA.</li>
+        </ul>
+        <h2>Znane ograniczenia</h2>
+        <p>Część treści osadzonych zewnętrznie (np. widgety) może nie być w pełni dostępna. Pracujemy nad ich poprawą.</p>
+        <h2>Zgłoś problem</h2>
+        <p>Jeśli napotkasz barierę w korzystaniu ze sklepu, napisz na hello@spookystrawberry.pl — postaramy się szybko pomóc i poprawić dany element. <a href="{% url 'core:contact' %}">Przejdź do kontaktu →</a></p>
+    </div>
+</section>
+{% endblock %}

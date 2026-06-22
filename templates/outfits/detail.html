@@ -30,7 +30,7 @@
                 {% endwith %}
                 <div class="lk-meta"><b><a href="{{ item.product.get_absolute_url }}" style="text-decoration:none;color:inherit">{{ item.product.name }}</a></b><div class="lt">{{ item.product.category.name }}</div></div>
                 <span class="price">{{ item.unit_price|money }}</span>
-                <form method="post" action="{% url 'cart:add' %}">
+                <form method="post" action="{% url 'cart:add' %}" class="js-cart-add">
                     {% csrf_token %}
                     <input type="hidden" name="variant_id" value="{% if item.variant %}{{ item.variant.id }}{% elif item.product.default_variant %}{{ item.product.default_variant.id }}{% endif %}">
                     <input type="hidden" name="quantity" value="{{ item.quantity }}">
@@ -42,7 +42,11 @@
         </div>
 
         <div class="lk-total"><span class="muted" style="font-size:13px">Razem za zestaw</span><span class="big">{{ outfit.display_price|money }}</span></div>
-        <a class="btn btn-primary btn-block btn-lg" href="{% url 'catalog:product_list' %}{% if outfit.aesthetics.all %}?aesthetic={{ outfit.aesthetics.all.0.slug }}{% endif %}">Skompletuj cały look</a>
+        <form method="post" action="{% url 'cart:add_outfit' outfit.slug %}" class="js-cart-add">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-primary btn-block btn-lg">Dodaj cały zestaw do koszyka</button>
+        </form>
 
         <div class="trust-row">
             <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg></span><b>Wysyłka 24h</b><span>Pakujemy z sercem</span></div>

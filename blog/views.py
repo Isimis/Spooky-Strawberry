@@ -43,11 +43,14 @@ def article_detail(request, slug):
         .distinct()
         .order_by("-published_at", "-created_at")[:3]
     )
+    word_count = len((article.body or "").split())
+    reading_minutes = max(1, round(word_count / 200)) if word_count else 1
     return render(
         request,
         "blog/detail.html",
         {
             "article": article,
             "related_articles": related_articles,
+            "reading_minutes": reading_minutes,
         },
     )

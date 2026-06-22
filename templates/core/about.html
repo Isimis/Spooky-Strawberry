@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}O nas — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="about-hero">
+    <div class="ph-in" style="position:relative;z-index:2">
+        <div class="eyebrow">Nasza historia</div>
+        <h1>Mrok, róż i bycie sobą</h1>
+        <p>Spooky Strawberry powstało z prostej potrzeby: miejsca, gdzie dziewczyny ze stylem alternatywnym znajdą akcesoria, które naprawdę je rozumieją. Bez kompromisów, bez nijakości.</p>
+    </div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <div class="prose">
+            <p>Zaczęło się od frustracji — w popularnych sklepach trudno znaleźć rzeczy z charakterem. Koronki, krzyże, kabaretki, kokardy, srebro. Rzeczy, które łączą słodycz z mrokiem i pozwalają wyrazić siebie.</p>
+            <p>Dziś jesteśmy małym, niezależnym butikiem prowadzonym przez ludzi, którzy sami żyją tą estetyką. Każde zamówienie pakujemy ręcznie, z sercem i dbałością o detal — bo wiemy, jak ważne są drobiazgi.</p>
+            <blockquote>„Nie sprzedajemy tylko akcesoriów. Dajemy gotowy sposób na bycie sobą.”</blockquote>
+        </div>
+        <h2 style="font-size:22px;margin:8px 0 14px">W co wierzymy</h2>
+        <div class="values">
+            <div class="value"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7z"/></svg></span><b>Robione z sercem</b><p>Małe serie, ręczne pakowanie i dbałość o każdy szczegół.</p></div>
+            <div class="value"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></span><b>Jakość bez kompromisów</b><p>Wybieramy materiały i wykończenia, które wytrzymują codzienność.</p></div>
+            <div class="value"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><b>Dla naszej społeczności</b><p>Słuchamy Was — dropy i kolekcje powstają z Waszych pomysłów.</p></div>
+        </div>
+        <div class="stats" style="margin-top:18px">
+            <div class="stat"><div class="num">2024</div><span>rok założenia</span></div>
+            <div class="stat"><div class="num">5000+</div><span>wysłanych paczek</span></div>
+            <div class="stat"><div class="num">4.9/5</div><span>średnia ocen</span></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px">
+            <a class="btn btn-primary btn-lg" href="{% url 'catalog:aesthetic_list' %}">Odkryj estetyki</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:contact' %}">Napisz do nas</a>
+        </div>
+    </div>
+</section>
+{% include "core/includes/newsletter.html" with nl_title="Dołącz do klubu 🍓" nl_text="Najnowsze dropy, kody rabatowe i porady stylowe prosto na maila." %}
+{% endblock %}

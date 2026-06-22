@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Pliki cookie — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#2a1622,#52283C)">
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Pliki cookie</h1><p>Zarządzaj swoimi preferencjami. Cookie niezbędne są zawsze aktywne.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <p>Używamy plików cookie, aby sklep działał poprawnie, zapamiętywał Twoje preferencje i pomagał nam ulepszać ofertę. Poniżej zdecydujesz, na co się zgadzasz — cookie niezbędne są zawsze aktywne. Więcej w <a href="{% url 'core:privacy' %}">Polityce prywatności</a>.</p>
+
+        <h2 style="margin-top:18px">Twoje preferencje</h2>
+        <div class="cookie-prefs">
+            <div class="pref-row"><div class="pr-meta"><b>Niezbędne</b><span>Wymagane do działania sklepu (koszyk, logowanie). Zawsze aktywne.</span></div><button type="button" class="switch on lock" aria-label="Niezbędne (zawsze aktywne)"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Analityczne</b><span>Pomagają zrozumieć, jak korzystasz ze sklepu, by go ulepszać.</span></div><button type="button" class="switch on" data-pref="analytics" aria-label="Analityczne"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Marketingowe</b><span>Pozwalają wyświetlać lepiej dopasowane oferty i reklamy.</span></div><button type="button" class="switch" data-pref="marketing" aria-label="Marketingowe"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Personalizacja</b><span>Zapamiętują Twoje preferencje, np. ulubione estetyki.</span></div><button type="button" class="switch on" data-pref="personalization" aria-label="Personalizacja"></button></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+                <button class="btn btn-primary" type="button" onclick="ssSaveCookiePrefs(false)">Zapisz preferencje</button>
+                <button class="btn btn-ghost" type="button" onclick="ssSaveCookiePrefs(true)">Akceptuję wszystkie</button>
+            </div>
+            <p id="cookieSaved" style="display:none;color:var(--rose-deep);font-weight:700;font-size:13px;margin-top:12px">Zapisano Twoje preferencje ✓</p>
+        </div>
+
+        <h2>Czym są pliki cookie?</h2>
+        <p>Cookie to małe pliki zapisywane na Twoim urządzeniu. Pomagają zapamiętać zawartość koszyka, ustawienia i to, że jesteś zalogowana, a także mierzyć ruch, by ulepszać sklep.</p>
+        <h2>Jak zmienić zgody?</h2>
+        <p>Swoje preferencje możesz zmienić w każdej chwili na tej stronie albo klikając „Ustawienia cookie” w stopce. Wycofanie zgody nie wpływa na zgodność z prawem wcześniejszego przetwarzania.</p>
+    </div>
+</section>
+{% endblock %}

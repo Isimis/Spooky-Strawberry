@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Regulamin — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#1c1018,#3a1d2c)">
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Regulamin</h1><p>Zasady korzystania ze sklepu Spooky Strawberry.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <div class="legal-meta">Dokument poglądowy (wzór do uzupełnienia treścią prawną).</div>
+        <h2>1. Postanowienia ogólne</h2>
+        <p>Sklep internetowy Spooky Strawberry, dostępny pod adresem spookystrawberry.pl, prowadzony jest przez [dane sprzedawcy]. Regulamin określa zasady i warunki korzystania ze sklepu oraz zawierania umów sprzedaży.</p>
+        <h2>2. Definicje</h2>
+        <ul><li>Sprzedawca — podmiot prowadzący sklep.</li><li>Klient — osoba dokonująca zakupów.</li><li>Produkt — towar dostępny w sklepie.</li></ul>
+        <h2>3. Składanie zamówień</h2>
+        <p>Zamówienia można składać 24/7 przez stronę sklepu. Umowa zostaje zawarta w chwili potwierdzenia przyjęcia zamówienia przez Sprzedawcę.</p>
+        <h2>4. Ceny i płatności</h2>
+        <p>Wszystkie ceny podane są w złotych polskich i zawierają podatek VAT. Dostępne metody płatności: BLIK, karta, Przelewy24, Apple/Google Pay.</p>
+        <h2>5. Dostawa</h2>
+        <p>Szczegóły dotyczące metod i kosztów dostawy znajdziesz na stronie <a href="{% url 'core:shipping' %}">Dostawa</a>.</p>
+        <h2>6. Prawo odstąpienia</h2>
+        <p>Klient ma prawo odstąpić od umowy w ciągu 30 dni. Szczegóły na stronie <a href="{% url 'core:returns' %}">Zwroty</a>.</p>
+        <h2>7. Reklamacje</h2>
+        <p>Reklamacje rozpatrywane są w terminie do 14 dni od ich zgłoszenia.</p>
+        <h2>8. Dane osobowe</h2>
+        <p>Zasady przetwarzania danych opisuje <a href="{% url 'core:privacy' %}">Polityka prywatności</a>.</p>
+    </div>
+</section>
+{% endblock %}

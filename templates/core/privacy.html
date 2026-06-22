@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Polityka prywatności — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#1c1018,#3a1d2c)">
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Polityka prywatności</h1><p>Jak chronimy i przetwarzamy Twoje dane.</p></div>
+</section>
+<section class="sec">
+    <div class="legal">
+        <div class="legal-meta">Dokument poglądowy (wzór do uzupełnienia treścią prawną).</div>
+        <h2>1. Administrator danych</h2>
+        <p>Administratorem Twoich danych osobowych jest [dane administratora]. W sprawach związanych z ochroną danych napisz na hello@spookystrawberry.pl.</p>
+        <h2>2. Jakie dane zbieramy</h2>
+        <ul><li>Dane podane przy zamówieniu (imię, adres, e-mail, telefon).</li><li>Dane o zamówieniach i płatnościach.</li><li>Dane techniczne i pliki cookie.</li></ul>
+        <h2>3. Cele przetwarzania</h2>
+        <p>Realizacja zamówień, obsługa klienta, marketing (za zgodą), analityka i poprawa działania sklepu.</p>
+        <h2>4. Twoje prawa</h2>
+        <p>Masz prawo dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania oraz przenoszenia. Możesz w każdej chwili wycofać zgodę marketingową.</p>
+        <h2>5. Pliki cookie</h2>
+        <p>Szczegóły dotyczące cookie oraz zarządzanie zgodami znajdziesz na stronie <a href="{% url 'core:cookies' %}">Ustawienia cookie</a>.</p>
+        <h2>6. Bezpieczeństwo</h2>
+        <p>Stosujemy szyfrowanie połączeń (SSL) oraz środki techniczne i organizacyjne chroniące Twoje dane.</p>
+    </div>
+</section>
+{% endblock %}
