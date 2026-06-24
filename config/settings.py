@@ -47,6 +47,14 @@ DEBUG = env_bool("DEBUG", True)
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
 
+# Domeny/adresy, którym ufamy przy sprawdzaniu CSRF (wymagane za HTTPS/nginx),
+# np. CSRF_TRUSTED_ORIGINS=https://spookystrawberry.pl,https://www.spookystrawberry.pl
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+
+# nginx przekazuje informację o HTTPS w tym nagłówku — dzięki temu Django
+# wie, że żądanie jest bezpieczne (poprawne przekierowania, cookies).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 # Application definition
 
@@ -124,12 +132,30 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Spooky Strawberry <he
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Lokalnie (brak DATABASE_URL) używamy SQLite — zero konfiguracji.
+# Na serwerze ustawiamy DATABASE_URL, np.:
+#   postgres://user:haslo@host:5432/spooky
+# i wtedy automatycznie wchodzi PostgreSQL.
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE", "600")),
+            conn_health_checks=True,
+            ssl_require=env_bool("DB_SSL_REQUIRE", False),
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -170,6 +196,8 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# Cel `collectstatic` na produkcji — nginx serwuje ten katalog pod /static/.
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
