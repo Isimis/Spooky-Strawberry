@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Skrzynka | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Komunikacja</p>
+        <h1>Skrzynka</h1>
+        <p>Wiadomości przychodzące i wychodzące. Realną pocztę podłączymy później — teraz to miejsce na komunikację i wysyłkę z szablonów.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:message_compose' %}" class="button">Napisz wiadomość</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie skrzynki">
+    <article><span>Wszystkie</span><strong>{{ message_summary.total_count }}</strong><small>wiadomości</small></article>
+    <article><span>Odebrane</span><strong>{{ message_summary.inbound_count }}</strong><small>przychodzące</small></article>
+    <article><span>Wysłane</span><strong>{{ message_summary.outbound_count }}</strong><small>wychodzące</small></article>
+    <article><span>Szkice</span><strong>{{ message_summary.draft_count }}</strong><small>niewysłane</small></article>
+</section>
+
+<div class="dashboard-active-filters" style="margin-bottom:4px">
+    <a href="{% url 'dashboard:model_list' config.slug %}" class="{% if not selected_box %}is-active{% endif %}" style="font-weight:700">Wszystkie</a>
+    <a href="?box=inbound" style="font-weight:700">Odebrane</a>
+    <a href="?box=outbound" style="font-weight:700">Wysłane</a>
+</div>
+
+{% if rows %}
+<div class="dashboard-table-wrap">
+    <table class="dashboard-table" aria-label="Lista wiadomości">
+        <thead>
+            <tr>
+                <th>Temat</th>
+                <th>Kierunek</th>
+                <th>Adres</th>
+                <th>Status</th>
+                <th>Data</th>
+                <th class="dashboard-col-actions">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td><a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.subject }}</a></td>
+                    <td>{% if row.direction == "inbound" %}<span class="dashboard-status-pill dashboard-status-pill--active">Odebrana</span>{% else %}<span class="dashboard-status-pill dashboard-status-pill--best">Wysłana</span>{% endif %}</td>
+                    <td><span class="dashboard-muted">{{ row.counterpart }}</span></td>
+                    <td>{{ row.status_label }}</td>
+                    <td><span class="dashboard-muted">{{ row.created_at|date:"d.m.Y H:i" }}</span></td>
+                    <td><div class="dashboard-row-actions"><a href="{{ row.admin_url }}">Otwórz</a></div></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <article class="dashboard-empty-card">
+        <h2>Brak wiadomości</h2>
+        <p>Tu pojawią się wiadomości. Możesz już teraz napisać wychodzącą wiadomość z szablonu.</p>
+        <a href="{% url 'dashboard:message_compose' %}" class="button">Napisz wiadomość</a>
+    </article>
+{% endif %}
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>{% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>{% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

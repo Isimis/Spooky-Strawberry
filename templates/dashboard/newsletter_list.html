@@ -81,68 +81,50 @@
             <a href="{% url 'dashboard:model_create' config.slug %}" class="button button--secondary">Dopisz ręcznie</a>
         </div>
 
-        <div class="dashboard-newsletter-list" aria-label="Lista adresów newslettera">
-            {% for row in rows %}
-                <article class="dashboard-newsletter-card {% if not row.is_active %}is-inactive{% endif %}">
-                    <div class="dashboard-newsletter-card__avatar" aria-hidden="true">
-                        {{ row.email|first|upper }}
-                    </div>
-
-                    <div class="dashboard-newsletter-card__body">
-                        <div class="dashboard-newsletter-card__head">
-                            <div>
-                                <p class="eyebrow">{{ row.source_label }}</p>
-                                <h2><a href="{{ row.admin_url }}">{{ row.email }}</a></h2>
-                            </div>
-                            <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
-                        </div>
-
-                        <div class="dashboard-newsletter-card__meta">
-                            <span>Zapis: {{ row.subscribed_at|date:"d.m.Y H:i" }}</span>
-                            {% if row.unsubscribed_at %}
-                                <span>Wypis: {{ row.unsubscribed_at|date:"d.m.Y H:i" }}</span>
-                            {% else %}
-                                <span>Wypis: brak</span>
-                            {% endif %}
-                        </div>
-
-                        <p class="dashboard-newsletter-consent-text">
-                            {% if row.consent_text %}
-                                {{ row.consent_text|truncatechars:140 }}
-                            {% else %}
-                                Brak zapisanego tekstu zgody. Warto uzupełnić, zanim adres trafi do większej kampanii.
-                            {% endif %}
-                        </p>
-
-                        <dl class="dashboard-newsletter-facts">
-                            <div>
-                                <dt>Do wysyłki</dt>
-                                <dd>{% if row.is_sendable %}Tak{% else %}Nie{% endif %}</dd>
-                            </div>
-                            <div>
-                                <dt>Zgoda</dt>
-                                <dd>{% if row.has_consent %}Tak{% else %}Brak{% endif %}</dd>
-                            </div>
-                            <div>
-                                <dt>Źródło</dt>
-                                <dd>{{ row.source_label }}</dd>
-                            </div>
-                        </dl>
-
-                        <div class="dashboard-taxonomy-actions dashboard-newsletter-card__actions">
-                            <a href="{{ row.admin_url }}">Otwórz</a>
-                            <a href="{{ row.delete_url }}">Usuń</a>
-                        </div>
-                    </div>
-                </article>
-            {% empty %}
-                <article class="dashboard-empty-card">
-                    <h2>Brak adresów</h2>
-                    <p>Nie ma jeszcze zapisów dla wybranych filtrów.</p>
-                    <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj adres</a>
-                </article>
-            {% endfor %}
+        {% if rows %}
+        <div class="dashboard-table-wrap">
+            <table class="dashboard-table dashboard-newsletter-table" aria-label="Lista adresów newslettera">
+                <thead>
+                    <tr>
+                        <th>E-mail</th>
+                        <th>Status</th>
+                        <th>Źródło</th>
+                        <th>Zgoda</th>
+                        <th>Zapis</th>
+                        <th class="dashboard-col-actions">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr class="{% if not row.is_active %}is-inactive{% endif %}">
+                            <td>
+                                <div class="dashboard-newsletter-id">
+                                    <span class="dashboard-newsletter-avatar" aria-hidden="true">{{ row.email|first|upper }}</span>
+                                    <a href="{{ row.admin_url }}" class="dashboard-newsletter-email" title="{{ row.email }}">{{ row.email }}</a>
+                                </div>
+                            </td>
+                            <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span></td>
+                            <td>{{ row.source_label }}</td>
+                            <td>{% if row.has_consent %}<span class="dashboard-consent-ok">Jest</span>{% else %}<span class="dashboard-consent-missing">Brak</span>{% endif %}</td>
+                            <td><span class="dashboard-muted">{{ row.subscribed_at|date:"d.m.Y" }}</span></td>
+                            <td>
+                                <div class="dashboard-row-actions">
+                                    <a href="{{ row.admin_url }}">Otwórz</a>
+                                    <a href="{{ row.delete_url }}">Usuń</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+            <article class="dashboard-empty-card">
+                <h2>Brak adresów</h2>
+                <p>Nie ma jeszcze zapisów dla wybranych filtrów.</p>
+                <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj adres</a>
+            </article>
+        {% endif %}
 
         {% if page.paginator.num_pages > 1 %}
             <nav class="dashboard-pagination">

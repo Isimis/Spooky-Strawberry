@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
@@ -71,7 +72,7 @@ def home_view(request):
     )
     aesthetics = (
         Aesthetic.objects.filter(is_active=True)
-        .order_by("-is_featured", "sort_order", "name")[:8]
+        .order_by("sort_order", "name")[:8]
     )
     articles = (
         Article.objects.filter(status=Article.STATUS_PUBLISHED)
@@ -203,9 +204,13 @@ def design_system_view(request):
     )
 
 
+SEARCH_SUGGESTIONS = ["choker", "kabaretki", "mitenki", "soft goth", "y2k", "rajstopy"]
+
+
 def search_view(request):
     query = request.GET.get("q", "").strip()
     products = Product.objects.none()
+    bestsellers = []
     if query:
         track_event(request, "search", metadata={"query": query})
         products = (
@@ -220,6 +225,12 @@ def search_view(request):
             .distinct()
             .order_by("sort_order", "-created_at")
         )
+        if not products:
+            bestsellers = list(
+                Product.objects.filter(status=Product.STATUS_ACTIVE)
+                .prefetch_related("images", "aesthetics", "variants__color")
+                .order_by("-is_bestseller", "sort_order", "-created_at")[:4]
+            )
 
     return render(
         request,
@@ -227,6 +238,8 @@ def search_view(request):
         {
             "query": query,
             "products": products,
+            "bestsellers": bestsellers,
+            "suggestions": SEARCH_SUGGESTIONS,
         },
     )
 
@@ -235,8 +248,8 @@ def cart_view(request):
     return render(request, "core/cart.html")
 
 
-def account_view(request):
-    return render(request, "core/account.html")
+def newsletter_thanks_view(request):
+    return render(request, "core/newsletter_thanks.html")
 
 
 def policy_view(request, slug):
@@ -251,9 +264,12 @@ def policy_view(request, slug):
 
 @require_POST
 def newsletter_subscribe(request):
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
     email = request.POST.get("email", "").strip().lower()
     next_url = request.POST.get("next") or "core:home"
     if not email:
+        if is_ajax:
+            return JsonResponse({"ok": False, "message": "Podaj poprawny adres e-mail."}, status=400)
         messages.error(request, "Podaj adres e-mail.")
         return redirect(next_url)
 
@@ -268,8 +284,21 @@ def newsletter_subscribe(request):
         subscriber.is_active = True
         subscriber.save(update_fields=["is_active"])
 
+    # Zapamiętaj zapis na całą sesję — kafelek newslettera pokazuje wtedy
+    # potwierdzenie zamiast formularza na każdej podstronie.
+    request.session["newsletter_email"] = email
+
+    if is_ajax:
+        if created:
+            heading = "Jesteś w klubie! 🍓"
+            message = f"Wysłaliśmy kod rabatowy -10% na {email}. Sprawdź skrzynkę (i folder spam), żeby go odebrać."
+        else:
+            heading = "Już jesteś z nami 🖤"
+            message = f"Adres {email} jest już zapisany — kod rabatowy znajdziesz w mailu powitalnym."
+        return JsonResponse({"ok": True, "created": created, "heading": heading, "message": message})
+
     if created:
-        messages.success(request, "Jesteś zapisana do newslettera.")
-    else:
-        messages.info(request, "Ten adres jest już zapisany do newslettera.")
+        return redirect("core:newsletter_thanks")
+
+    messages.info(request, "Ten adres jest już zapisany do newslettera.")
     return redirect(next_url)

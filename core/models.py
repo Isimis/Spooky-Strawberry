@@ -145,3 +145,68 @@ class NewsletterSubscriber(models.Model):
 
     def __str__(self):
         return self.email
+
+
+class MessageTemplate(models.Model):
+    """Szablon wiadomości HTML. Systemowe szablony to maile wysyłane automatycznie."""
+
+    name = models.CharField(max_length=160)
+    subject = models.CharField(max_length=200, blank=True)
+    body_html = models.TextField(blank=True, help_text="Treść HTML wiadomości.")
+    description = models.CharField(max_length=255, blank=True, help_text="Kiedy ten mail jest wysyłany.")
+    system_key = models.SlugField(max_length=80, blank=True, unique=True, null=True)
+    is_system = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_system", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Message(models.Model):
+    """Wiadomość w hubie komunikacji (przychodząca/wychodząca)."""
+
+    DIRECTION_INBOUND = "inbound"
+    DIRECTION_OUTBOUND = "outbound"
+    DIRECTION_CHOICES = [
+        (DIRECTION_INBOUND, "Przychodząca"),
+        (DIRECTION_OUTBOUND, "Wychodząca"),
+    ]
+
+    STATUS_DRAFT = "draft"
+    STATUS_SENT = "sent"
+    STATUS_RECEIVED = "received"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Szkic"),
+        (STATUS_SENT, "Wysłana"),
+        (STATUS_RECEIVED, "Odebrana"),
+    ]
+
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES, default=DIRECTION_OUTBOUND)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    subject = models.CharField(max_length=200, blank=True)
+    body_html = models.TextField(blank=True)
+    from_email = models.EmailField(blank=True)
+    to_email = models.EmailField(blank=True)
+    template = models.ForeignKey(
+        MessageTemplate,
+        on_delete=models.SET_NULL,
+        related_name="messages",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["direction", "created_at"], name="message_dir_created_idx"),
+        ]
+
+    def __str__(self):
+        return self.subject or f"Wiadomość #{self.pk}"

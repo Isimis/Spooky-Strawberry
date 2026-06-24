@@ -217,8 +217,63 @@ def build_variant_matrix(product, selected_variant):
 
 
 def aesthetic_list(request):
-    aesthetics = Aesthetic.objects.filter(is_active=True).order_by("-is_featured", "sort_order", "name")
+    # Kolejność wg sort_order, by mozaika układała się jak w projekcie — wyróżnione
+    # (is_featured = kafle „tall") rozkładają się w rytmie, a nie zbijają na początku.
+    aesthetics = Aesthetic.objects.filter(is_active=True).order_by("sort_order", "name")
     return render(request, "catalog/aesthetic_list.html", {"aesthetics": aesthetics})
+
+
+# Klucz odpowiedzi quizu -> (slug estetyki w bazie, nazwa wyniku, opis, gradient)
+QUIZ_RESULTS = [
+    ("soft", "goth", "Soft Goth", "Mrok, ale delikatny — koronki, krzyże i czerń przełamana różem.", "#2a1622,#7a3d5a"),
+    ("coquette", "dark-coquette", "Dark Coquette", "Kokardy, koronki i romantyczny pazur. Słodko, ale z charakterem.", "#3a1d2c,#b4456f"),
+    ("jirai", "jirai-kei", "Jirai Kei", "Słodko-gorzko i lalkowato. Pastel z mrocznym twistem.", "#2a1622,#d45d8a"),
+    ("grunge", "grunge", "Grunge", "Surowo, buntowniczo i bez udawania. Podarte, czarne, szczere.", "#1c1018,#4a2236"),
+    ("y2k", "y2k", "Y2K / Emo", "Nostalgia lat 2000, neony i emo-nuta. Trochę chaosu, dużo serca.", "#241a2e,#6e3b6a"),
+    ("witchy", "goth", "Witchy", "Magia codzienna — świece, srebro i intuicja. Mroczna elegancja.", "#1a1322,#5e2b40"),
+]
+
+
+def style_quiz(request):
+    """Interaktywny quiz stylu — dopasowuje estetykę z bazy i jej produkty."""
+    from django.template.loader import render_to_string
+    from django.urls import reverse
+
+    fallback_url = reverse("catalog:aesthetic_list")
+
+    def render_cards(products):
+        return "".join(
+            render_to_string("catalog/includes/product_card.html", {"product": p}, request=request)
+            for p in products
+        )
+
+    bestsellers = list(
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
+        .prefetch_related("images", "aesthetics", "variants__color")
+        .order_by("-is_bestseller", "sort_order", "-created_at")[:3]
+    )
+
+    quiz_results = {}
+    for key, slug, name, desc, gradient in QUIZ_RESULTS:
+        aesthetic = Aesthetic.objects.filter(slug=slug, is_active=True).first()
+        products = []
+        if aesthetic is not None:
+            products = list(
+                Product.objects.filter(status=Product.STATUS_ACTIVE, aesthetics=aesthetic)
+                .prefetch_related("images", "aesthetics", "variants__color")
+                .order_by("sort_order", "-created_at")[:3]
+            )
+        if not products:
+            products = bestsellers
+        quiz_results[key] = {
+            "name": name,
+            "desc": desc,
+            "gradient": gradient,
+            "url": aesthetic.get_absolute_url() if aesthetic is not None else fallback_url,
+            "cards": render_cards(products),
+        }
+
+    return render(request, "catalog/style_quiz.html", {"quiz_results": quiz_results})
 
 
 def aesthetic_detail(request, slug):

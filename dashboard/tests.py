@@ -37,6 +37,110 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("dashboard:login"), response["Location"])
 
+    def test_user_accounts_list_renders_with_type_and_section(self):
+        self.client.login(username="staff", password="pass")
+        response = self.client.get(reverse("dashboard:model_list", args=["user-accounts"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/user_account_list.html")
+        self.assertContains(response, "Konta użytkowników")
+        self.assertContains(response, "Klient")  # typ konta dla zwykłego usera
+        self.assertIn("Klienci", get_sections())
+
+    def test_user_account_detail_toggles_staff_access(self):
+        self.client.login(username="staff", password="pass")
+        url = reverse("dashboard:user_account_detail", args=[self.regular_user.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Zarządzanie")
+
+        self.client.post(url, {"action": "toggle_staff"})
+        self.regular_user.refresh_from_db()
+        self.assertTrue(self.regular_user.is_staff)
+
+    def test_user_account_generic_create_blocked(self):
+        self.client.login(username="staff", password="pass")
+        create = self.client.get(reverse("dashboard:model_create", args=["user-accounts"]))
+        # Generyczny formularz (z hasłem) jest zablokowany — używamy dedykowanego.
+        self.assertEqual(create.status_code, 302)
+
+    def test_user_account_detail_lists_all_consents(self):
+        self.client.login(username="staff", password="pass")
+        response = self.client.get(reverse("dashboard:user_account_detail", args=[self.regular_user.pk]))
+        self.assertContains(response, "Potwierdzenie e-mail")
+        self.assertContains(response, "Zgoda marketingowa")
+        self.assertContains(response, "Newsletter")
+        # Zgody systemowe / niekontrolowalne nie są tu wymieniane.
+        self.assertNotContains(response, "Pliki cookie")
+
+    def test_user_account_create_view(self):
+        self.client.login(username="staff", password="pass")
+        response = self.client.post(
+            reverse("dashboard:user_account_create"),
+            {"email": "Nowa@Example.PL", "password": "spookypass123", "accepts_marketing": "on"},
+        )
+        user_model = get_user_model()
+        new_user = user_model.objects.get(email__iexact="nowa@example.pl")
+        self.assertRedirects(response, reverse("dashboard:user_account_detail", args=[new_user.pk]))
+        self.assertEqual(new_user.username, "nowa@example.pl")
+        self.assertTrue(new_user.customer_profile.accepts_marketing)
+
+    def test_email_templates_list_and_edit(self):
+        from core.models import MessageTemplate
+
+        self.client.login(username="staff", password="pass")
+        list_resp = self.client.get(reverse("dashboard:model_list", args=["email-templates"]))
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertTemplateUsed(list_resp, "dashboard/email_template_list.html")
+        self.assertContains(list_resp, "Szablony maili")
+        self.assertIn("Komunikacja", get_sections())
+
+        tpl = MessageTemplate.objects.filter(is_system=True).first()
+        self.assertIsNotNone(tpl)
+        edit_page = self.client.get(reverse("dashboard:email_template_edit", args=[tpl.pk]))
+        self.assertEqual(edit_page.status_code, 200)
+        self.assertTemplateUsed(edit_page, "dashboard/email_template_form.html")
+        self.assertContains(edit_page, "data-rich-area")
+        edit = self.client.post(
+            reverse("dashboard:email_template_edit", args=[tpl.pk]),
+            {"subject": "Nowy temat testowy", "body_html": "<p>Cześć</p>", "is_active": "on"},
+        )
+        self.assertEqual(edit.status_code, 302)
+        tpl.refresh_from_db()
+        self.assertEqual(tpl.subject, "Nowy temat testowy")
+
+    def test_messages_hub_list_compose_detail(self):
+        from core.models import Message
+
+        self.client.login(username="staff", password="pass")
+        list_resp = self.client.get(reverse("dashboard:model_list", args=["messages"]))
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertTemplateUsed(list_resp, "dashboard/message_list.html")
+        self.assertContains(list_resp, "Skrzynka")
+
+        compose = self.client.post(
+            reverse("dashboard:message_compose"),
+            {"to_email": "klient@example.pl", "subject": "Cześć", "body_html": "<p>Test</p>"},
+        )
+        message = Message.objects.get(to_email="klient@example.pl")
+        self.assertRedirects(compose, reverse("dashboard:message_detail", args=[message.pk]))
+        self.assertEqual(message.direction, Message.DIRECTION_OUTBOUND)
+        self.assertEqual(message.status, Message.STATUS_SENT)
+
+        detail = self.client.get(reverse("dashboard:message_detail", args=[message.pk]))
+        self.assertContains(detail, "Cześć")
+
+    def test_user_account_edit_and_delete(self):
+        self.client.login(username="staff", password="pass")
+        url = reverse("dashboard:user_account_detail", args=[self.regular_user.pk])
+        self.client.post(url, {"action": "save", "email": "edited@example.pl", "first_name": "Zo", "accepts_marketing": "on"})
+        self.regular_user.refresh_from_db()
+        self.assertEqual(self.regular_user.email, "edited@example.pl")
+        self.assertTrue(self.regular_user.customer_profile.accepts_marketing)
+
+        delete = self.client.post(url, {"action": "delete"})
+        self.assertRedirects(delete, reverse("dashboard:model_list", args=["user-accounts"]))
+        self.assertFalse(get_user_model().objects.filter(pk=self.regular_user.pk).exists())
+
     def test_dashboard_rejects_non_staff_user(self):
         self.client.login(username="regular", password="pass")
         response = self.client.get(reverse("dashboard:home"))

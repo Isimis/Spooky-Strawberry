@@ -75,3 +75,18 @@ class CatalogViewTests(TestCase):
         self.assertContains(response, "<strong>Mocny detal</strong>")
         self.assertContains(response, "<li>Do czarnych butów</li>")
         self.assertContains(response, "<ol><li>Załóż do chokera</li><li>Dodaj cięższe buty</li></ol>")
+
+
+class StyleQuizTests(TestCase):
+    def test_quiz_renders_intro_and_result_data(self):
+        from .models import Aesthetic
+
+        Aesthetic.objects.create(name="Goth", slug="goth", tagline="Romantyczny mrok", is_active=True)
+        response = self.client.get(reverse("catalog:style_quiz"))
+        self.assertEqual(response.status_code, 200)
+        # Intro krok i wszystkie 6 pytań z prototypu.
+        self.assertContains(response, "Jaka estetyka to Ty?")
+        self.assertContains(response, "Pytanie 6 z 6")
+        # Dane wyników wstrzykiwane przez json_script.
+        self.assertContains(response, 'id="quizData"')
+        self.assertContains(response, "Soft Goth")

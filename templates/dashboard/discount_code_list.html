@@ -69,50 +69,54 @@
             </div>
         </div>
 
-        <div class="dashboard-commerce-list" aria-label="Lista kodów rabatowych">
-            {% for row in rows %}
-                <article class="dashboard-commerce-card {% if row.status_class == 'archived' %}is-muted{% endif %}">
-                    <div class="dashboard-commerce-card__top">
-                        <div>
-                            <p class="eyebrow">Kod rabatowy · {{ row.discount_type_label }}</p>
-                            <h2><a href="{{ row.admin_url }}">{{ row.code }}</a></h2>
-                            <p>{{ row.value_label }} rabatu · {{ row.minimum_order_label }} · {{ row.date_label }}</p>
-                        </div>
-                        <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
-                    </div>
-
-                    <dl class="dashboard-commerce-facts">
-                        <div>
-                            <dt>Wartość</dt>
-                            <dd>{{ row.value_label }}</dd>
-                        </div>
-                        <div>
-                            <dt>Minimum</dt>
-                            <dd>{{ row.minimum_order_label }}</dd>
-                        </div>
-                        <div>
-                            <dt>Użycia</dt>
-                            <dd>{{ row.usage_label }}</dd>
-                        </div>
-                        <div>
-                            <dt>Zamówienia</dt>
-                            <dd>{{ row.order_count }}</dd>
-                        </div>
-                    </dl>
-
-                    <div class="dashboard-taxonomy-actions dashboard-commerce-card__actions">
-                        <a href="{{ row.admin_url }}">Edytuj</a>
-                        <a href="{{ row.delete_url }}">Usuń</a>
-                    </div>
-                </article>
-            {% empty %}
-                <article class="dashboard-empty-card">
-                    <h2>Brak kodów rabatowych</h2>
-                    <p>Dodaj pierwszy kod testowy, np. dla przyszłej kampanii albo ręcznych zamówień.</p>
-                    <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj kod</a>
-                </article>
-            {% endfor %}
+        {% if rows %}
+        <div class="dashboard-table-wrap">
+            <table class="dashboard-table" aria-label="Lista kodów rabatowych">
+                <thead>
+                    <tr>
+                        <th>Kod</th>
+                        <th>Status</th>
+                        <th>Wartość</th>
+                        <th>Minimum</th>
+                        <th>Użycia</th>
+                        <th>Zamówienia</th>
+                        <th class="dashboard-col-actions">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr class="{% if row.status_class == 'archived' %}is-inactive{% endif %}">
+                            <td>
+                                <div class="dashboard-cell-main">
+                                    <div>
+                                        <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.code }}</a>
+                                        <small>{{ row.discount_type_label }} · {{ row.date_label }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span></td>
+                            <td><span class="dashboard-cell-strong">{{ row.value_label }}</span></td>
+                            <td>{{ row.minimum_order_label }}</td>
+                            <td>{{ row.usage_label }}</td>
+                            <td>{{ row.order_count }}</td>
+                            <td>
+                                <div class="dashboard-row-actions">
+                                    <a href="{{ row.admin_url }}">Edytuj</a>
+                                    <a href="{{ row.delete_url }}">Usuń</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+            <article class="dashboard-empty-card">
+                <h2>Brak kodów rabatowych</h2>
+                <p>Dodaj pierwszy kod testowy, np. dla przyszłej kampanii albo ręcznych zamówień.</p>
+                <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj kod</a>
+            </article>
+        {% endif %}
 
         {% if page.paginator.num_pages > 1 %}
             <nav class="dashboard-pagination">

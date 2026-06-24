@@ -72,56 +72,54 @@
             </div>
         </div>
 
-        <div class="dashboard-commerce-list" aria-label="Lista metod dostawy">
-            {% for row in rows %}
-                <article class="dashboard-commerce-card {% if not row.is_active %}is-muted{% endif %}">
-                    <div class="dashboard-commerce-card__top">
-                        <div>
-                            <p class="eyebrow">Dostawa · {{ row.code }}</p>
-                            <h2><a href="{{ row.admin_url }}">{{ row.name }}</a></h2>
-                            <p>
-                                {% if row.description %}
-                                    {{ row.description|truncatechars:170 }}
-                                {% else %}
-                                    Brak opisu. Warto dodać krótką informację, którą później pokażemy przy wyborze dostawy.
-                                {% endif %}
-                            </p>
-                        </div>
-                        <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
-                    </div>
-
-                    <dl class="dashboard-commerce-facts">
-                        <div>
-                            <dt>Cena</dt>
-                            <dd>{{ row.price|money }}</dd>
-                        </div>
-                        <div>
-                            <dt>Darmowa od</dt>
-                            <dd>{{ row.free_from_label }}</dd>
-                        </div>
-                        <div>
-                            <dt>Kolejność</dt>
-                            <dd>{{ row.sort_order }}</dd>
-                        </div>
-                        <div>
-                            <dt>Zamówienia</dt>
-                            <dd>{{ row.order_count }}</dd>
-                        </div>
-                    </dl>
-
-                    <div class="dashboard-taxonomy-actions dashboard-commerce-card__actions">
-                        <a href="{{ row.admin_url }}">Edytuj</a>
-                        <a href="{{ row.delete_url }}">Usuń</a>
-                    </div>
-                </article>
-            {% empty %}
-                <article class="dashboard-empty-card">
-                    <h2>Brak metod dostawy</h2>
-                    <p>Dodaj pierwszą metodę, np. paczkomat albo kuriera. Checkout zostaje na później, ale dane dostawy możemy przygotować już teraz.</p>
-                    <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj metodę</a>
-                </article>
-            {% endfor %}
+        {% if rows %}
+        <div class="dashboard-table-wrap">
+            <table class="dashboard-table" aria-label="Lista metod dostawy">
+                <thead>
+                    <tr>
+                        <th>Metoda</th>
+                        <th>Status</th>
+                        <th>Cena</th>
+                        <th>Darmowa od</th>
+                        <th>Kolejność</th>
+                        <th>Zamówienia</th>
+                        <th class="dashboard-col-actions">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr class="{% if not row.is_active %}is-inactive{% endif %}">
+                            <td>
+                                <div class="dashboard-cell-main">
+                                    <div>
+                                        <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.name }}</a>
+                                        <small>{{ row.code }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span></td>
+                            <td><span class="dashboard-cell-strong">{{ row.price|money }}</span></td>
+                            <td>{{ row.free_from_label }}</td>
+                            <td>{{ row.sort_order }}</td>
+                            <td>{{ row.order_count }}</td>
+                            <td>
+                                <div class="dashboard-row-actions">
+                                    <a href="{{ row.admin_url }}">Edytuj</a>
+                                    <a href="{{ row.delete_url }}">Usuń</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+            <article class="dashboard-empty-card">
+                <h2>Brak metod dostawy</h2>
+                <p>Dodaj pierwszą metodę, np. paczkomat albo kuriera. Checkout zostaje na później, ale dane dostawy możemy przygotować już teraz.</p>
+                <a href="{% url 'dashboard:model_create' config.slug %}" class="button">Dodaj metodę</a>
+            </article>
+        {% endif %}
 
         {% if page.paginator.num_pages > 1 %}
             <nav class="dashboard-pagination">

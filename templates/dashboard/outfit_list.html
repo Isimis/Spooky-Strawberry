@@ -68,73 +68,56 @@
     </div>
 {% endif %}
 
-<section class="dashboard-outfit-grid" aria-label="Lista stylizacji">
-    {% for row in rows %}
-        <article class="dashboard-outfit-card">
-            <a href="{{ row.admin_url }}" class="dashboard-outfit-card__image">
-                {% if row.image_url %}
-                    <img src="{{ row.image_url }}" alt="{{ row.image_alt }}">
-                {% else %}
-                    <span>SS</span>
-                {% endif %}
-            </a>
-            <div class="dashboard-outfit-card__body">
-                <div class="dashboard-outfit-card__head">
-                    <div>
-                        <p class="eyebrow">Stylizacja</p>
-                        <h2><a href="{{ row.admin_url }}">{{ row.name }}</a></h2>
-                    </div>
-                    <span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span>
-                </div>
-
-                {% if row.short_description %}
-                    <p>{{ row.short_description }}</p>
-                {% else %}
-                    <p class="dashboard-muted">Brak krótkiego opisu. Warto uzupełnić tekst widoczny na karcie stylizacji.</p>
-                {% endif %}
-
-                <div class="dashboard-outfit-tags">
-                    {% for aesthetic in row.aesthetics %}
-                        <span>{{ aesthetic.name }}</span>
-                    {% empty %}
-                        <span>Bez estetyki</span>
-                    {% endfor %}
-                </div>
-
-                <dl class="dashboard-outfit-facts">
-                    <div>
-                        <dt>Produkty</dt>
-                        <dd>{{ row.item_count }}</dd>
-                    </div>
-                    <div>
-                        <dt>Zdjęcia</dt>
-                        <dd>{{ row.image_count }}</dd>
-                    </div>
-                    <div>
-                        <dt>Osobno</dt>
-                        <dd>{{ row.products_total|money }}</dd>
-                    </div>
-                    <div>
-                        <dt>Cena promocyjna</dt>
-                        <dd>{% if row.promo_price %}{{ row.promo_price|money }}{% else %}Brak{% endif %}</dd>
-                    </div>
-                </dl>
-
-                <div class="dashboard-taxonomy-actions">
-                    <a href="{{ row.admin_url }}">Edytuj</a>
-                    <a href="{{ row.preview_url }}">Podgląd</a>
-                    <a href="{{ row.delete_url }}">Usuń</a>
-                </div>
-            </div>
-        </article>
-    {% empty %}
-        <article class="dashboard-empty-card">
-            <h2>Brak stylizacji</h2>
-            <p>Dodaj pierwszą stylizację i przypisz do niej produkty oraz zdjęcia.</p>
-            <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj stylizację</a>
-        </article>
-    {% endfor %}
-</section>
+{% if rows %}
+<div class="dashboard-table-wrap">
+    <table class="dashboard-table" aria-label="Lista stylizacji">
+        <thead>
+            <tr>
+                <th>Stylizacja</th>
+                <th>Status</th>
+                <th>Produkty</th>
+                <th>Zdjęcia</th>
+                <th>Osobno</th>
+                <th>Cena promocyjna</th>
+                <th class="dashboard-col-actions">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr class="{% if row.status == 'archived' %}is-inactive{% endif %}">
+                    <td>
+                        <div class="dashboard-cell-main">
+                            {% if row.image_url %}<img class="dashboard-cell-thumb" src="{{ row.image_url }}" alt="{{ row.image_alt }}">{% else %}<span class="dashboard-cell-thumb dashboard-cell-thumb--empty">SS</span>{% endif %}
+                            <div>
+                                <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.name }}</a>
+                                <small>{% for aesthetic in row.aesthetics %}{{ aesthetic.name }}{% if not forloop.last %}, {% endif %}{% empty %}Bez estetyki{% endfor %}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span></td>
+                    <td>{{ row.item_count }}</td>
+                    <td>{{ row.image_count }}</td>
+                    <td>{{ row.products_total|money }}</td>
+                    <td>{% if row.promo_price %}<span class="dashboard-cell-strong">{{ row.promo_price|money }}</span>{% else %}<span class="dashboard-muted">Brak</span>{% endif %}</td>
+                    <td>
+                        <div class="dashboard-row-actions">
+                            <a href="{{ row.admin_url }}">Edytuj</a>
+                            <a href="{{ row.preview_url }}">Podgląd</a>
+                            <a href="{{ row.delete_url }}">Usuń</a>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <article class="dashboard-empty-card">
+        <h2>Brak stylizacji</h2>
+        <p>Dodaj pierwszą stylizację i przypisz do niej produkty oraz zdjęcia.</p>
+        <a href="{% url 'dashboard:outfit_create_workspace' %}" class="button">Dodaj stylizację</a>
+    </article>
+{% endif %}
 
 {% if page.paginator.num_pages > 1 %}
     <nav class="dashboard-pagination">

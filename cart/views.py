@@ -16,6 +16,7 @@ from .services import (
     get_cart_quantity,
     get_cart_summary,
     remove_cart_item,
+    save_cart_for_user,
     update_cart_item,
 )
 
@@ -41,12 +42,22 @@ def cart_detail(request):
         },
     )
     shipping_cost, free_from, remaining = get_shipping_estimate(summary["subtotal"])
+
+    in_cart_ids = [item["product"].id for item in summary["items"] if item.get("product")]
+    recommendations = list(
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
+        .exclude(id__in=in_cart_ids)
+        .prefetch_related("images", "aesthetics", "variants__color")
+        .order_by("-is_bestseller", "sort_order", "-created_at")[:4]
+    )
+
     summary.update(
         {
             "shipping_cost": shipping_cost,
             "free_from": free_from,
             "free_remaining": remaining,
             "grand_total": summary["subtotal"] + shipping_cost,
+            "recommendations": recommendations,
         }
     )
     return render(request, "cart/detail.html", summary)
@@ -62,6 +73,7 @@ def add_item(request):
     )
     quantity = request.POST.get("quantity", 1)
     result = add_to_cart(request, variant, quantity)
+    save_cart_for_user(request)
     track_event(
         request,
         "add_to_cart",
@@ -109,6 +121,7 @@ def add_outfit(request, slug):
             result = add_to_cart(request, variant, item.quantity or 1)
             if result.get("added"):
                 added += 1
+    save_cart_for_user(request)
 
     text = "Dodano zestaw do koszyka 🍓" if added else "Nie udało się dodać zestawu — brak dostępnych wariantów."
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
@@ -122,6 +135,7 @@ def add_outfit(request, slug):
 def update_item(request, variant_id):
     variant = get_object_or_404(ProductVariant.objects.select_related("product"), pk=variant_id)
     result = update_cart_item(request, variant, request.POST.get("quantity", 1))
+    save_cart_for_user(request)
 
     if result.get("removed") and result.get("reason") == "unavailable":
         messages.warning(request, "Usunięto produkt, bo nie jest już dostępny.")
@@ -137,6 +151,7 @@ def update_item(request, variant_id):
 @require_POST
 def remove_item(request, variant_id):
     remove_cart_item(request, variant_id)
+    save_cart_for_user(request)
     messages.success(request, "Produkt usunięty z koszyka.")
     return redirect("cart:detail")
 
@@ -144,5 +159,6 @@ def remove_item(request, variant_id):
 @require_POST
 def clear_items(request):
     clear_cart(request)
+    save_cart_for_user(request)
     messages.success(request, "Koszyk wyczyszczony.")
     return redirect("cart:detail")

@@ -1,11 +1,15 @@
 from dataclasses import dataclass
 
+from django.contrib.auth import get_user_model
+
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, Size
-from core.models import NewsletterSubscriber
+from core.models import Message, MessageTemplate, NewsletterSubscriber
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit
+
+User = get_user_model()
 
 
 @dataclass(frozen=True)
@@ -95,6 +99,33 @@ MODEL_REGISTRY = [
         "Zamówienia",
         ("code", "discount_type", "value", "is_active", "used_count"),
         ("code",),
+    ),
+    AdminModelConfig(
+        "user-accounts",
+        "Konta użytkowników",
+        User,
+        "Klienci",
+        ("email", "first_name", "is_staff", "date_joined"),
+        ("email", "username", "first_name", "last_name"),
+        readonly=True,
+    ),
+    AdminModelConfig(
+        "messages",
+        "Skrzynka",
+        Message,
+        "Komunikacja",
+        ("subject", "to_email", "status", "created_at"),
+        ("subject", "to_email", "from_email"),
+        readonly=True,
+    ),
+    AdminModelConfig(
+        "email-templates",
+        "Szablony maili",
+        MessageTemplate,
+        "Komunikacja",
+        ("name", "subject", "is_active"),
+        ("name", "subject", "description"),
+        readonly=True,
     ),
     AdminModelConfig(
         "analytics-sessions",

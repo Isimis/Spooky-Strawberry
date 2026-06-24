@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Jaka estetyka to Ty? — quiz stylu | Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="sec">
+    <div class="quiz">
+        <div class="quiz-prog"><div class="quiz-prog-fill"></div></div>
+
+        <div class="quiz-step active">
+            <div class="quiz-intro">
+                <div class="qi-ic">🍓</div>
+                <h2 class="q-title" style="margin-bottom:10px">Jaka estetyka to Ty?</h2>
+                <p class="muted" style="max-width:420px;margin:0 auto 22px">6 szybkich pytań, około minuty. Na końcu dopasujemy Ci estetykę, gotowe stylizacje i kod -10% na start.</p>
+                <button class="btn btn-primary btn-lg quiz-start" type="button">Zaczynamy ✨</button>
+            </div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="q-count">Pytanie 1 z 6</div>
+            <h2 class="q-title">Jaki klimat czujesz najbardziej?</h2>
+            <div class="q-opts">
+                <button class="q-opt" type="button" data-aes="soft"><span class="qo-ic">🌙</span><b>Romantyczny mrok</b><span>koronki, świece, cisza</span></button>
+                <button class="q-opt" type="button" data-aes="coquette"><span class="qo-ic">🎀</span><b>Słodko i kokardkowo</b><span>róż, falbanki, urok</span></button>
+                <button class="q-opt" type="button" data-aes="grunge"><span class="qo-ic">⛓️</span><b>Surowo i buntowniczo</b><span>czerń, glany, pazur</span></button>
+                <button class="q-opt" type="button" data-aes="y2k"><span class="qo-ic">👾</span><b>Kolorowo i nostalgicznie</b><span>neon, 2000s, chaos</span></button>
+            </div>
+            <div class="q-nav"><button class="q-back" type="button">← Wstecz</button></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="q-count">Pytanie 2 z 6</div>
+            <h2 class="q-title">Twoja paleta?</h2>
+            <div class="q-opts">
+                <button class="q-opt" type="button" data-aes="soft"><span class="qo-ic">🖤</span><b>Czerń i koronka</b><span>mrocznie, elegancko</span></button>
+                <button class="q-opt" type="button" data-aes="coquette"><span class="qo-ic">🩷</span><b>Róż i czerń</b><span>słodko z pazurem</span></button>
+                <button class="q-opt" type="button" data-aes="grunge"><span class="qo-ic">🤍</span><b>Wyblakłe i znoszone</b><span>vintage, surowo</span></button>
+                <button class="q-opt" type="button" data-aes="y2k"><span class="qo-ic">🌈</span><b>Pastele i neony</b><span>kolorowo, śmiało</span></button>
+            </div>
+            <div class="q-nav"><button class="q-back" type="button">← Wstecz</button></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="q-count">Pytanie 3 z 6</div>
+            <h2 class="q-title">Idealny wieczór to…</h2>
+            <div class="q-opts">
+                <button class="q-opt" type="button" data-aes="witchy"><span class="qo-ic">🕯️</span><b>Świece i tarot</b><span>klimat, intuicja</span></button>
+                <button class="q-opt" type="button" data-aes="coquette"><span class="qo-ic">☕</span><b>Randka w kawiarni</b><span>romantycznie</span></button>
+                <button class="q-opt" type="button" data-aes="grunge"><span class="qo-ic">🎸</span><b>Koncert albo klub</b><span>głośno, ostro</span></button>
+                <button class="q-opt" type="button" data-aes="y2k"><span class="qo-ic">🎮</span><b>Gry i stare bajki</b><span>nostalgia</span></button>
+            </div>
+            <div class="q-nav"><button class="q-back" type="button">← Wstecz</button></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="q-count">Pytanie 4 z 6</div>
+            <h2 class="q-title">Wybierz swój akcent</h2>
+            <div class="q-opts">
+                <button class="q-opt" type="button" data-aes="soft"><span class="qo-ic">✝️</span><b>Choker z krzyżami</b><span>mroczny detal</span></button>
+                <button class="q-opt" type="button" data-aes="coquette"><span class="qo-ic">🎀</span><b>Kokarda i falbanka</b><span>dziewczęco</span></button>
+                <button class="q-opt" type="button" data-aes="jirai"><span class="qo-ic">🧷</span><b>Spinki kawaii</b><span>lalkowato</span></button>
+                <button class="q-opt" type="button" data-aes="grunge"><span class="qo-ic">⛓️</span><b>Łańcuchy</b><span>buntowniczo</span></button>
+            </div>
+            <div class="q-nav"><button class="q-back" type="button">← Wstecz</button></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="q-count">Pytanie 5 z 6</div>
+            <h2 class="q-title">Twój wibe w jednym słowie</h2>
+            <div class="q-opts">
+                <button class="q-opt" type="button" data-aes="soft"><span class="qo-ic">🦋</span><b>Eteryczna</b><span>delikatnie, marzycielsko</span></button>
+                <button class="q-opt" type="button" data-aes="jirai"><span class="qo-ic">🎎</span><b>Lalkowata</b><span>słodko-gorzko</span></button>
+                <button class="q-opt" type="button" data-aes="grunge"><span class="qo-ic">🔥</span><b>Hardcore</b><span>mocno, bez filtra</span></button>
+                <button class="q-opt" type="button" data-aes="y2k"><span class="qo-ic">💭</span><b>Dreamy</b><span>nostalgicznie</span></button>
+            </div>
+            <div class="q-nav"><button class="q-back" type="button">← Wstecz</button></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="q-count">Pytanie 6 z 6</div>
+            <h2 class="q-title">Jak mocno spooky?</h2>
+            <div class="q-opts">
+                <button class="q-opt" type="button" data-aes="coquette"><span class="qo-ic">🌸</span><b>Delikatnie</b><span>tylko muśnięcie mroku</span></button>
+                <button class="q-opt" type="button" data-aes="soft"><span class="qo-ic">🌙</span><b>W sam raz</b><span>słodko i mrocznie</span></button>
+                <button class="q-opt" type="button" data-aes="grunge"><span class="qo-ic">🦇</span><b>Mocno</b><span>im ciemniej, tym lepiej</span></button>
+                <button class="q-opt" type="button" data-aes="witchy"><span class="qo-ic">🔮</span><b>Magicznie</b><span>mistycznie i tajemniczo</span></button>
+            </div>
+            <div class="q-nav"><button class="q-back" type="button">← Wstecz</button></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="quiz-load"><div class="spinner"></div><h2 class="q-title" style="font-size:20px;margin-bottom:6px">Dobieramy Twoją estetykę…</h2><p class="muted">Mieszamy róż z mrokiem 🖤</p></div>
+        </div>
+
+        <div class="quiz-step">
+            <div class="qr-hero"><div class="qr-ov"></div><div class="qr-tx"><div class="qr-k">Twoja estetyka</div><div class="qr-name">Soft Goth</div></div></div>
+            <p class="qr-desc" style="font-size:17px;line-height:1.55;color:var(--ink-soft);margin-bottom:14px">Mrok, ale delikatny.</p>
+            <p style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px">Dopasowane produkty na start:</p>
+            <div class="pgrid qr-grid"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:22px">
+                <a class="btn btn-primary btn-lg quiz-collection" href="{% url 'catalog:aesthetic_list' %}">Zobacz kolekcję</a>
+                <button class="btn btn-ghost btn-lg quiz-restart" type="button">Powtórz quiz</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+{{ quiz_results|json_script:"quizData" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+  const quiz = document.querySelector('.quiz');
+  if(!quiz) return;
+  const DATA = JSON.parse(document.getElementById('quizData').textContent);
+  const steps = quiz.querySelectorAll('.quiz-step');
+  const fill = quiz.querySelector('.quiz-prog-fill');
+  let score = {};
+
+  function current(){ return [...steps].findIndex(s => s.classList.contains('active')); }
+
+  function go(idx){
+    steps.forEach(s => s.classList.remove('active'));
+    steps[idx].classList.add('active');
+    let p = 0;
+    if(idx >= 1 && idx <= 6) p = (idx - 1) / 6 * 100;
+    else if(idx > 6) p = 100;
+    if(fill) fill.style.width = p + '%';
+    quiz.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function start(){ score = {}; quiz.classList.remove('quiz-done'); quiz.querySelectorAll('.q-opt.sel').forEach(o => o.classList.remove('sel')); go(1); }
+
+  function pick(el){
+    el.parentElement.querySelectorAll('.q-opt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    const a = el.dataset.aes;
+    if(a) score[a] = (score[a] || 0) + 1;
+    const c = current();
+    setTimeout(() => { if(c >= 6) finish(); else go(c + 1); }, 250);
+  }
+
+  function finish(){
+    go(7);
+    setTimeout(() => {
+      let best = null, bv = -1;
+      for(const k in score){ if(score[k] > bv){ bv = score[k]; best = k; } }
+      const r = DATA[best] || DATA['soft'];
+      const step = steps[8];
+      step.querySelector('.qr-name').textContent = r.name;
+      step.querySelector('.qr-desc').textContent = r.desc;
+      step.querySelector('.qr-hero').style.background = 'linear-gradient(160deg,' + r.gradient + ')';
+      step.querySelector('.qr-grid').innerHTML = r.cards;
+      const col = step.querySelector('.quiz-collection');
+      if(col && r.url) col.href = r.url;
+      quiz.classList.add('quiz-done');
+      go(8);
+    }, 1300);
+  }
+
+  quiz.querySelectorAll('.quiz-start, .quiz-restart').forEach(b => b.addEventListener('click', start));
+  quiz.querySelectorAll('.q-opt').forEach(b => b.addEventListener('click', () => pick(b)));
+  quiz.querySelectorAll('.q-back').forEach(b => b.addEventListener('click', () => go(Math.max(0, current() - 1))));
+})();
+</script>
+{% endblock %}

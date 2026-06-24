@@ -117,12 +117,13 @@ class CategoryDashboardForm(AutoSlugDashboardForm):
 class AestheticDashboardForm(AutoSlugDashboardForm):
     class Meta:
         model = Aesthetic
-        fields = ["name", "tagline", "description", "image", "card_gradient", "is_featured", "sort_order", "is_active"]
+        fields = ["name", "tagline", "description", "image", "featured_image", "card_gradient", "is_featured", "sort_order", "is_active"]
         labels = {
             "name": "Nazwa estetyki",
             "tagline": "Podtytuł kafelka",
             "description": "Opis estetyki",
             "image": "Zdjęcie estetyki",
+            "featured_image": "Zdjęcie wyróżnionego kafelka",
             "card_gradient": "Gradient tła (fallback)",
             "is_featured": "Wyróżniona (większy kafelek)",
             "sort_order": "Kolejność wyświetlania",
@@ -133,6 +134,7 @@ class AestheticDashboardForm(AutoSlugDashboardForm):
             "tagline": "Krótkie hasło na kafelku, np. „Mrok, ale delikatny”.",
             "description": "Krótki opis klimatu, który później może trafić do kolekcji albo SEO.",
             "image": "Zdjęcie tła kafelka i hero estetyki. Jeśli puste, użyty zostanie gradient.",
+            "featured_image": "Używane tylko, gdy estetyka jest wyróżniona (duży kafelek w mozaice). Jeśli puste, użyte zostanie zwykłe zdjęcie.",
             "card_gradient": "Dwa kolory rozdzielone przecinkiem, np. „#2a1622,#7a3d5a”.",
             "is_featured": "Wyróżnione estetyki dostają większy kafelek w mozaice.",
             "sort_order": "Niższa liczba oznacza wcześniejsze miejsce na listach.",
@@ -999,3 +1001,97 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             status=Product.STATUS_ACTIVE
         ).order_by("sort_order", "name")
         self.apply_dashboard_widgets()
+
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+
+User = get_user_model()
+
+
+class UserAccountForm(DashboardFormMixin, forms.ModelForm):
+    accepts_marketing = forms.BooleanField(required=False, label="Zgoda marketingowa / newsletter")
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "is_active", "is_staff"]
+        labels = {
+            "first_name": "Imię",
+            "last_name": "Nazwisko",
+            "email": "E-mail",
+            "is_active": "Konto aktywne",
+            "is_staff": "Dostęp do panelu (zespół)",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        profile = getattr(self.instance, "customer_profile", None)
+        if profile is not None:
+            self.fields["accepts_marketing"].initial = profile.accepts_marketing
+        self.apply_dashboard_widgets()
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if email and User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Ten e-mail jest już używany przez inne konto.")
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        from accounts.models import CustomerProfile
+
+        profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        profile.accepts_marketing = self.cleaned_data.get("accepts_marketing", False)
+        profile.save(update_fields=["accepts_marketing"])
+        return user
+
+
+class UserAccountCreateForm(DashboardFormMixin, forms.ModelForm):
+    password = forms.CharField(min_length=8, widget=forms.PasswordInput, label="Hasło")
+    accepts_marketing = forms.BooleanField(required=False, label="Zgoda marketingowa / newsletter")
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "is_staff"]
+        labels = {
+            "first_name": "Imię",
+            "last_name": "Nazwisko",
+            "email": "E-mail",
+            "is_staff": "Dostęp do panelu (zespół)",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if not email:
+            raise forms.ValidationError("Podaj adres e-mail.")
+        if User.objects.filter(email__iexact=email).exists() or User.objects.filter(username__iexact=email).exists():
+            raise forms.ValidationError("Konto z tym adresem e-mail już istnieje.")
+        return email
+
+    def clean_password(self):
+        password = self.cleaned_data["password"]
+        validate_password(password)
+        return password
+
+    def save(self, commit=True):
+        email = self.cleaned_data["email"]
+        user = User(
+            username=email,
+            email=email,
+            first_name=self.cleaned_data.get("first_name", ""),
+            last_name=self.cleaned_data.get("last_name", ""),
+            is_staff=self.cleaned_data.get("is_staff", False),
+        )
+        user.set_password(self.cleaned_data["password"])
+        if commit:
+            user.save()
+            from accounts.models import CustomerProfile
+
+            profile, _ = CustomerProfile.objects.get_or_create(user=user)
+            profile.accepts_marketing = self.cleaned_data.get("accepts_marketing", False)
+            profile.save(update_fields=["accepts_marketing"])
+        return user

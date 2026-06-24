@@ -69,4 +69,14 @@
     </div>
     {% endif %}
 </section>
+
+{% if recommendations %}
+<section class="sec" style="background:var(--blush)">
+    <div class="sec-head"><div><div class="eyebrow">Dla Ciebie</div><h2 class="h-lg">Może dorzucisz?</h2></div>
+        <a class="link" href="{% url 'catalog:product_list' %}">Katalog →</a></div>
+    <div class="pgrid">
+        {% for product in recommendations %}{% include "catalog/includes/product_card.html" with product=product %}{% endfor %}
+    </div>
+</section>
+{% endif %}
 {% endblock %}

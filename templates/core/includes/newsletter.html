@@ -1,21 +1,31 @@
 {% load static %}
 <section class="sec">
-    <div class="nl">
+    <div class="nl js-newsletter-card">
         <div class="nl-deco"></div>
         <img class="nl-berry" src="{% static 'img/ssmodernbginvert.png' %}" alt="">
-        <div class="nl-chip">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7z"/></svg>
-            Klub Spooky
-        </div>
-        <h3>{{ nl_title|default:"Dołącz do klubu 🍓" }}</h3>
-        <p>{{ nl_text|default:"Najnowsze dropy, kody rabatowe i porady stylowe. Zero spamu, tylko soczyste treści." }}</p>
-        <form class="nl-form" action="{% url 'core:newsletter_subscribe' %}" method="post">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <input type="hidden" name="source" value="{{ nl_source|default:'home' }}">
-            <input type="email" name="email" placeholder="Twój e-mail" aria-label="Twój e-mail" required>
-            <button type="submit" class="btn btn-primary">Zapisz</button>
-        </form>
-        <div class="fine">-10% na pierwsze zamówienie po zapisie.</div>
+        {% if request.session.newsletter_email %}
+            <div class="nl-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Klub Spooky
+            </div>
+            <h3>Jesteś w klubie! 🍓</h3>
+            <p>Wysłaliśmy kod rabatowy -10% na {{ request.session.newsletter_email }}. Sprawdź skrzynkę (i folder spam), żeby go odebrać.</p>
+            <div class="fine">Nie widzisz maila? Sprawdź folder spam.</div>
+        {% else %}
+            <div class="nl-chip">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7z"/></svg>
+                Klub Spooky
+            </div>
+            <h3>{{ nl_title|default:"Dołącz do klubu 🍓" }}</h3>
+            <p>{{ nl_text|default:"Najnowsze dropy, kody rabatowe i porady stylowe. Zero spamu, tylko soczyste treści." }}</p>
+            <form class="nl-form js-newsletter-form" action="{% url 'core:newsletter_subscribe' %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" name="source" value="{{ nl_source|default:'home' }}">
+                <input type="email" name="email" placeholder="Twój e-mail" aria-label="Twój e-mail" required>
+                <button type="submit" class="btn btn-primary">Zapisz</button>
+            </form>
+            <div class="fine">-10% na pierwsze zamówienie po zapisie.</div>
+        {% endif %}
     </div>
 </section>

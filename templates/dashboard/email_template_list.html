@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Szablony maili | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Komunikacja</p>
+        <h1>Szablony maili</h1>
+        <p>Domyślne maile wysyłane do klientek — potwierdzenia, newsletter, zamówienia. Treść jest edytowalna; szablonów systemowych nie dodajesz ani nie usuwasz.</p>
+    </div>
+</section>
+
+{% if rows %}
+<div class="dashboard-table-wrap">
+    <table class="dashboard-table" aria-label="Szablony maili">
+        <thead>
+            <tr>
+                <th>Szablon</th>
+                <th>Temat</th>
+                <th>Rodzaj</th>
+                <th>Status</th>
+                <th class="dashboard-col-actions">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr class="{% if not row.is_active %}is-inactive{% endif %}">
+                    <td>
+                        <div class="dashboard-cell-main">
+                            <div>
+                                <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.name }}</a>
+                                {% if row.description %}<small>{{ row.description }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="dashboard-muted">{{ row.subject }}</span></td>
+                    <td>{% if row.is_system %}<span class="dashboard-status-pill dashboard-status-pill--best">Systemowy</span>{% else %}<span class="dashboard-status-pill dashboard-status-pill--active">Własny</span>{% endif %}</td>
+                    <td>{% if row.is_active %}<span class="dashboard-consent-ok">Aktywny</span>{% else %}<span class="dashboard-muted">Wyłączony</span>{% endif %}</td>
+                    <td>
+                        <div class="dashboard-row-actions">
+                            <a href="{{ row.admin_url }}">Edytuj treść</a>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <article class="dashboard-empty-card">
+        <h2>Brak szablonów</h2>
+        <p>Domyślne szablony pojawią się po migracji danych.</p>
+    </article>
+{% endif %}
+{% endblock %}

@@ -1,29 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Wyszukiwanie | Spooky Strawberry{% endblock %}
+{% block title %}{% if query %}Wyniki dla „{{ query }}"{% else %}Wyszukiwanie{% endif %} — Spooky Strawberry{% endblock %}
 
 {% block content %}
-<section class="page-shell">
-    <div class="page-heading">
-        <p class="eyebrow">Wyszukiwanie</p>
-        <h1>Szukaj</h1>
-    </div>
+<section class="sec">
+    <div class="bcrumb"><a href="{% url 'core:home' %}">Start</a> / Wyszukiwanie</div>
 
-    <form class="search-page-form" action="{% url 'core:search' %}" method="get">
-        <input type="search" name="q" value="{{ query }}" placeholder="Nazwa produktu, klimat, dodatek..." aria-label="Szukaj produktów">
-        <button class="button" type="submit">Szukaj</button>
+    <form class="search-bar" action="{% url 'core:search' %}" method="get" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.2-4.2"/></svg>
+        <input class="q" type="search" name="q" value="{{ query }}" placeholder="Czego szukasz? np. kabaretki, choker…" aria-label="Szukaj produktów" autofocus>
+        {% if query %}<a class="q-clear" href="{% url 'core:search' %}" aria-label="Wyczyść"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></a>{% endif %}
     </form>
 
     {% if query %}
-        <div class="catalog-results__bar">
-            <p>Wyniki dla: {{ query }}</p>
-        </div>
-        <div class="product-grid">
-            {% for product in products %}
-                {% include "catalog/includes/product_card.html" with product=product %}
-            {% empty %}
-                <p class="empty-state">Nie znaleziono produktów.</p>
-            {% endfor %}
+        {% if products %}
+            <p class="muted" style="margin:14px 0 0;font-size:13.5px">Wyniki dla „{{ query }}" · {{ products|length }} {% if products|length == 1 %}produkt{% else %}produkty{% endif %}</p>
+            <div class="sugg">
+                {% for s in suggestions %}<a class="chip2" href="{% url 'core:search' %}?q={{ s|urlencode }}">{{ s }}</a>{% endfor %}
+            </div>
+            <div class="pgrid cat" style="margin-top:6px">
+                {% for product in products %}{% include "catalog/includes/product_card.html" with product=product %}{% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="es-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.2-4.2"/></svg></div>
+                <h2 class="h-md">Brak wyników dla „{{ query }}"</h2>
+                <p class="muted" style="max-width:380px;margin:6px auto 0">Sprawdź pisownię albo spróbuj ogólniejszego hasła. Może zainteresuje Cię coś z popularnych?</p>
+                <div class="sugg" style="justify-content:center;margin-top:16px">
+                    {% for s in suggestions %}<a class="chip2" href="{% url 'core:search' %}?q={{ s|urlencode }}">{{ s }}</a>{% endfor %}
+                </div>
+            </div>
+            {% if bestsellers %}
+            <div class="sec-head" style="margin-top:20px"><div><div class="eyebrow">Może to?</div><h2 class="h-lg">Bestsellery</h2></div>
+                <a class="link" href="{% url 'catalog:product_list' %}">Katalog →</a></div>
+            <div class="pgrid">
+                {% for product in bestsellers %}{% include "catalog/includes/product_card.html" with product=product %}{% endfor %}
+            </div>
+            {% endif %}
+        {% endif %}
+    {% else %}
+        <p class="muted" style="margin:14px 0 0;font-size:13.5px">Wpisz, czego szukasz — albo zacznij od popularnych haseł.</p>
+        <div class="sugg">
+            {% for s in suggestions %}<a class="chip2" href="{% url 'core:search' %}?q={{ s|urlencode }}">{{ s }}</a>{% endfor %}
         </div>
     {% endif %}
 </section>

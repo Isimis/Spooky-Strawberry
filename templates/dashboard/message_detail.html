@@ -1,0 +1,42 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ message.subject|default:"Wiadomość" }} | Skrzynka | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow"><a href="{% url 'dashboard:model_list' 'messages' %}" style="color:inherit">Skrzynka</a> · {{ message.get_direction_display }}</p>
+        <h1>{{ message.subject|default:"(bez tematu)" }}</h1>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'messages' %}" class="button button--secondary">← Wróć do skrzynki</a>
+        <a href="{% url 'dashboard:message_compose' %}" class="button">Napisz nową</a>
+    </div>
+</section>
+
+<div class="dashboard-newsletter-layout">
+    <div class="dashboard-newsletter-main">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head"><div><h2>Treść wiadomości</h2><p>Podgląd HTML, który trafia do odbiorcy.</p></div></div>
+            <div class="dashboard-rich-area" style="border:1px solid var(--admin-line);border-radius:10px">{{ message.body_html|safe }}</div>
+        </article>
+    </div>
+    <aside class="dashboard-newsletter-side">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head"><div><h2>Szczegóły</h2></div></div>
+            <dl class="dashboard-newsletter-detail-list">
+                <div><dt>Kierunek</dt><dd>{{ message.get_direction_display }}</dd></div>
+                <div><dt>Status</dt><dd>{{ message.get_status_display }}</dd></div>
+                <div><dt>Od</dt><dd>{{ message.from_email|default:"—" }}</dd></div>
+                <div><dt>Do</dt><dd>{{ message.to_email|default:"—" }}</dd></div>
+                <div><dt>Szablon</dt><dd>{% if message.template %}{{ message.template.name }}{% else %}—{% endif %}</dd></div>
+                <div><dt>Utworzono</dt><dd>{{ message.created_at|date:"d.m.Y H:i" }}</dd></div>
+                <div><dt>Wysłano</dt><dd>{% if message.sent_at %}{{ message.sent_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
+            </dl>
+        </article>
+        <article class="dashboard-card">
+            <div class="dashboard-card__head"><div><h2>Realna poczta</h2><p>Wiadomość jest zapisana w panelu. Wysyłka przez prawdziwą skrzynkę zostanie podpięta przy integracji e-mail.</p></div></div>
+        </article>
+    </aside>
+</div>
+{% endblock %}

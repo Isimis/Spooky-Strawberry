@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}{{ template.name }} | Szablony maili | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow"><a href="{% url 'dashboard:model_list' 'email-templates' %}" style="color:inherit">Szablony maili</a>{% if template.is_system %} · Systemowy{% endif %}</p>
+        <h1>{{ template.name }}</h1>
+        {% if template.description %}<p>{{ template.description }}</p>{% endif %}
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'email-templates' %}" class="button button--secondary">← Wróć do listy</a>
+        <button type="submit" form="email-template-form" class="button">Zapisz szablon</button>
+    </div>
+</section>
+
+<form id="email-template-form" method="post" class="mailform">
+    {% csrf_token %}
+
+    <div class="mailform__meta">
+        {% if template.is_system %}
+            <div class="mailform__system-note">
+                <span class="dashboard-status-pill dashboard-status-pill--best">Szablon systemowy</span>
+                <p>Ten mail wysyła się automatycznie. Możesz zmienić temat i treść, ale nazwy i przeznaczenia nie edytujesz.</p>
+            </div>
+        {% else %}
+            <label class="dashboard-field"><span>Nazwa szablonu</span><input class="dashboard-input" name="name" value="{{ template.name }}"></label>
+            <label class="dashboard-field"><span>Opis (kiedy wysyłany)</span><input class="dashboard-input" name="description" value="{{ template.description }}"></label>
+        {% endif %}
+        <label class="mailform__toggle">
+            <input type="checkbox" name="is_active" {% if template.is_active %}checked{% endif %}>
+            <span><b>Szablon aktywny</b><small>Nieaktywne szablony nie są wysyłane.</small></span>
+        </label>
+    </div>
+
+    {% include "dashboard/includes/mail_editor.html" with editor_subject=template.subject editor_body=template.body_html %}
+
+    <div class="mailform__save-bar">
+        <a href="{% url 'dashboard:model_list' 'email-templates' %}" class="button button--secondary">Anuluj</a>
+        <button type="submit" class="button">Zapisz szablon</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/mail-editor.js' %}?v=20260624-mail"></script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Witaj w klubie — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="sec">
+    <div class="thanks">
+        <div class="confirm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h1 class="h-lg" style="margin-bottom:8px">Witaj w klubie! 🍓</h1>
+        <p class="muted">Potwierdź zapis, klikając link w mailu, który właśnie wysłaliśmy. A oto Twój kod na start:</p>
+        <div class="code"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7z"/></svg> SPOOKY10</div>
+        <p class="muted" style="font-size:12.5px;margin-bottom:18px">-10% na pierwsze zamówienie. Kod wpiszesz w koszyku.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Zaczynam zakupy</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'catalog:aesthetic_list' %}">Odkryj estetyki</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

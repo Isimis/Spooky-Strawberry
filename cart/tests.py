@@ -66,3 +66,40 @@ class SessionCartTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Twój koszyk jest pusty")
+
+
+class PersistentCartTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        category = Category.objects.create(name="Chokery", slug="chokery")
+        self.product = Product.objects.create(
+            name="Persist Choker",
+            slug="persist-choker",
+            category=category,
+            regular_price="29.00",
+            status=Product.STATUS_ACTIVE,
+        )
+        self.variant = ProductVariant.objects.create(product=self.product, stock_quantity=5, is_active=True)
+        User = get_user_model()
+        User.objects.create_user(username="buy@example.pl", email="buy@example.pl", password="spookypass123")
+
+    def _login(self):
+        # Realny login wyzwala sygnał user_logged_in (scalanie koszyka).
+        self.client.post(reverse("accounts:login_submit"), {"email": "buy@example.pl", "password": "spookypass123"})
+
+    def test_cart_persists_across_sessions_for_same_user(self):
+        from cart.models import SavedCart
+
+        self._login()
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 2})
+        self.assertTrue(SavedCart.objects.filter(user__email="buy@example.pl").exists())
+
+        # Nowa sesja: wyloguj (flush) i zaloguj ponownie — koszyk powinien wrócić.
+        self.client.logout()
+        self.assertNotIn("cart", self.client.session)
+        self._login()
+
+        self.assertEqual(self.client.session["cart"][str(self.variant.id)]["quantity"], 2)
+        response = self.client.get(reverse("cart:detail"))
+        self.assertContains(response, "Persist Choker")

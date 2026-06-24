@@ -74,82 +74,58 @@
     </div>
 {% endif %}
 
-<section class="dashboard-article-list" aria-label="Lista poradników">
-    {% for row in rows %}
-        <article class="dashboard-article-card">
-            <a href="{{ row.admin_url }}" class="dashboard-article-card__cover">
-                {% if row.cover_url %}
-                    <img src="{{ row.cover_url }}" alt="{{ row.cover_alt }}">
-                {% else %}
-                    <span>SS</span>
-                {% endif %}
-            </a>
-            <div class="dashboard-article-card__content">
-                <div class="dashboard-article-card__head">
-                    <div>
-                        <p class="eyebrow">{% if row.category %}{{ row.category.name }}{% else %}Bez kategorii{% endif %}</p>
-                        <h2><a href="{{ row.admin_url }}">{{ row.title }}</a></h2>
-                    </div>
-                    <span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span>
-                </div>
-
-                {% if row.intro %}
-                    <p>{{ row.intro }}</p>
-                {% else %}
-                    <p class="dashboard-muted">Brak zajawki. Warto dodać krótki opis widoczny pod tytułem.</p>
-                {% endif %}
-
-                <div class="dashboard-outfit-tags">
-                    {% for aesthetic in row.aesthetics %}
-                        <span>{{ aesthetic.name }}</span>
-                    {% empty %}
-                        <span>Bez estetyki</span>
-                    {% endfor %}
-                </div>
-
-                <dl class="dashboard-article-facts">
-                    <div>
-                        <dt>Produkty</dt>
-                        <dd>{{ row.product_count }}</dd>
-                    </div>
-                    <div>
-                        <dt>Stylizacje</dt>
-                        <dd>{{ row.outfit_count }}</dd>
-                    </div>
-                    <div>
-                        <dt>Okładka</dt>
-                        <dd>{% if row.has_cover %}Tak{% else %}Brak{% endif %}</dd>
-                    </div>
-                    <div>
-                        <dt>Aktualizacja</dt>
-                        <dd>{{ row.updated_at|date:"d.m.Y" }}</dd>
-                    </div>
-                </dl>
-
-                <div class="dashboard-article-card__footer">
-                    <span>{% if row.is_featured %}Wyróżniony{% else %}Zwykły{% endif %}</span>
-                    {% if row.published_at %}
-                        <span>Publikacja: {{ row.published_at|date:"d.m.Y H:i" }}</span>
-                    {% endif %}
-                </div>
-
-                <div class="dashboard-taxonomy-actions">
-                    <a href="{{ row.admin_url }}">Edytuj</a>
-                    {% if row.preview_url %}
-                        <a href="{{ row.preview_url }}">Podgląd</a>
-                    {% endif %}
-                    <a href="{{ row.delete_url }}">Usuń</a>
-                </div>
-            </div>
-        </article>
-    {% empty %}
-        <article class="dashboard-empty-card">
-            <h2>Brak poradników</h2>
-            <p>Dodaj pierwszy artykuł SEO i połącz go z produktami, stylizacjami oraz estetykami.</p>
-            <a href="{% url 'dashboard:article_create_workspace' %}" class="button">Dodaj poradnik</a>
-        </article>
-    {% endfor %}
-</section>
+{% if rows %}
+<div class="dashboard-table-wrap">
+    <table class="dashboard-table" aria-label="Lista poradników">
+        <thead>
+            <tr>
+                <th>Poradnik</th>
+                <th>Status</th>
+                <th>Kategoria</th>
+                <th>Produkty</th>
+                <th>Stylizacje</th>
+                <th>Wyróżniony</th>
+                <th>Aktualizacja</th>
+                <th class="dashboard-col-actions">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr class="{% if row.status == 'archived' %}is-inactive{% endif %}">
+                    <td>
+                        <div class="dashboard-cell-main">
+                            {% if row.cover_url %}<img class="dashboard-cell-thumb" src="{{ row.cover_url }}" alt="{{ row.cover_alt }}">{% else %}<span class="dashboard-cell-thumb dashboard-cell-thumb--empty">SS</span>{% endif %}
+                            <div>
+                                <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.title }}</a>
+                                {% if row.intro %}<small>{{ row.intro|truncatechars:80 }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status }}">{{ row.status_label }}</span></td>
+                    <td>{% if row.category %}{{ row.category.name }}{% else %}<span class="dashboard-muted">Brak</span>{% endif %}</td>
+                    <td>{{ row.product_count }}</td>
+                    <td>{{ row.outfit_count }}</td>
+                    <td>{% if row.is_featured %}Tak{% else %}<span class="dashboard-muted">Nie</span>{% endif %}</td>
+                    <td><span class="dashboard-muted">{{ row.updated_at|date:"d.m.Y" }}</span></td>
+                    <td>
+                        <div class="dashboard-row-actions">
+                            <a href="{{ row.admin_url }}">Edytuj</a>
+                            {% if row.preview_url %}<a href="{{ row.preview_url }}">Podgląd</a>{% endif %}
+                            <a href="{{ row.delete_url }}">Usuń</a>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <article class="dashboard-empty-card">
+        <h2>Brak poradników</h2>
+        <p>Dodaj pierwszy artykuł SEO i połącz go z produktami, stylizacjami oraz estetykami.</p>
+        <a href="{% url 'dashboard:article_create_workspace' %}" class="button">Dodaj poradnik</a>
+    </article>
+{% endif %}
 
 {% if page.paginator.num_pages > 1 %}
     <nav class="dashboard-pagination">

@@ -9,6 +9,37 @@ def get_cart_data(request):
     return request.session.setdefault(CART_SESSION_KEY, {})
 
 
+def save_cart_for_user(request):
+    """Zapisuje koszyk z sesji do trwałego koszyka użytkownika (jeśli zalogowany)."""
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated:
+        return
+    from .models import SavedCart
+
+    cart = request.session.get(CART_SESSION_KEY, {})
+    SavedCart.objects.update_or_create(user=user, defaults={"data": cart})
+
+
+def restore_cart_for_user(request):
+    """Po zalogowaniu łączy zapisany koszyk użytkownika z koszykiem z bieżącej sesji."""
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated:
+        return
+    from .models import SavedCart
+
+    saved = SavedCart.objects.filter(user=user).first()
+    if not saved or not saved.data:
+        return
+    cart = get_cart_data(request)
+    for key, item in saved.data.items():
+        quantity = int(item.get("quantity", 0)) if isinstance(item, dict) else 0
+        if quantity <= 0:
+            continue
+        current = int(cart.get(key, {}).get("quantity", 0))
+        cart[key] = {"quantity": max(current, quantity)}
+    request.session.modified = True
+
+
 def get_cart_quantity(request):
     cart = request.session.get(CART_SESSION_KEY, {})
     return sum(int(item.get("quantity", 0)) for item in cart.values())

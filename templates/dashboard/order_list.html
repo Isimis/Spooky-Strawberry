@@ -76,61 +76,63 @@
             </div>
         </div>
 
-        <div class="dashboard-order-list" aria-label="Lista zamówień">
-            {% for row in rows %}
-                <article class="dashboard-order-card {% if row.is_open %}is-open{% endif %}">
-                    <div class="dashboard-order-card__top">
-                        <div>
-                            <p class="eyebrow">{{ row.created_at|date:"d.m.Y H:i" }}</p>
-                            <h2><a href="{{ row.admin_url }}">{{ row.order_number }}</a></h2>
-                            <p>{{ row.customer_name }} · {{ row.email }}</p>
-                        </div>
-                        <span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span>
-                    </div>
-
-                    <dl class="dashboard-order-facts">
-                        <div>
-                            <dt>Kwota</dt>
-                            <dd>{{ row.grand_total|money }}</dd>
-                        </div>
-                        <div>
-                            <dt>Produkty</dt>
-                            <dd>{{ row.quantity_count }} szt.</dd>
-                        </div>
-                        <div>
-                            <dt>Miasto</dt>
-                            <dd>{{ row.city|default:"Brak" }}</dd>
-                        </div>
-                        <div>
-                            <dt>Dostawa</dt>
-                            <dd>{% if row.shipping_method %}{{ row.shipping_method.name }}{% else %}Brak{% endif %}</dd>
-                        </div>
-                    </dl>
-
-                    <div class="dashboard-order-items-preview">
-                        {% for item_name in row.items_preview %}
-                            <span>{{ item_name }}</span>
-                        {% empty %}
-                            <span>Brak pozycji zamówienia</span>
-                        {% endfor %}
-                        {% if row.has_more_items %}
-                            <span>+ więcej</span>
-                        {% endif %}
-                    </div>
-
-                    <div class="dashboard-taxonomy-actions dashboard-order-card__actions">
-                        <a href="{{ row.admin_url }}">Otwórz</a>
-                        <a href="{{ row.delete_url }}">Usuń</a>
-                    </div>
-                </article>
-            {% empty %}
-                <article class="dashboard-empty-card">
-                    <h2>Brak zamówień</h2>
-                    <p>Gdy koszyk i checkout będą gotowe, zamówienia pojawią się tutaj. Możesz też dodać testowe ręcznie.</p>
-                    <a href="{% url 'dashboard:order_create_workspace' %}" class="button">Dodaj ręcznie</a>
-                </article>
-            {% endfor %}
+        {% if rows %}
+        <div class="dashboard-table-wrap">
+            <table class="dashboard-table" aria-label="Lista zamówień">
+                <thead>
+                    <tr>
+                        <th>Zamówienie</th>
+                        <th>Klient</th>
+                        <th>Status</th>
+                        <th>Kwota</th>
+                        <th>Szt.</th>
+                        <th>Dostawa</th>
+                        <th class="dashboard-col-actions">Akcje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.order_number }}</a>
+                                    <small class="dashboard-muted">{{ row.created_at|date:"d.m.Y H:i" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <span class="dashboard-cell-strong">{{ row.customer_name }}</span>
+                                    <small class="dashboard-muted">{{ row.email }}</small>
+                                    {% if row.items_preview %}<small class="dashboard-muted">{% for item_name in row.items_preview %}{{ item_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if row.has_more_items %} +{% endif %}</small>{% endif %}
+                                </div>
+                            </td>
+                            <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span></td>
+                            <td><span class="dashboard-cell-strong">{{ row.grand_total|money }}</span></td>
+                            <td>{{ row.quantity_count }}</td>
+                            <td>
+                                <div>
+                                    {% if row.shipping_method %}{{ row.shipping_method.name }}{% else %}<span class="dashboard-muted">Brak</span>{% endif %}
+                                    {% if row.city %}<small class="dashboard-muted">{{ row.city }}</small>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="dashboard-row-actions">
+                                    <a href="{{ row.admin_url }}">Otwórz</a>
+                                    <a href="{{ row.delete_url }}">Usuń</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% else %}
+            <article class="dashboard-empty-card">
+                <h2>Brak zamówień</h2>
+                <p>Gdy koszyk i checkout będą gotowe, zamówienia pojawią się tutaj. Możesz też dodać testowe ręcznie.</p>
+                <a href="{% url 'dashboard:order_create_workspace' %}" class="button">Dodaj ręcznie</a>
+            </article>
+        {% endif %}
 
         {% if page.paginator.num_pages > 1 %}
             <nav class="dashboard-pagination">

@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Konta użytkowników | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Klienci</p>
+        <h1>Konta użytkowników</h1>
+        <p>Klientki, zespół i administratorzy — rodzaj konta, zamówienia, zgody i status w jednym miejscu.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:user_account_create' %}" class="button">Dodaj konto</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie kont">
+    <article>
+        <span>Wszystkie</span>
+        <strong>{{ user_summary.total_count }}</strong>
+        <small>konta w panelu</small>
+    </article>
+    <article>
+        <span>Klienci</span>
+        <strong>{{ user_summary.customer_count }}</strong>
+        <small>konta sklepowe</small>
+    </article>
+    <article>
+        <span>Zespół</span>
+        <strong>{{ user_summary.staff_count }}</strong>
+        <small>dostęp do panelu</small>
+    </article>
+    <article>
+        <span>Nowe 30 dni</span>
+        <strong>{{ user_summary.new_30_count }}</strong>
+        <small>świeże rejestracje</small>
+    </article>
+</section>
+
+<form method="get" class="dashboard-search">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj po e-mailu lub imieniu">
+    <select name="account_type">
+        <option value="">Każdy typ</option>
+        {% for value, label in user_type_choices %}
+            <option value="{{ value }}" {% if selected_account_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="state">
+        <option value="">Każdy status</option>
+        <option value="active" {% if selected_state == "active" %}selected{% endif %}>Aktywne</option>
+        <option value="inactive" {% if selected_state == "inactive" %}selected{% endif %}>Nieaktywne</option>
+    </select>
+    <button type="submit">Filtruj</button>
+    {% if query or active_filters %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+{% if active_filters %}
+    <div class="dashboard-active-filters">
+        {% for filter in active_filters %}
+            <span>{{ filter }}</span>
+        {% endfor %}
+        <a href="{% url 'dashboard:model_list' config.slug %}">Wyczyść wszystko</a>
+    </div>
+{% endif %}
+
+{% if rows %}
+<div class="dashboard-table-wrap">
+    <table class="dashboard-table" aria-label="Lista kont użytkowników">
+        <thead>
+            <tr>
+                <th>Użytkownik</th>
+                <th>Typ konta</th>
+                <th>Zamówienia</th>
+                <th>Wydano</th>
+                <th>Newsletter</th>
+                <th>Dołączył</th>
+                <th>Status</th>
+                <th class="dashboard-col-actions">Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr class="{% if not row.is_active %}is-inactive{% endif %}">
+                    <td>
+                        <div class="dashboard-cell-main">
+                            <span class="dashboard-newsletter-avatar" aria-hidden="true">{{ row.email|first|upper }}</span>
+                            <div>
+                                <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.email }}</a>
+                                <small>{{ row.name }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.type_class }}">{{ row.type_label }}</span></td>
+                    <td>{{ row.orders_count }}{% if row.paid_count %} <span class="dashboard-muted">({{ row.paid_count }} opł.)</span>{% endif %}</td>
+                    <td><span class="dashboard-cell-strong">{{ row.spent|money }}</span></td>
+                    <td>{% if row.accepts_marketing %}<span class="dashboard-consent-ok">Tak</span>{% else %}<span class="dashboard-muted">Nie</span>{% endif %}</td>
+                    <td><span class="dashboard-muted">{{ row.date_joined|date:"d.m.Y" }}</span></td>
+                    <td>
+                        {% if row.is_active %}
+                            <span class="dashboard-status-pill dashboard-status-pill--active">Aktywne</span>
+                        {% else %}
+                            <span class="dashboard-status-pill dashboard-status-pill--draft">Nieaktywne</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="dashboard-row-actions">
+                            <a href="{{ row.admin_url }}">Otwórz</a>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+    <article class="dashboard-empty-card">
+        <h2>Brak kont</h2>
+        <p>Nie ma jeszcze kont spełniających wybrane filtry.</p>
+    </article>
+{% endif %}
+
+{% if page.paginator.num_pages > 1 %}
+    <nav class="dashboard-pagination">
+        {% if page.has_previous %}
+            <a href="?page={{ page.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>
+        {% endif %}
+    </nav>
+{% endif %}
+{% endblock %}

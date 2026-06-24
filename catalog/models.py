@@ -62,6 +62,11 @@ class Aesthetic(models.Model):
     )
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="aesthetics/", blank=True)
+    featured_image = models.ImageField(
+        upload_to="aesthetics/",
+        blank=True,
+        help_text="Zdjęcie używane tylko, gdy kafelek jest wyróżniony (duży) w mozaice.",
+    )
     card_gradient = models.CharField(
         max_length=80,
         blank=True,

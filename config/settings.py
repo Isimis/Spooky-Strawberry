@@ -106,6 +106,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# Authentication / customer accounts
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "accounts:account"
+LOGOUT_REDIRECT_URL = "core:home"
+
+# Sesja przeżywa zamknięcie przeglądarki — logowanie i koszyk zostają między sesjami.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 dni
+SESSION_SAVE_EVERY_REQUEST = True  # odświeża ważność przy aktywności
+
+# E-mail — w dev wypisujemy na konsolę; realną skrzynkę podłączymy później.
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Spooky Strawberry <hello@spookystrawberry.pl>")
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

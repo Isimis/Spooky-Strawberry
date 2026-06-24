@@ -1,0 +1,148 @@
+{% extends "dashboard/base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{{ account.email|default:account.username }} | Konta | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow"><a href="{% url 'dashboard:model_list' 'user-accounts' %}" style="color:inherit">Konta użytkowników</a> · {{ type_label }}</p>
+        <h1>{{ account.email|default:account.username }}</h1>
+        <p>{{ account.get_full_name|default:"Brak imienia i nazwiska" }}</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'user-accounts' %}" class="button button--secondary">← Wróć do listy</a>
+    </div>
+</section>
+
+<section class="dashboard-taxonomy-summary" aria-label="Podsumowanie konta">
+    <article>
+        <span>Rodzaj konta</span>
+        <strong>{{ type_label }}</strong>
+        <small>{% if account.is_superuser %}pełny dostęp{% elif account.is_staff %}dostęp do panelu{% else %}konto sklepowe{% endif %}</small>
+    </article>
+    <article>
+        <span>Zamówienia</span>
+        <strong>{{ orders_count }}</strong>
+        <small>{{ paid_count }} opłaconych</small>
+    </article>
+    <article>
+        <span>Wydano</span>
+        <strong class="dashboard-taxonomy-summary__slug">{{ spent_total|money }}</strong>
+        <small>bez szkiców i anulowanych</small>
+    </article>
+    <article>
+        <span>Status</span>
+        <strong>{% if account.is_active %}Aktywne{% else %}Nieaktywne{% endif %}</strong>
+        <small>{% if account.last_login %}ost. logowanie {{ account.last_login|date:"d.m.Y" }}{% else %}brak logowania{% endif %}</small>
+    </article>
+</section>
+
+<div class="dashboard-newsletter-layout">
+    <div class="dashboard-newsletter-main">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head"><div><h2>Dane konta</h2><p>Edytuj dane klientki i jej zgodę marketingową.</p></div></div>
+            <form method="post" class="dashboard-newsletter-detail-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save">
+                {{ form.non_field_errors }}
+                <div class="dashboard-newsletter-status-grid">
+                    <label class="dashboard-field"><span>{{ form.first_name.label }}</span>{{ form.first_name }}{{ form.first_name.errors }}</label>
+                    <label class="dashboard-field"><span>{{ form.last_name.label }}</span>{{ form.last_name }}{{ form.last_name.errors }}</label>
+                </div>
+                <label class="dashboard-field"><span>{{ form.email.label }}</span>{{ form.email }}{{ form.email.errors }}</label>
+                <label class="dashboard-field dashboard-field--checkbox"><span>{{ form.is_active.label }}</span>{{ form.is_active }}</label>
+                <label class="dashboard-field dashboard-field--checkbox"><span>{{ form.is_staff.label }}</span>{{ form.is_staff }}</label>
+                <label class="dashboard-field dashboard-field--checkbox"><span>{{ form.accepts_marketing.label }}</span>{{ form.accepts_marketing }}</label>
+                <div class="dashboard-save-bar"><button type="submit" class="button">Zapisz zmiany</button></div>
+            </form>
+        </article>
+
+        <article class="dashboard-card" style="margin-top:16px">
+            <div class="dashboard-card__head"><div><h2>Zgody</h2><p>Wszystkie zgody dostępne w serwisie i ich status dla tego konta.</p></div></div>
+            <div class="dashboard-table-wrap">
+                <table class="dashboard-table">
+                    <thead><tr><th>Zgoda</th><th>Status</th><th>Opis</th></tr></thead>
+                    <tbody>
+                        {% for consent in consents %}
+                            <tr>
+                                <td><span class="dashboard-cell-strong">{{ consent.label }}</span></td>
+                                <td>
+                                    {% if consent.granted is True %}<span class="dashboard-consent-ok">{{ consent.value }}</span>
+                                    {% elif consent.granted is False %}<span class="dashboard-consent-missing">{{ consent.value }}</span>
+                                    {% else %}<span class="dashboard-muted">{{ consent.value }}</span>{% endif %}
+                                </td>
+                                <td><span class="dashboard-muted">{{ consent.help }}</span></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="dashboard-card" style="margin-top:16px">
+            <div class="dashboard-card__head"><div><h2>Zamówienia</h2><p>Historia zamówień powiązanych z kontem.</p></div></div>
+            {% if orders %}
+                <div class="dashboard-table-wrap">
+                    <table class="dashboard-table">
+                        <thead><tr><th>Numer</th><th>Data</th><th>Status</th><th>Kwota</th><th class="dashboard-col-actions">Akcje</th></tr></thead>
+                        <tbody>
+                            {% for order in orders %}
+                                <tr>
+                                    <td><span class="dashboard-cell-strong">{{ order.order_number|default:order.pk }}</span></td>
+                                    <td><span class="dashboard-muted">{{ order.created_at|date:"d.m.Y" }}</span></td>
+                                    <td>{{ order.get_status_display }}</td>
+                                    <td>{{ order.grand_total|money }}</td>
+                                    <td><div class="dashboard-row-actions"><a href="{% url 'dashboard:order_workspace' order.pk %}">Otwórz</a></div></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="dashboard-muted" style="padding:6px 0">To konto nie ma jeszcze żadnych zamówień.</p>
+            {% endif %}
+        </article>
+    </div>
+
+    <aside class="dashboard-newsletter-side">
+        <article class="dashboard-card">
+            <div class="dashboard-card__head"><div><h2>Zarządzanie</h2><p>Szybkie akcje na koncie.</p></div></div>
+            <dl class="dashboard-newsletter-detail-list">
+                <div><dt>Login</dt><dd>{{ account.username }}</dd></div>
+                <div><dt>Dostęp do panelu</dt><dd>{% if account.is_staff %}Tak{% else %}Nie{% endif %}</dd></div>
+                <div><dt>Administrator</dt><dd>{% if account.is_superuser %}Tak{% else %}Nie{% endif %}</dd></div>
+                <div><dt>Rejestracja</dt><dd>{{ account.date_joined|date:"d.m.Y H:i" }}</dd></div>
+            </dl>
+
+            {% if is_self %}
+                <p class="dashboard-muted" style="margin-top:10px">To Twoje konto — akcje na własnym dostępie są zablokowane.</p>
+            {% else %}
+                <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_active">
+                        <button type="submit" class="button button--secondary button--wide">
+                            {% if account.is_active %}Dezaktywuj konto{% else %}Aktywuj konto{% endif %}
+                        </button>
+                    </form>
+                    {% if not account.is_superuser %}
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="toggle_staff">
+                            <button type="submit" class="button button--wide">
+                                {% if account.is_staff %}Odbierz dostęp do panelu{% else %}Nadaj dostęp do panelu{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    <form method="post" onsubmit="return confirm('Usunąć to konto na stałe? Tej operacji nie można cofnąć.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <button type="submit" class="button button--danger button--wide">Usuń konto</button>
+                    </form>
+                </div>
+            {% endif %}
+        </article>
+    </aside>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 <a class="coll{% if mosaic and aesthetic.is_featured %} tall{% endif %}" href="{{ aesthetic.get_absolute_url }}">
-    <div class="cbg" style="{% if aesthetic.image %}background-image:url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
+    <div class="cbg" style="{% if mosaic and aesthetic.is_featured and aesthetic.featured_image %}background-image:url('{{ aesthetic.featured_image.url }}'){% elif aesthetic.image %}background-image:url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
     <div class="cov"></div>
     <div class="arrow">→</div>
     <div class="ctxt">

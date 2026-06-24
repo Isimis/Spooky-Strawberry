@@ -11,6 +11,7 @@ urlpatterns = [
     path("", include("checkout.urls")),
     path("", include("outfits.urls")),
     path("", include("blog.urls")),
+    path("", include("accounts.urls")),
     path("", include("core.urls")),
 ]
 

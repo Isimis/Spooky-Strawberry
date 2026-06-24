@@ -5,7 +5,7 @@ from decimal import Decimal
 from urllib.parse import urlparse
 
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
@@ -24,7 +24,7 @@ from django.views.decorators.http import require_http_methods
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
-from core.models import NewsletterSubscriber, SiteSettings
+from core.models import Message, MessageTemplate, NewsletterSubscriber, SiteSettings
 from dashboard.models import DataQualityIssue
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitImage, OutfitItem
@@ -40,10 +40,14 @@ from .forms import (
     ProductImageFormSet,
     ProductVariantFormSet,
     SiteSettingsDashboardForm,
+    UserAccountCreateForm,
+    UserAccountForm,
     build_model_form,
 )
 from .registry import MODEL_REGISTRY, get_model_config, get_sections
 from .services import count_unique_visitors, get_dashboard_analytics, refresh_all_product_quality_issues, refresh_product_quality_issues
+
+User = get_user_model()
 
 
 PRODUCT_SORT_HEADERS = {
@@ -138,6 +142,323 @@ def site_settings(request):
     )
 
 
+def user_account_type(user):
+    """Zwraca (etykieta, klasa pigułki) dla rodzaju konta."""
+    if user.is_superuser:
+        return "Administrator", "best"
+    if user.is_staff:
+        return "Zespół", "draft"
+    return "Klient", "active"
+
+
+def _user_paid_orders(user):
+    return [
+        order
+        for order in user.orders.all()
+        if order.status not in {Order.STATUS_DRAFT, Order.STATUS_CANCELLED}
+    ]
+
+
+def build_user_account_row(user):
+    type_label, type_class = user_account_type(user)
+    paid_orders = _user_paid_orders(user)
+    spent = sum((order.grand_total for order in paid_orders), Decimal("0.00"))
+    profile = getattr(user, "customer_profile", None)
+    return {
+        "object": user,
+        "email": user.email or user.get_username(),
+        "name": user.get_full_name() or "—",
+        "type_label": type_label,
+        "type_class": type_class,
+        "is_active": user.is_active,
+        "orders_count": user.orders.count(),
+        "paid_count": len(paid_orders),
+        "spent": spent,
+        "accepts_marketing": bool(profile and profile.accepts_marketing),
+        "date_joined": user.date_joined,
+        "last_login": user.last_login,
+        "admin_url": reverse("dashboard:user_account_detail", args=[user.pk]),
+    }
+
+
+def build_user_account_summary():
+    queryset = User.objects.all()
+    now = timezone.now()
+    return {
+        "total_count": queryset.count(),
+        "customer_count": queryset.filter(is_staff=False).count(),
+        "staff_count": queryset.filter(is_staff=True).count(),
+        "new_30_count": queryset.filter(date_joined__gte=now - timedelta(days=30)).count(),
+    }
+
+
+def get_user_account_type_choices():
+    return [
+        ("customer", "Klienci"),
+        ("staff", "Zespół"),
+        ("admin", "Administratorzy"),
+    ]
+
+
+def apply_user_admin_filters(request, queryset, active_filters):
+    account_type = request.GET.get("account_type", "")
+    if account_type == "customer":
+        queryset = queryset.filter(is_staff=False)
+        active_filters.append("Typ: Klienci")
+    elif account_type == "staff":
+        queryset = queryset.filter(is_staff=True, is_superuser=False)
+        active_filters.append("Typ: Zespół")
+    elif account_type == "admin":
+        queryset = queryset.filter(is_superuser=True)
+        active_filters.append("Typ: Administratorzy")
+
+    state = request.GET.get("state", "")
+    if state == "active":
+        queryset = queryset.filter(is_active=True)
+        active_filters.append("Aktywne")
+    elif state == "inactive":
+        queryset = queryset.filter(is_active=False)
+        active_filters.append("Nieaktywne")
+    return queryset
+
+
+def build_user_consents(user_obj, profile):
+    """Wszystkie zgody dostępne w serwisie — z ich statusem dla danego konta."""
+    newsletter_active = bool(
+        user_obj.email
+        and NewsletterSubscriber.objects.filter(email__iexact=user_obj.email, is_active=True).exists()
+    )
+    accepts_marketing = bool(profile and profile.accepts_marketing)
+    email_verified = bool(profile and profile.email_verified)
+    return [
+        {
+            "label": "Potwierdzenie e-mail",
+            "help": "Czy adres e-mail został potwierdzony linkiem weryfikacyjnym.",
+            "granted": email_verified,
+            "value": "Potwierdzony" if email_verified else "Niepotwierdzony",
+        },
+        {
+            "label": "Zgoda marketingowa",
+            "help": "Zgoda na newsletter, dropy i kody rabatowe (profil klienta).",
+            "granted": accepts_marketing,
+            "value": "Udzielona" if accepts_marketing else "Brak",
+        },
+        {
+            "label": "Newsletter (zapis e-mail)",
+            "help": "Aktywny zapis adresu w bazie newslettera.",
+            "granted": newsletter_active,
+            "value": "Aktywny" if newsletter_active else "Brak zapisu",
+        },
+    ]
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def user_account_detail(request, pk):
+    user_obj = get_object_or_404(
+        User.objects.select_related("customer_profile").prefetch_related("orders__shipping_method"),
+        pk=pk,
+    )
+    profile = getattr(user_obj, "customer_profile", None)
+    form = UserAccountForm(instance=user_obj)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "toggle_active":
+            if user_obj == request.user:
+                messages.error(request, "Nie możesz dezaktywować własnego konta.")
+            else:
+                user_obj.is_active = not user_obj.is_active
+                user_obj.save(update_fields=["is_active"])
+                messages.success(request, "Zaktualizowano status konta.")
+            return redirect("dashboard:user_account_detail", pk=pk)
+        elif action == "toggle_staff":
+            if user_obj.is_superuser:
+                messages.error(request, "Konta administratora nie zmieniamy z tego widoku.")
+            elif user_obj == request.user:
+                messages.error(request, "Nie odbieraj dostępu samemu sobie.")
+            else:
+                user_obj.is_staff = not user_obj.is_staff
+                user_obj.save(update_fields=["is_staff"])
+                messages.success(request, "Zmieniono dostęp do panelu.")
+            return redirect("dashboard:user_account_detail", pk=pk)
+        elif action == "delete":
+            if user_obj == request.user:
+                messages.error(request, "Nie możesz usunąć własnego konta.")
+                return redirect("dashboard:user_account_detail", pk=pk)
+            user_obj.delete()
+            messages.success(request, "Konto zostało usunięte.")
+            return redirect("dashboard:model_list", model_slug="user-accounts")
+        elif action == "save":
+            form = UserAccountForm(request.POST, instance=user_obj)
+            if form.is_valid():
+                if user_obj == request.user and not form.cleaned_data.get("is_active", True):
+                    messages.error(request, "Nie możesz dezaktywować własnego konta.")
+                else:
+                    form.save()
+                    messages.success(request, "Zapisano zmiany w koncie.")
+                    return redirect("dashboard:user_account_detail", pk=pk)
+
+    type_label, type_class = user_account_type(user_obj)
+    paid_orders = _user_paid_orders(user_obj)
+    orders = list(user_obj.orders.all().order_by("-created_at"))
+
+    return render(
+        request,
+        "dashboard/user_account_detail.html",
+        {
+            "config": get_required_config("user-accounts"),
+            "account": user_obj,
+            "form": form,
+            "type_label": type_label,
+            "type_class": type_class,
+            "profile": profile,
+            "consents": build_user_consents(user_obj, profile),
+            "orders": orders,
+            "orders_count": len(orders),
+            "paid_count": len(paid_orders),
+            "spent_total": sum((order.grand_total for order in paid_orders), Decimal("0.00")),
+            "is_self": user_obj == request.user,
+            "sections": get_sections(),
+        },
+    )
+
+
+def build_message_row(message):
+    counterpart = message.from_email if message.direction == Message.DIRECTION_INBOUND else message.to_email
+    return {
+        "object": message,
+        "subject": message.subject or "(bez tematu)",
+        "counterpart": counterpart or "—",
+        "direction": message.direction,
+        "direction_label": message.get_direction_display(),
+        "status": message.status,
+        "status_label": message.get_status_display(),
+        "created_at": message.created_at,
+        "admin_url": reverse("dashboard:message_detail", args=[message.pk]),
+    }
+
+
+def build_message_summary():
+    queryset = Message.objects.all()
+    return {
+        "total_count": queryset.count(),
+        "inbound_count": queryset.filter(direction=Message.DIRECTION_INBOUND).count(),
+        "outbound_count": queryset.filter(direction=Message.DIRECTION_OUTBOUND).count(),
+        "draft_count": queryset.filter(status=Message.STATUS_DRAFT).count(),
+    }
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def message_compose(request):
+    templates = list(MessageTemplate.objects.filter(is_active=True).order_by("-is_system", "name"))
+    if request.method == "POST":
+        subject = request.POST.get("subject", "").strip()
+        body_html = request.POST.get("body_html", "")
+        to_email = request.POST.get("to_email", "").strip()
+        template_id = request.POST.get("template") or None
+        template = MessageTemplate.objects.filter(pk=template_id).first() if template_id else None
+
+        message = Message.objects.create(
+            direction=Message.DIRECTION_OUTBOUND,
+            status=Message.STATUS_SENT,
+            subject=subject,
+            body_html=body_html,
+            to_email=to_email,
+            from_email=request.user.email or "",
+            template=template,
+            sent_at=timezone.now(),
+        )
+        # Realna wysyłka maila zostanie podpięta przy integracji skrzynki.
+        messages.success(request, "Wiadomość zapisana w skrzynce (wysyłka maila zostanie podpięta z realną pocztą).")
+        return redirect("dashboard:message_detail", pk=message.pk)
+
+    templates_json = json.dumps(
+        {str(t.pk): {"subject": t.subject, "body_html": t.body_html} for t in templates}
+    )
+    return render(
+        request,
+        "dashboard/message_compose.html",
+        {
+            "config": get_required_config("messages"),
+            "templates": templates,
+            "templates_json": templates_json,
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+def message_detail(request, pk):
+    message = get_object_or_404(Message.objects.select_related("template"), pk=pk)
+    return render(
+        request,
+        "dashboard/message_detail.html",
+        {
+            "config": get_required_config("messages"),
+            "message": message,
+            "sections": get_sections(),
+        },
+    )
+
+
+def build_email_template_row(template):
+    return {
+        "object": template,
+        "name": template.name,
+        "subject": template.subject or "—",
+        "description": template.description,
+        "is_active": template.is_active,
+        "is_system": template.is_system,
+        "admin_url": reverse("dashboard:email_template_edit", args=[template.pk]),
+    }
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def email_template_edit(request, pk):
+    template = get_object_or_404(MessageTemplate, pk=pk)
+    if request.method == "POST":
+        template.subject = request.POST.get("subject", "").strip()
+        template.body_html = request.POST.get("body_html", "")
+        template.is_active = request.POST.get("is_active") == "on"
+        if not template.is_system:
+            template.name = request.POST.get("name", template.name).strip() or template.name
+            template.description = request.POST.get("description", template.description).strip()
+        template.save()
+        messages.success(request, "Szablon zapisany.")
+        return redirect("dashboard:email_template_edit", pk=pk)
+    return render(
+        request,
+        "dashboard/email_template_form.html",
+        {
+            "config": get_required_config("email-templates"),
+            "template": template,
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def user_account_create(request):
+    form = UserAccountCreateForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user_obj = form.save()
+        messages.success(request, "Konto zostało utworzone.")
+        return redirect("dashboard:user_account_detail", pk=user_obj.pk)
+    return render(
+        request,
+        "dashboard/user_account_form.html",
+        {
+            "config": get_required_config("user-accounts"),
+            "form": form,
+            "sections": get_sections(),
+        },
+    )
+
+
 @staff_required
 def model_list(request, model_slug):
     config = get_required_config(model_slug)
@@ -182,6 +503,21 @@ def model_list(request, model_slug):
         queryset = queryset.select_related("session", "product", "variant")
         queryset = apply_analytics_event_filters(request, queryset, active_filters)
         queryset = queryset.order_by("-created_at")
+    elif config.model is User:
+        queryset = queryset.select_related("customer_profile").prefetch_related("orders")
+        queryset = apply_user_admin_filters(request, queryset, active_filters)
+        queryset = queryset.order_by("-date_joined")
+    elif config.model is MessageTemplate:
+        queryset = queryset.order_by("-is_system", "name")
+    elif config.model is Message:
+        box = request.GET.get("box", "")
+        if box == "inbound":
+            queryset = queryset.filter(direction=Message.DIRECTION_INBOUND)
+            active_filters.append("Skrzynka: odebrane")
+        elif box == "outbound":
+            queryset = queryset.filter(direction=Message.DIRECTION_OUTBOUND)
+            active_filters.append("Skrzynka: wysłane")
+        queryset = queryset.order_by("-created_at")
     elif is_taxonomy_model(config.model):
         queryset = prepare_taxonomy_queryset(config.model, queryset)
         queryset = apply_taxonomy_filters(request, queryset, active_filters)
@@ -220,6 +556,12 @@ def model_list(request, model_slug):
         rows = [build_analytics_session_row(obj) for obj in page.object_list]
     elif config.model is AnalyticsEvent:
         rows = [build_analytics_event_row(obj) for obj in page.object_list]
+    elif config.model is User:
+        rows = [build_user_account_row(obj) for obj in page.object_list]
+    elif config.model is MessageTemplate:
+        rows = [build_email_template_row(obj) for obj in page.object_list]
+    elif config.model is Message:
+        rows = [build_message_row(obj) for obj in page.object_list]
     elif is_taxonomy_model(config.model):
         rows = [build_taxonomy_row(config, obj) for obj in page.object_list]
     else:
@@ -242,6 +584,12 @@ def model_list(request, model_slug):
         template_name = "dashboard/analytics_session_list.html"
     elif config.model is AnalyticsEvent:
         template_name = "dashboard/analytics_event_list.html"
+    elif config.model is User:
+        template_name = "dashboard/user_account_list.html"
+    elif config.model is MessageTemplate:
+        template_name = "dashboard/email_template_list.html"
+    elif config.model is Message:
+        template_name = "dashboard/message_list.html"
     elif is_taxonomy_model(config.model):
         template_name = "dashboard/taxonomy_list.html"
     else:
@@ -295,6 +643,11 @@ def model_list(request, model_slug):
             "analytics_source_choices": get_analytics_source_choices() if config.model is AnalyticsSession else None,
             "analytics_event_type_choices": get_analytics_event_type_choices() if config.model is AnalyticsEvent else None,
             "taxonomy": build_taxonomy_list_context(config) if is_taxonomy_model(config.model) else None,
+            "user_summary": build_user_account_summary() if config.model is User else None,
+            "message_summary": build_message_summary() if config.model is Message else None,
+            "selected_box": request.GET.get("box", ""),
+            "user_type_choices": get_user_account_type_choices() if config.model is User else None,
+            "selected_account_type": request.GET.get("account_type", ""),
             "sections": get_sections(),
         },
     )

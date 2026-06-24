@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Nowa wiadomość | Skrzynka | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow"><a href="{% url 'dashboard:model_list' 'messages' %}" style="color:inherit">Skrzynka</a></p>
+        <h1>Nowa wiadomość</h1>
+        <p>Napisz maila ręcznie albo zacznij od gotowego szablonu. Treść widzisz na żywo po prawej.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'messages' %}" class="button button--secondary">← Wróć do skrzynki</a>
+        <button type="submit" form="message-form" class="button">Wyślij wiadomość</button>
+    </div>
+</section>
+
+<form id="message-form" method="post" class="mailform">
+    {% csrf_token %}
+
+    <div class="mailform__meta">
+        <label class="dashboard-field">
+            <span>Do (adres e-mail)</span>
+            <input class="dashboard-input" type="email" name="to_email" placeholder="klientka@email.pl" autocomplete="off">
+        </label>
+        <label class="dashboard-field">
+            <span>Zacznij od szablonu</span>
+            <select class="dashboard-input" data-template-picker>
+                <option value="">— pusta wiadomość —</option>
+                {% for t in templates %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}
+            </select>
+        </label>
+    </div>
+
+    {% include "dashboard/includes/mail_editor.html" with editor_subject='' editor_body='' %}
+
+    <input type="hidden" name="template" data-template-id>
+
+    <div class="mailform__save-bar">
+        <a href="{% url 'dashboard:model_list' 'messages' %}" class="button button--secondary">Anuluj</a>
+        <button type="submit" class="button">Wyślij wiadomość</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ templates_json|json_script:"templatesData" }}
+<script src="{% static 'js/mail-editor.js' %}?v=20260624-mail"></script>
+<script>
+(function () {
+    var TEMPLATES = JSON.parse(document.getElementById("templatesData").textContent);
+    var picker = document.querySelector("[data-template-picker]");
+    var subject = document.querySelector("[data-mc-subject]");
+    var area = document.querySelector("[data-mc-area]");
+    var hiddenId = document.querySelector("[data-template-id]");
+    if (!picker) return;
+    picker.addEventListener("change", function () {
+        hiddenId.value = picker.value || "";
+        var t = TEMPLATES[picker.value];
+        if (subject) {
+            subject.value = t ? (t.subject || "") : "";
+            subject.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        if (area) {
+            area.innerHTML = t ? (t.body_html || "") : "";
+            area.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+    });
+})();
+</script>
+{% endblock %}

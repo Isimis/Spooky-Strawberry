@@ -107,8 +107,13 @@
 
   // --- Toast "Dodano do koszyka" ---
   var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-  var toastTimer;
-  function showToast(msg) {
+  // Toast siada nad paskiem cookie (jeśli widoczny), żeby się z nim nie zlewał.
+  function toastBottomOffset() {
+    var bar = document.getElementById("cookieBar");
+    if (bar && !bar.hidden) return bar.offsetHeight + 16;
+    return 26;
+  }
+  function ensureToastWrap() {
     var wrap = document.getElementById("toastWrap");
     if (!wrap) {
       wrap = document.createElement("div");
@@ -116,16 +121,40 @@
       wrap.className = "toast-wrap";
       document.body.appendChild(wrap);
     }
-    wrap.innerHTML =
-      '<div class="toast"><span class="tk">' + CHECK_SVG + "</span>" +
-      (msg || "Dodano do koszyka") +
-      ' <a href="/koszyk/">Zobacz koszyk</a></div>';
-    var t = wrap.firstElementChild;
-    requestAnimationFrame(function () { t.classList.add("show"); });
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 3200);
+    wrap.style.bottom = toastBottomOffset() + "px";
+    return wrap;
+  }
+  function showToast(msg, opts) {
+    opts = opts || {};
+    var wrap = ensureToastWrap();
+    var toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerHTML = '<span class="tk">' + CHECK_SVG + '</span><span class="toast-msg"></span>';
+    toast.querySelector(".toast-msg").textContent = msg || "";
+    if (opts.link) {
+      var a = document.createElement("a");
+      a.href = opts.link.href;
+      a.textContent = opts.link.label;
+      toast.appendChild(a);
+    }
+    wrap.appendChild(toast);
+    requestAnimationFrame(function () { toast.classList.add("show"); });
+    setTimeout(function () {
+      toast.classList.remove("show");
+      setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, opts.duration || 3400);
   }
   window.ssShowToast = showToast;
+
+  // Komunikaty Django (np. „Konto założone") pokazujemy jako toasty w tym samym miejscu.
+  (function () {
+    var box = document.getElementById("djangoMessages");
+    if (!box) return;
+    var nodes = box.querySelectorAll("span");
+    Array.prototype.forEach.call(nodes, function (n, i) {
+      setTimeout(function () { showToast(n.textContent); }, i * 260);
+    });
+  })();
 
   function updateCartCount(count) {
     var dot = document.getElementById("cartCount");
@@ -150,7 +179,33 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (data) {
         if (data.cart_count !== undefined) updateCartCount(data.cart_count);
-        showToast(data.message || "Dodano do koszyka 🍓");
+        showToast(data.message || "Dodano do koszyka 🍓", { link: { href: "/koszyk/", label: "Zobacz koszyk" } });
+      })
+      .catch(function () { form.submit(); });
+  });
+
+  // Zapis do newslettera bez przeładowania — zamienia kafelek na potwierdzenie
+  document.addEventListener("submit", function (e) {
+    var form = e.target.closest("form.js-newsletter-form");
+    if (!form) return;
+    e.preventDefault();
+    var card = form.closest(".nl");
+    fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      credentials: "same-origin",
+    })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+      .then(function (data) {
+        if (!data.ok || !card) { form.submit(); return; }
+        card.innerHTML =
+          '<div class="nl-deco"></div>' +
+          '<div class="nl-chip">' + CHECK_SVG + " Klub Spooky</div>" +
+          "<h3></h3><p></p>" +
+          '<div class="fine">Nie widzisz maila? Sprawdź folder spam.</div>';
+        card.querySelector("h3").textContent = data.heading || "Jesteś w klubie! 🍓";
+        card.querySelector("p").textContent = data.message || "";
       })
       .catch(function () { form.submit(); });
   });

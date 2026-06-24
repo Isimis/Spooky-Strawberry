@@ -18,7 +18,7 @@ urlpatterns = [
     path("design-system/", views.design_system_view, name="design_system"),
     path("szukaj/", views.search_view, name="search"),
     path("koszyk/", views.cart_view, name="cart"),
-    path("konto/", views.account_view, name="account"),
+    path("newsletter/dziekujemy/", views.newsletter_thanks_view, name="newsletter_thanks"),
     path("polityki/<slug:slug>/", views.policy_view, name="policy"),
     path("newsletter/zapisz/", views.newsletter_subscribe, name="newsletter_subscribe"),
 ]

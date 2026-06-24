@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Nowe konto | Konta | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow"><a href="{% url 'dashboard:model_list' 'user-accounts' %}" style="color:inherit">Konta użytkowników</a></p>
+        <h1>Nowe konto</h1>
+        <p>Załóż konto klientce lub osobie z zespołu. E-mail będzie loginem.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'user-accounts' %}" class="button button--secondary">← Wróć do listy</a>
+    </div>
+</section>
+
+<article class="dashboard-card" style="max-width:680px">
+    <form method="post" class="dashboard-newsletter-detail-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="dashboard-newsletter-status-grid">
+            <label class="dashboard-field"><span>{{ form.first_name.label }}</span>{{ form.first_name }}{{ form.first_name.errors }}</label>
+            <label class="dashboard-field"><span>{{ form.last_name.label }}</span>{{ form.last_name }}{{ form.last_name.errors }}</label>
+        </div>
+        <label class="dashboard-field"><span>{{ form.email.label }} *</span>{{ form.email }}{{ form.email.errors }}</label>
+        <label class="dashboard-field"><span>{{ form.password.label }} *</span>{{ form.password }}{{ form.password.errors }}</label>
+        <label class="dashboard-field dashboard-field--checkbox"><span>{{ form.is_staff.label }}</span>{{ form.is_staff }}</label>
+        <label class="dashboard-field dashboard-field--checkbox"><span>{{ form.accepts_marketing.label }}</span>{{ form.accepts_marketing }}</label>
+        <div class="dashboard-save-bar"><button type="submit" class="button">Utwórz konto</button></div>
+    </form>
+</article>
+{% endblock %}

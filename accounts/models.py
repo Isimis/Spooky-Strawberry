@@ -16,6 +16,7 @@ class CustomerProfile(models.Model):
         blank=True,
     )
     accepts_marketing = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
