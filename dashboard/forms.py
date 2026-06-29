@@ -10,7 +10,7 @@ from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size, unique_slug_for
 from core.models import NewsletterSubscriber, SiteSettings
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
-from outfits.models import Outfit, OutfitImage, OutfitItem
+from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
 
 
 def build_model_form(model):
@@ -786,6 +786,28 @@ class OutfitImageInlineForm(DashboardFormMixin, forms.ModelForm):
         self.apply_dashboard_widgets()
 
 
+class OutfitHotspotInlineForm(DashboardFormMixin, forms.ModelForm):
+    class Meta:
+        model = OutfitHotspot
+        fields = ["product", "pos_x", "pos_y", "sort_order"]
+        labels = {
+            "product": "Produkt",
+            "pos_x": "Pozycja X (%)",
+            "pos_y": "Pozycja Y (%)",
+            "sort_order": "Kolejność",
+        }
+        widgets = {
+            "pos_x": forms.HiddenInput(),
+            "pos_y": forms.HiddenInput(),
+            "sort_order": forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["product"].queryset = Product.objects.order_by("name")
+
+
 class ProductVariantInlineForm(DashboardFormMixin, forms.ModelForm):
     class Meta:
         model = ProductVariant
@@ -941,6 +963,14 @@ OutfitImageFormSet = inlineformset_factory(
     Outfit,
     OutfitImage,
     form=OutfitImageInlineForm,
+    extra=0,
+    can_delete=True,
+)
+
+OutfitHotspotFormSet = inlineformset_factory(
+    Outfit,
+    OutfitHotspot,
+    form=OutfitHotspotInlineForm,
     extra=0,
     can_delete=True,
 )

@@ -73,19 +73,26 @@
 
 <section class="dashboard-newsletter-layout">
     <div class="dashboard-newsletter-main">
-        <div class="dashboard-list-toolbar dashboard-newsletter-toolbar" aria-label="Akcje newslettera">
-            <div>
-                <span>{{ page.paginator.count }} adresów na aktualnej liście</span>
-                <small>{{ newsletter_summary.active_count }} aktywnych w całej bazie</small>
+        <form method="post" action="{% url 'dashboard:bulk_compose' %}" data-bulk-form>
+            {% csrf_token %}
+            <input type="hidden" name="back" value="{{ request.get_full_path }}">
+            <div class="dashboard-list-toolbar dashboard-newsletter-toolbar" aria-label="Akcje newslettera">
+                <div>
+                    <span>{{ page.paginator.count }} adresów na aktualnej liście</span>
+                    <small><span data-bulk-count>0</span> zaznaczonych do wysyłki</small>
+                </div>
+                <div class="dashboard-bulk-actions">
+                    <button type="submit" class="button" data-bulk-send disabled>Wyślij do zaznaczonych</button>
+                    <a href="{% url 'dashboard:model_create' config.slug %}" class="button button--secondary">Dopisz ręcznie</a>
+                </div>
             </div>
-            <a href="{% url 'dashboard:model_create' config.slug %}" class="button button--secondary">Dopisz ręcznie</a>
-        </div>
 
         {% if rows %}
         <div class="dashboard-table-wrap">
             <table class="dashboard-table dashboard-newsletter-table" aria-label="Lista adresów newslettera">
                 <thead>
                     <tr>
+                        <th class="dashboard-col-check"><input type="checkbox" data-bulk-all aria-label="Zaznacz wszystkie"></th>
                         <th>E-mail</th>
                         <th>Status</th>
                         <th>Źródło</th>
@@ -97,6 +104,11 @@
                 <tbody>
                     {% for row in rows %}
                         <tr class="{% if not row.is_active %}is-inactive{% endif %}">
+                            <td class="dashboard-col-check">
+                                {% if row.is_sendable %}
+                                    <input type="checkbox" name="emails" value="{{ row.email }}" data-bulk-item aria-label="Zaznacz {{ row.email }}">
+                                {% endif %}
+                            </td>
                             <td>
                                 <div class="dashboard-newsletter-id">
                                     <span class="dashboard-newsletter-avatar" aria-hidden="true">{{ row.email|first|upper }}</span>
@@ -118,7 +130,9 @@
                 </tbody>
             </table>
         </div>
+        </form>
         {% else %}
+        </form>
             <article class="dashboard-empty-card">
                 <h2>Brak adresów</h2>
                 <p>Nie ma jeszcze zapisów dla wybranych filtrów.</p>
@@ -219,5 +233,31 @@
             }, 1600);
         });
     }
+
+    (function () {
+        const form = document.querySelector("[data-bulk-form]");
+        if (!form) return;
+        const items = Array.from(form.querySelectorAll("[data-bulk-item]"));
+        const all = form.querySelector("[data-bulk-all]");
+        const sendBtn = form.querySelector("[data-bulk-send]");
+        const count = form.querySelector("[data-bulk-count]");
+
+        function refresh() {
+            const checked = items.filter((i) => i.checked).length;
+            if (count) count.textContent = checked;
+            if (sendBtn) sendBtn.disabled = checked === 0;
+            if (all) {
+                all.checked = checked > 0 && checked === items.length;
+                all.indeterminate = checked > 0 && checked < items.length;
+            }
+        }
+
+        if (all) all.addEventListener("change", () => {
+            items.forEach((i) => { i.checked = all.checked; });
+            refresh();
+        });
+        items.forEach((i) => i.addEventListener("change", refresh));
+        refresh();
+    })();
 </script>
 {% endblock %}

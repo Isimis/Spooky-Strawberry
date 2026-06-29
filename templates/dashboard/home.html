@@ -313,30 +313,156 @@
 
 {% block scripts %}
 <script>
-    document.querySelectorAll(".stats-line-chart--fixed").forEach((chart) => {
-        const tooltip = chart.querySelector(".chart-tooltip");
-        if (!tooltip) {
-            return;
+    (function () {
+        const SVGNS = "http://www.w3.org/2000/svg";
+
+        function parsePoints(polyline) {
+            if (!polyline) return [];
+            return (polyline.getAttribute("points") || "")
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .map((pair) => pair.split(",").map(Number));
         }
 
-        chart.querySelectorAll(".chart-hover-zone").forEach((zone) => {
-            zone.addEventListener("mousemove", (event) => {
-                const box = chart.getBoundingClientRect();
-                tooltip.innerHTML = `
-                    <strong>${zone.dataset.label}</strong>
-                    <span>Sesje: ${zone.dataset.sessions}</span>
-                    <span>Użytkownicy: ${zone.dataset.users}</span>
-                `;
-                tooltip.style.left = `${event.clientX - box.left}px`;
-                tooltip.style.top = `${event.clientY - box.top}px`;
-                tooltip.setAttribute("aria-hidden", "false");
-                tooltip.classList.add("is-visible");
+        // Gładka ścieżka z monotoniczną interpolacją (Fritsch-Carlson),
+        // która NIE przestrzeliwuje — krzywa zostaje w zakresie wartości
+        // punktów, więc przy zerach nie zjeżdża poniżej osi.
+        function smoothPath(points) {
+            const n = points.length;
+            if (!n) return "";
+            if (n === 1) return `M${points[0][0]},${points[0][1]}`;
+            if (n === 2) return `M${points[0][0]},${points[0][1]} L${points[1][0]},${points[1][1]}`;
+
+            const dx = [];
+            const slope = [];
+            for (let i = 0; i < n - 1; i++) {
+                dx[i] = points[i + 1][0] - points[i][0];
+                slope[i] = (points[i + 1][1] - points[i][1]) / (dx[i] || 1);
+            }
+
+            const tan = new Array(n);
+            tan[0] = slope[0];
+            tan[n - 1] = slope[n - 2];
+            for (let i = 1; i < n - 1; i++) {
+                if (slope[i - 1] * slope[i] <= 0) {
+                    tan[i] = 0; // ekstremum lokalne -> styczna pozioma, brak overshootu
+                } else {
+                    const w1 = 2 * dx[i] + dx[i - 1];
+                    const w2 = dx[i] + 2 * dx[i - 1];
+                    tan[i] = (w1 + w2) / (w1 / slope[i - 1] + w2 / slope[i]);
+                }
+            }
+
+            let d = `M${points[0][0]},${points[0][1]}`;
+            for (let i = 0; i < n - 1; i++) {
+                const c1x = points[i][0] + dx[i] / 3;
+                const c1y = points[i][1] + (tan[i] * dx[i]) / 3;
+                const c2x = points[i + 1][0] - dx[i] / 3;
+                const c2y = points[i + 1][1] - (tan[i + 1] * dx[i]) / 3;
+                d += ` C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${points[i + 1][0]},${points[i + 1][1]}`;
+            }
+            return d;
+        }
+
+        function make(tag, attrs) {
+            const el = document.createElementNS(SVGNS, tag);
+            for (const key in attrs) el.setAttribute(key, attrs[key]);
+            return el;
+        }
+
+        document.querySelectorAll(".stats-line-chart--fixed").forEach((chart, chartIndex) => {
+            const svg = chart.querySelector("svg");
+            const tooltip = chart.querySelector(".chart-tooltip");
+            const frame = chart.querySelector(".chart-frame");
+            const sessLine = chart.querySelector(".chart-line--sessions");
+            const userLine = chart.querySelector(".chart-line--users");
+            const zones = [...chart.querySelectorAll(".chart-hover-zone")];
+            const sessDots = [...chart.querySelectorAll(".chart-dot--sessions")];
+            const userDots = [...chart.querySelectorAll(".chart-dot--users")];
+            if (!svg || !frame || !sessLine) return;
+
+            const plotLeft = parseFloat(frame.getAttribute("x"));
+            const plotTop = parseFloat(frame.getAttribute("y"));
+            const plotW = parseFloat(frame.getAttribute("width"));
+            const plotH = parseFloat(frame.getAttribute("height"));
+            const baseline = plotTop + plotH;
+
+            const sessPts = parsePoints(sessLine);
+            const userPts = parsePoints(userLine);
+            if (!sessPts.length) return;
+
+            // Gradienty wypełnienia pod liniami.
+            const defs = make("defs", {});
+            const gid = (name) => `chart-${chartIndex}-${name}`;
+            [["sess", "#100c10"], ["user", "#ee8db8"]].forEach(([key, color]) => {
+                const grad = make("linearGradient", { id: gid(key), x1: "0", y1: "0", x2: "0", y2: "1" });
+                grad.appendChild(make("stop", { offset: "0", "stop-color": color, "stop-opacity": key === "sess" ? "0.22" : "0.28" }));
+                grad.appendChild(make("stop", { offset: "1", "stop-color": color, "stop-opacity": "0" }));
+                defs.appendChild(grad);
             });
-            zone.addEventListener("mouseleave", () => {
+            svg.insertBefore(defs, svg.firstChild);
+
+            // Obszary (area) + gładkie krzywe — wstawiamy przed kropkami/strefami.
+            const firstZone = zones[0] || sessDots[0];
+            function areaD(points) {
+                return smoothPath(points) + ` L${points[points.length - 1][0]},${baseline} L${points[0][0]},${baseline} Z`;
+            }
+            const userArea = make("path", { class: "chart-area", d: areaD(userPts), fill: `url(#${gid("user")})` });
+            const sessArea = make("path", { class: "chart-area", d: areaD(sessPts), fill: `url(#${gid("sess")})` });
+            const userCurve = make("path", { class: "chart-curve chart-curve--users", d: smoothPath(userPts) });
+            const sessCurve = make("path", { class: "chart-curve chart-curve--sessions", d: smoothPath(sessPts) });
+            [userArea, sessArea, userCurve, sessCurve].forEach((el) => svg.insertBefore(el, firstZone));
+
+            // Ukrywamy stare, kanciaste polyline.
+            sessLine.style.display = "none";
+            if (userLine) userLine.style.display = "none";
+
+            // Pionowa prowadnica aktywnego punktu.
+            const guide = make("line", { class: "chart-guide", x1: 0, x2: 0, y1: plotTop, y2: baseline });
+            guide.style.opacity = "0";
+            svg.insertBefore(guide, firstZone);
+
+            if (!tooltip) return;
+            const scale = () => svg.clientWidth / svg.viewBox.baseVal.width;
+
+            function activate(index, clientX) {
+                const z = zones[index];
+                if (!z) return;
+                const s = scale();
+                const px = sessPts[index][0];
+                guide.setAttribute("x1", px);
+                guide.setAttribute("x2", px);
+                guide.style.opacity = "1";
+
+                sessDots.forEach((d, i) => d.classList.toggle("is-active", i === index));
+                userDots.forEach((d, i) => d.classList.toggle("is-active", i === index));
+
+                tooltip.innerHTML =
+                    `<strong>${z.dataset.label}</strong>` +
+                    `<span class="tt-sess">Sesje: ${z.dataset.sessions}</span>` +
+                    `<span class="tt-user">Użytkownicy: ${z.dataset.users}</span>`;
+                const topPx = Math.min(sessPts[index][1], userPts[index][1]) * s;
+                tooltip.style.left = `${px * s}px`;
+                tooltip.style.top = `${topPx}px`;
+                tooltip.classList.add("is-visible");
+                tooltip.setAttribute("aria-hidden", "false");
+            }
+
+            function clear() {
+                guide.style.opacity = "0";
+                sessDots.forEach((d) => d.classList.remove("is-active"));
+                userDots.forEach((d) => d.classList.remove("is-active"));
                 tooltip.classList.remove("is-visible");
                 tooltip.setAttribute("aria-hidden", "true");
+            }
+
+            zones.forEach((zone, index) => {
+                zone.addEventListener("mouseenter", (e) => activate(index, e.clientX));
+                zone.addEventListener("mousemove", (e) => activate(index, e.clientX));
             });
+            chart.addEventListener("mouseleave", clear);
         });
-    });
+    })();
 </script>
 {% endblock %}

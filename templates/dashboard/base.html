@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260623-cookie-center">
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20260624-mail">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260627b-hotspots">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=20260629-charts">
 </head>
 <body class="dashboard-body">
     <header class="dashboard-topbar">
@@ -51,6 +51,13 @@
                             {% endfor %}
                         </section>
                     {% endfor %}
+                    <section>
+                        <h2>Szablon bazowy</h2>
+                        {% url 'dashboard:base_layout_edit' as base_layout_url %}
+                        <a href="{{ base_layout_url }}" class="{% if request.path == base_layout_url %}is-active{% endif %}">
+                            <span>Wygląd maili (wzór)</span>
+                        </a>
+                    </section>
                 </nav>
             </aside>
         {% endif %}

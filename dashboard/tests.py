@@ -14,7 +14,7 @@ from dashboard.registry import get_model_config, get_sections
 from dashboard.services import get_dashboard_analytics
 from dashboard.views import filter_product_image_files, sync_product_main_image
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
-from outfits.models import Outfit, OutfitImage, OutfitItem
+from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
 
 
 class DashboardAccessTests(TestCase):
@@ -99,7 +99,7 @@ class DashboardAccessTests(TestCase):
         edit_page = self.client.get(reverse("dashboard:email_template_edit", args=[tpl.pk]))
         self.assertEqual(edit_page.status_code, 200)
         self.assertTemplateUsed(edit_page, "dashboard/email_template_form.html")
-        self.assertContains(edit_page, "data-rich-area")
+        self.assertContains(edit_page, "data-mc-area")
         edit = self.client.post(
             reverse("dashboard:email_template_edit", args=[tpl.pk]),
             {"subject": "Nowy temat testowy", "body_html": "<p>Cześć</p>", "is_active": "on"},
@@ -128,6 +128,70 @@ class DashboardAccessTests(TestCase):
 
         detail = self.client.get(reverse("dashboard:message_detail", args=[message.pk]))
         self.assertContains(detail, "Cześć")
+
+    def test_bulk_compose_selects_recipients_and_sends(self):
+        from django.core import mail
+        from core.models import Message, NewsletterSubscriber
+
+        NewsletterSubscriber.objects.create(email="a@example.pl", is_active=True)
+        NewsletterSubscriber.objects.create(email="b@example.pl", is_active=True)
+
+        self.client.login(username="staff", password="pass")
+
+        # Zaznaczenie odbiorców na liście przerzuca ich do edytora.
+        bulk = self.client.post(
+            reverse("dashboard:bulk_compose"),
+            {"emails": ["a@example.pl", "b@example.pl", "a@example.pl"], "back": "/admin/newsletter-subscribers/"},
+        )
+        self.assertRedirects(bulk, reverse("dashboard:message_compose"))
+        self.assertEqual(self.client.session["compose_recipients"], ["a@example.pl", "b@example.pl"])
+
+        compose_page = self.client.get(reverse("dashboard:message_compose"))
+        self.assertContains(compose_page, "a@example.pl")
+        self.assertContains(compose_page, "Odbiorcy (2)")
+
+        sent = self.client.post(
+            reverse("dashboard:message_compose"),
+            {"subject": "Drop 🦇", "body_html": "<p>Cześć {{ first_name }}!</p>"},
+        )
+        self.assertRedirects(sent, reverse("dashboard:model_list", args=["messages"]))
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(Message.objects.filter(subject="Drop 🦇").count(), 2)
+        # Sesja czyszczona po wysyłce.
+        self.assertNotIn("compose_recipients", self.client.session)
+
+    def test_base_layout_wraps_outgoing_mail(self):
+        from django.core import mail
+        from core.mailer import BASE_LAYOUT_KEY
+        from core.models import MessageTemplate
+
+        # Szablon bazowy istnieje, ma własną stronę i nie ląduje w liście szablonów.
+        self.assertTrue(MessageTemplate.objects.filter(system_key=BASE_LAYOUT_KEY).exists())
+
+        self.client.login(username="staff", password="pass")
+        list_resp = self.client.get(reverse("dashboard:model_list", args=["email-templates"]))
+        # Wzorek nie miesza się z listą zwykłych szablonów (ma własną podkategorię).
+        self.assertNotContains(list_resp, "Szablon bazowy maili (wzór)")
+
+        edit_page = self.client.get(reverse("dashboard:base_layout_edit"))
+        self.assertEqual(edit_page.status_code, 200)
+        self.assertTemplateUsed(edit_page, "dashboard/base_layout_form.html")
+
+        self.client.post(
+            reverse("dashboard:base_layout_edit"),
+            {"body_html": "<div class=\"frame\">RAMKA {{ content }} STOPKA</div>"},
+        )
+
+        self.client.post(
+            reverse("dashboard:message_compose"),
+            {"to_email": "klient@example.pl", "subject": "Test", "body_html": "<p>Środek</p>"},
+        )
+        self.assertEqual(len(mail.outbox), 1)
+        html_body = mail.outbox[0].alternatives[0][0]
+        self.assertIn("RAMKA", html_body)
+        self.assertIn("Środek", html_body)
+        self.assertIn("STOPKA", html_body)
+        self.assertNotIn("{{ content }}", html_body)
 
     def test_user_account_edit_and_delete(self):
         self.client.login(username="staff", password="pass")
@@ -709,6 +773,10 @@ class DashboardAccessTests(TestCase):
                 "images-INITIAL_FORMS": "0",
                 "images-MIN_NUM_FORMS": "0",
                 "images-MAX_NUM_FORMS": "1000",
+                "hotspots-TOTAL_FORMS": "0",
+                "hotspots-INITIAL_FORMS": "0",
+                "hotspots-MIN_NUM_FORMS": "0",
+                "hotspots-MAX_NUM_FORMS": "1000",
             },
         )
 
@@ -717,6 +785,49 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(outfit.status, Outfit.STATUS_ACTIVE)
         self.assertEqual(outfit.bundle_price, Decimal("39.00"))
         self.assertTrue(OutfitItem.objects.filter(outfit=outfit, product=product, quantity=2).exists())
+
+    def test_outfit_workspace_saves_hotspot(self):
+        outfit = Outfit.objects.create(name="Hotspot Outfit", slug="hotspot-outfit", status=Outfit.STATUS_ACTIVE)
+        product = self.create_product("Hotspot Choker", "hotspot-choker")
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:outfit_workspace", args=[outfit.id]),
+            {
+                "deleted_item_ids": "",
+                "deleted_image_ids": "",
+                "deleted_hotspot_ids": "",
+                "outfit-name": outfit.name,
+                "outfit-short_description": "",
+                "outfit-mood_description": "",
+                "outfit-styling_tips": "",
+                "outfit-bundle_price": "",
+                "outfit-status": Outfit.STATUS_ACTIVE,
+                "outfit-seo_title": "",
+                "outfit-seo_description": "",
+                "items-TOTAL_FORMS": "0",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "images-TOTAL_FORMS": "0",
+                "images-INITIAL_FORMS": "0",
+                "images-MIN_NUM_FORMS": "0",
+                "images-MAX_NUM_FORMS": "1000",
+                "hotspots-TOTAL_FORMS": "1",
+                "hotspots-INITIAL_FORMS": "0",
+                "hotspots-MIN_NUM_FORMS": "0",
+                "hotspots-MAX_NUM_FORMS": "1000",
+                "hotspots-0-product": str(product.id),
+                "hotspots-0-pos_x": "33.50",
+                "hotspots-0-pos_y": "60.25",
+                "hotspots-0-sort_order": "0",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        hotspot = OutfitHotspot.objects.get(outfit=outfit, product=product)
+        self.assertEqual(hotspot.pos_x, Decimal("33.50"))
+        self.assertEqual(hotspot.pos_y, Decimal("60.25"))
 
     def test_outfit_workspace_deletes_image(self):
         outfit = Outfit.objects.create(name="Image Outfit", slug="image-outfit", status=Outfit.STATUS_ACTIVE)
@@ -747,6 +858,10 @@ class DashboardAccessTests(TestCase):
                 "images-0-id": str(image.id),
                 "images-0-sort_order": "0",
                 "images-0-DELETE": "on",
+                "hotspots-TOTAL_FORMS": "0",
+                "hotspots-INITIAL_FORMS": "0",
+                "hotspots-MIN_NUM_FORMS": "0",
+                "hotspots-MAX_NUM_FORMS": "1000",
             },
         )
 

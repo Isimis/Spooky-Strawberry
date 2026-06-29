@@ -55,6 +55,98 @@
     if (main && src) main.src = src;
   });
 
+  // --- Lightbox PDP: klik w główne zdjęcie otwiera galerię na środku ekranu ---
+  (function pdpLightbox() {
+    var media = document.querySelector(".pdp-media");
+    if (!media) return;
+    var sources = Array.prototype.map.call(
+      media.querySelectorAll("[data-gallery-src]"),
+      function (el) {
+        return { full: el.getAttribute("data-full"), alt: el.getAttribute("data-alt") || "" };
+      }
+    );
+    if (!sources.length) return;
+
+    var main = document.getElementById("pdpMain");
+    var current = 0;
+    var overlay = null;
+    var imgEl = null;
+    var countEl = null;
+
+    function build() {
+      overlay = document.createElement("div");
+      overlay.className = "lightbox";
+      overlay.innerHTML =
+        '<button class="lb-close" type="button" aria-label="Zamknij">×</button>' +
+        '<button class="lb-nav lb-prev" type="button" aria-label="Poprzednie zdjęcie">‹</button>' +
+        '<figure class="lb-stage"><img alt=""></figure>' +
+        '<button class="lb-nav lb-next" type="button" aria-label="Następne zdjęcie">›</button>' +
+        '<div class="lb-count"></div>';
+      document.body.appendChild(overlay);
+      imgEl = overlay.querySelector("img");
+      countEl = overlay.querySelector(".lb-count");
+      overlay.querySelector(".lb-close").addEventListener("click", close);
+      overlay.querySelector(".lb-prev").addEventListener("click", function (e) {
+        e.stopPropagation();
+        show(current - 1);
+      });
+      overlay.querySelector(".lb-next").addEventListener("click", function (e) {
+        e.stopPropagation();
+        show(current + 1);
+      });
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay || e.target.classList.contains("lb-stage")) close();
+      });
+    }
+
+    function show(index) {
+      var n = sources.length;
+      current = ((index % n) + n) % n;
+      imgEl.src = sources[current].full;
+      imgEl.alt = sources[current].alt;
+      countEl.textContent = current + 1 + " / " + n;
+      countEl.hidden = n < 2;
+      var hideNav = n < 2;
+      overlay.querySelector(".lb-prev").hidden = hideNav;
+      overlay.querySelector(".lb-next").hidden = hideNav;
+    }
+
+    function open(index) {
+      if (!overlay) build();
+      show(index);
+      overlay.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function close() {
+      if (overlay) overlay.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    function currentMainIndex() {
+      if (!main) return 0;
+      var src = main.getAttribute("src");
+      for (var i = 0; i < sources.length; i++) {
+        if (sources[i].full === src) return i;
+      }
+      return 0;
+    }
+
+    if (main) {
+      main.style.cursor = "zoom-in";
+      main.addEventListener("click", function () {
+        open(currentMainIndex());
+      });
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (!overlay || !overlay.classList.contains("open")) return;
+      if (e.key === "ArrowLeft") show(current - 1);
+      else if (e.key === "ArrowRight") show(current + 1);
+      else if (e.key === "Escape") close();
+    });
+  })();
+
   // --- Baner cookie ---
   var COOKIE_KEY = "ss_cookie_consent";
   function hideCookieBar() {

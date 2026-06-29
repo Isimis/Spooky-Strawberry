@@ -66,11 +66,25 @@
     </div>
 {% endif %}
 
+<form method="post" action="{% url 'dashboard:bulk_compose' %}" data-bulk-form>
+    {% csrf_token %}
+    <input type="hidden" name="back" value="{{ request.get_full_path }}">
+    <div class="dashboard-list-toolbar" aria-label="Akcje na kontach">
+        <div>
+            <span>{{ page.paginator.count }} kont na aktualnej liście</span>
+            <small><span data-bulk-count>0</span> zaznaczonych do wysyłki</small>
+        </div>
+        <div class="dashboard-bulk-actions">
+            <button type="submit" class="button" data-bulk-send disabled>Wyślij do zaznaczonych</button>
+        </div>
+    </div>
+
 {% if rows %}
 <div class="dashboard-table-wrap">
     <table class="dashboard-table" aria-label="Lista kont użytkowników">
         <thead>
             <tr>
+                <th class="dashboard-col-check"><input type="checkbox" data-bulk-all aria-label="Zaznacz wszystkie"></th>
                 <th>Użytkownik</th>
                 <th>Typ konta</th>
                 <th>Zamówienia</th>
@@ -84,6 +98,11 @@
         <tbody>
             {% for row in rows %}
                 <tr class="{% if not row.is_active %}is-inactive{% endif %}">
+                    <td class="dashboard-col-check">
+                        {% if row.object.email %}
+                            <input type="checkbox" name="emails" value="{{ row.object.email }}" data-bulk-item aria-label="Zaznacz {{ row.email }}">
+                        {% endif %}
+                    </td>
                     <td>
                         <div class="dashboard-cell-main">
                             <span class="dashboard-newsletter-avatar" aria-hidden="true">{{ row.email|first|upper }}</span>
@@ -121,6 +140,7 @@
         <p>Nie ma jeszcze kont spełniających wybrane filtry.</p>
     </article>
 {% endif %}
+</form>
 
 {% if page.paginator.num_pages > 1 %}
     <nav class="dashboard-pagination">
@@ -133,4 +153,34 @@
         {% endif %}
     </nav>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        const form = document.querySelector("[data-bulk-form]");
+        if (!form) return;
+        const items = Array.from(form.querySelectorAll("[data-bulk-item]"));
+        const all = form.querySelector("[data-bulk-all]");
+        const sendBtn = form.querySelector("[data-bulk-send]");
+        const count = form.querySelector("[data-bulk-count]");
+
+        function refresh() {
+            const checked = items.filter((i) => i.checked).length;
+            if (count) count.textContent = checked;
+            if (sendBtn) sendBtn.disabled = checked === 0;
+            if (all) {
+                all.checked = checked > 0 && checked === items.length;
+                all.indeterminate = checked > 0 && checked < items.length;
+            }
+        }
+
+        if (all) all.addEventListener("change", () => {
+            items.forEach((i) => { i.checked = all.checked; });
+            refresh();
+        });
+        items.forEach((i) => i.addEventListener("change", refresh));
+        refresh();
+    })();
+</script>
 {% endblock %}

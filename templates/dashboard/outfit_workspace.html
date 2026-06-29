@@ -37,6 +37,7 @@
     {% csrf_token %}
     <input type="hidden" name="deleted_item_ids" value="" data-deleted-item-ids>
     <input type="hidden" name="deleted_image_ids" value="" data-deleted-image-ids>
+    <input type="hidden" name="deleted_hotspot_ids" value="" data-deleted-hotspot-ids>
     {{ outfit_form.non_field_errors }}
 
     <div class="dashboard-product-grid">
@@ -250,6 +251,70 @@
                     <p class="dashboard-empty-note" data-empty-images>Ta stylizacja nie ma jeszcze zdjęć.</p>
                 {% endfor %}
             </div>
+        </section>
+
+        <section class="dashboard-form-panel dashboard-hotspot-panel" data-hotspot-editor>
+            <div class="dashboard-form-panel__heading">
+                <p class="eyebrow">Klikalne punkty</p>
+                <h2>Hotspoty na zdjęciu</h2>
+                <p>Kliknij na zdjęciu, aby dodać „plusik" w danym miejscu, a potem wybierz produkt, do którego kieruje. Punkt możesz przeciągnąć, żeby go przesunąć. Na stronie sklepu po najechaniu pokaże się podgląd produktu.</p>
+            </div>
+
+            {{ hotspot_formset.management_form }}
+            {{ hotspot_formset.non_form_errors }}
+
+            {% with hero=outfit.main_image %}
+            <div class="dashboard-hotspot-layout">
+                <div class="dashboard-hotspot-stage {% if hero %}has-image{% endif %}" data-hotspot-stage>
+                    {% if hero %}
+                        <img src="{{ hero.image.url }}" alt="{{ hero.alt_text|default:outfit.name }}" draggable="false">
+                    {% else %}
+                        <div class="dashboard-hotspot-stage__empty">Dodaj najpierw zdjęcie główne, żeby rozmieszczać punkty.</div>
+                    {% endif %}
+                </div>
+
+                <div class="dashboard-hotspot-side">
+                    <div class="dashboard-hotspot-rows" data-formset-list="hotspots">
+                        {% for form in hotspot_formset %}
+                            <article class="dashboard-hotspot-row" data-formset-form data-hotspot-form>
+                                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                <span class="dashboard-hidden-delete">{{ form.DELETE }}</span>
+                                <span class="dashboard-hotspot-row__num" data-form-index>{{ forloop.counter }}</span>
+                                <span class="dashboard-hotspot-row__thumb" data-hotspot-thumb>
+                                    {% if form.instance.pk and form.instance.product.main_image %}
+                                        <img src="{{ form.instance.product.main_image.image.url }}" alt="{{ form.instance.product.name }}">
+                                    {% else %}<span>SS</span>{% endif %}
+                                </span>
+                                <label class="dashboard-field dashboard-hotspot-row__product" data-field-name="product">
+                                    <span>{{ form.product.label }}</span>
+                                    {{ form.product }}
+                                    {{ form.product.errors }}
+                                </label>
+                                <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń punkt">×</button>
+                            </article>
+                        {% endfor %}
+                    </div>
+                    <p class="dashboard-empty-note" data-hotspot-empty {% if hotspot_formset|length %}hidden{% endif %}>
+                        Brak punktów. Kliknij na zdjęciu, aby dodać pierwszy.
+                    </p>
+
+                    <template data-formset-template="hotspots">
+                        <article class="dashboard-hotspot-row" data-formset-form data-hotspot-form>
+                            {% for hidden in hotspot_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            <span class="dashboard-hidden-delete">{{ hotspot_formset.empty_form.DELETE }}</span>
+                            <span class="dashboard-hotspot-row__num" data-form-index></span>
+                            <span class="dashboard-hotspot-row__thumb" data-hotspot-thumb><span>SS</span></span>
+                            <label class="dashboard-field dashboard-hotspot-row__product" data-field-name="product">
+                                <span>{{ hotspot_formset.empty_form.product.label }}</span>
+                                {{ hotspot_formset.empty_form.product }}
+                            </label>
+                            <button type="button" class="dashboard-icon-button" data-remove-form aria-label="Usuń punkt">×</button>
+                        </article>
+                    </template>
+                </div>
+            </div>
+            {{ hotspot_product_catalog|json_script:"hotspot-product-catalog-data" }}
+            {% endwith %}
         </section>
     {% else %}
         <section class="dashboard-quality-panel dashboard-quality-panel--ok">
@@ -666,9 +731,235 @@
         }
     }
 
+    function setupHotspots() {
+        const editor = form.querySelector("[data-hotspot-editor]");
+        if (!editor) {
+            return;
+        }
+        const stage = editor.querySelector("[data-hotspot-stage]");
+        const list = editor.querySelector('[data-formset-list="hotspots"]');
+        const template = editor.querySelector('[data-formset-template="hotspots"]');
+        const totalInput = document.getElementById("id_hotspots-TOTAL_FORMS");
+        const emptyNote = editor.querySelector("[data-hotspot-empty]");
+        if (!stage || !list || !template || !totalInput) {
+            return;
+        }
+
+        const catalogScript = document.getElementById("hotspot-product-catalog-data");
+        const productCatalog = catalogScript ? JSON.parse(catalogScript.textContent) : {};
+
+        function rowField(row, suffix) {
+            return row.querySelector(`[name$="-${suffix}"]`);
+        }
+
+        function escapeAttribute(value) {
+            return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function updateRowThumb(row) {
+            const thumb = row.querySelector("[data-hotspot-thumb]");
+            const select = row.querySelector("select");
+            if (!thumb || !select) {
+                return;
+            }
+            const data = productCatalog[select.value];
+            if (data && data.image_url) {
+                thumb.innerHTML = '<img src="' + escapeAttribute(data.image_url) + '" alt="' + escapeAttribute(data.image_alt || data.name) + '">';
+            } else {
+                thumb.innerHTML = "<span>SS</span>";
+            }
+        }
+
+        function clampPercent(value) {
+            let n = parseFloat(String(value).replace(",", "."));
+            if (Number.isNaN(n)) {
+                n = 50;
+            }
+            return Math.max(0, Math.min(100, n));
+        }
+
+        function visibleRows() {
+            return [...list.querySelectorAll("[data-hotspot-form]:not([hidden])")];
+        }
+
+        function refreshIndexes() {
+            const rows = visibleRows();
+            rows.forEach((row, index) => {
+                const orderInput = rowField(row, "sort_order");
+                if (orderInput) {
+                    orderInput.value = index;
+                }
+                const numEl = row.querySelector("[data-form-index]");
+                if (numEl) {
+                    numEl.textContent = index + 1;
+                }
+                updateMarkerLabel(row);
+            });
+            if (emptyNote) {
+                emptyNote.hidden = rows.length > 0;
+            }
+        }
+
+        function updateMarkerLabel(row) {
+            const marker = row._marker;
+            if (!marker) {
+                return;
+            }
+            const select = row.querySelector("select");
+            const label = marker.querySelector(".dashboard-hotspot-marker__label");
+            const text = select && select.selectedIndex >= 0 ? select.options[select.selectedIndex].text : "";
+            const index = visibleRows().indexOf(row) + 1;
+            label.textContent = text && select.value ? text : "Punkt " + index;
+        }
+
+        function positionMarker(row) {
+            const marker = row._marker;
+            if (!marker) {
+                return;
+            }
+            marker.style.left = clampPercent(rowField(row, "pos_x").value) + "%";
+            marker.style.top = clampPercent(rowField(row, "pos_y").value) + "%";
+        }
+
+        function createMarker(row) {
+            const marker = document.createElement("button");
+            marker.type = "button";
+            marker.className = "dashboard-hotspot-marker";
+            marker.dataset.hotspotMarker = "";
+            marker.innerHTML = '<span class="dashboard-hotspot-marker__plus">+</span><span class="dashboard-hotspot-marker__label"></span>';
+            stage.appendChild(marker);
+            row._marker = marker;
+            marker._row = row;
+            positionMarker(row);
+            updateMarkerLabel(row);
+            bindMarkerDrag(marker, row);
+            return marker;
+        }
+
+        function bindMarkerDrag(marker, row) {
+            let dragging = false;
+            let moved = false;
+            marker.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                dragging = true;
+                moved = false;
+                marker.setPointerCapture(event.pointerId);
+                marker.classList.add("is-dragging");
+            });
+            marker.addEventListener("pointermove", (event) => {
+                if (!dragging) {
+                    return;
+                }
+                moved = true;
+                const rect = stage.getBoundingClientRect();
+                const x = clampPercent(((event.clientX - rect.left) / rect.width) * 100);
+                const y = clampPercent(((event.clientY - rect.top) / rect.height) * 100);
+                rowField(row, "pos_x").value = x.toFixed(2);
+                rowField(row, "pos_y").value = y.toFixed(2);
+                marker.style.left = x + "%";
+                marker.style.top = y + "%";
+            });
+            function endDrag() {
+                if (!dragging) {
+                    return;
+                }
+                dragging = false;
+                marker.classList.remove("is-dragging");
+                if (!moved) {
+                    highlightRow(row);
+                }
+            }
+            marker.addEventListener("pointerup", endDrag);
+            marker.addEventListener("pointercancel", endDrag);
+        }
+
+        function highlightRow(row) {
+            list.querySelectorAll("[data-hotspot-form]").forEach((other) => other.classList.remove("is-active"));
+            row.classList.add("is-active");
+            if (row._marker) {
+                stage.querySelectorAll("[data-hotspot-marker]").forEach((m) => m.classList.remove("is-active"));
+                row._marker.classList.add("is-active");
+            }
+            const select = row.querySelector("select");
+            if (select) {
+                select.focus();
+            }
+        }
+
+        function bindRow(row) {
+            const removeButton = row.querySelector("[data-remove-form]");
+            if (removeButton) {
+                removeButton.addEventListener("click", () => removeRow(row));
+            }
+            const select = row.querySelector("select");
+            if (select) {
+                select.addEventListener("change", () => {
+                    updateMarkerLabel(row);
+                    updateRowThumb(row);
+                });
+                select.addEventListener("focus", () => highlightRow(row));
+            }
+        }
+
+        function removeRow(row) {
+            const idInput = rowField(row, "id");
+            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            rememberDeletedId(deletedHotspotInput, idInput && idInput.value);
+            if (deleteInput) {
+                deleteInput.checked = true;
+            }
+            row.hidden = true;
+            if (row._marker) {
+                row._marker.remove();
+                row._marker = null;
+            }
+            refreshIndexes();
+        }
+
+        function addHotspot(x, y) {
+            const index = Number.parseInt(totalInput.value, 10);
+            const html = template.innerHTML.replaceAll("__prefix__", index);
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = html.trim();
+            const row = wrapper.firstElementChild;
+            list.appendChild(row);
+            totalInput.value = index + 1;
+            rowField(row, "pos_x").value = x.toFixed(2);
+            rowField(row, "pos_y").value = y.toFixed(2);
+            bindRow(row);
+            createMarker(row);
+            refreshIndexes();
+            highlightRow(row);
+        }
+
+        stage.addEventListener("click", (event) => {
+            if (event.target.closest("[data-hotspot-marker]")) {
+                return;
+            }
+            if (!stage.classList.contains("has-image")) {
+                return;
+            }
+            const rect = stage.getBoundingClientRect();
+            const x = clampPercent(((event.clientX - rect.left) / rect.width) * 100);
+            const y = clampPercent(((event.clientY - rect.top) / rect.height) * 100);
+            addHotspot(x, y);
+        });
+
+        list.querySelectorAll("[data-hotspot-form]").forEach((row) => {
+            bindRow(row);
+            createMarker(row);
+            updateRowThumb(row);
+        });
+        refreshIndexes();
+    }
+
+    const deletedHotspotInput = form.querySelector("[data-deleted-hotspot-ids]");
+
     setupFormset("items", deletedItemInput);
     setupRichTextToolbar();
     setupImages();
+    setupHotspots();
 })();
 </script>
 {% endblock %}

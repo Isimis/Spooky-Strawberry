@@ -25,12 +25,14 @@ from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
 from core.models import Message, MessageTemplate, NewsletterSubscriber, SiteSettings
+from core.mailer import BASE_LAYOUT_KEY, send_message
 from dashboard.models import DataQualityIssue
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
-from outfits.models import Outfit, OutfitImage, OutfitItem
+from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
 
 from .forms import (
     OutfitDashboardForm,
+    OutfitHotspotFormSet,
     OutfitImageFormSet,
     OutfitItemFormSet,
     ArticleDashboardForm,
@@ -352,27 +354,62 @@ def build_message_summary():
 @staff_required
 @require_http_methods(["GET", "POST"])
 def message_compose(request):
-    templates = list(MessageTemplate.objects.filter(is_active=True).order_by("-is_system", "name"))
+    templates = list(
+        MessageTemplate.objects.filter(is_active=True)
+        .exclude(system_key=BASE_LAYOUT_KEY)
+        .order_by("-is_system", "name")
+    )
+    recipients = request.session.get("compose_recipients") or []
+
     if request.method == "POST":
         subject = request.POST.get("subject", "").strip()
         body_html = request.POST.get("body_html", "")
-        to_email = request.POST.get("to_email", "").strip()
         template_id = request.POST.get("template") or None
         template = MessageTemplate.objects.filter(pk=template_id).first() if template_id else None
 
-        message = Message.objects.create(
-            direction=Message.DIRECTION_OUTBOUND,
-            status=Message.STATUS_SENT,
-            subject=subject,
-            body_html=body_html,
-            to_email=to_email,
-            from_email=request.user.email or "",
-            template=template,
-            sent_at=timezone.now(),
-        )
-        # Realna wysyłka maila zostanie podpięta przy integracji skrzynki.
-        messages.success(request, "Wiadomość zapisana w skrzynce (wysyłka maila zostanie podpięta z realną pocztą).")
-        return redirect("dashboard:message_detail", pk=message.pk)
+        single = request.POST.get("to_email", "").strip()
+        targets = recipients if recipients else ([single] if single else [])
+        if not targets:
+            messages.error(request, "Podaj odbiorcę wiadomości.")
+            return redirect("dashboard:message_compose")
+
+        sent, failed = [], []
+        for email in targets:
+            user = User.objects.filter(email__iexact=email).first()
+            context = {"first_name": user.first_name if user else "", "email": email}
+            try:
+                # Nadawcą jest uwierzytelniona skrzynka (DEFAULT_FROM_EMAIL), żeby
+                # serwer SMTP nie odrzucił maila przy niezgodnym adresie „od”.
+                send_message(
+                    subject=subject,
+                    body_html=body_html,
+                    to_email=email,
+                    context=context,
+                    template=template,
+                )
+                sent.append(email)
+            except Exception:
+                failed.append(email)
+
+        request.session.pop("compose_recipients", None)
+
+        if sent and not failed:
+            label = "odbiorcy" if len(sent) == 1 else "odbiorców"
+            messages.success(request, f"Wysłano wiadomość do {len(sent)} {label}.")
+        elif sent and failed:
+            messages.warning(
+                request,
+                f"Wysłano do {len(sent)} odbiorców. Nie udało się: {', '.join(failed)}.",
+            )
+        else:
+            messages.error(request, "Nie udało się wysłać wiadomości. Sprawdź konfigurację skrzynki.")
+            return redirect("dashboard:message_compose")
+
+        if len(sent) == 1:
+            last = Message.objects.filter(to_email=sent[0]).order_by("-created_at").first()
+            if last:
+                return redirect("dashboard:message_detail", pk=last.pk)
+        return redirect("dashboard:model_list", model_slug="messages")
 
     templates_json = json.dumps(
         {str(t.pk): {"subject": t.subject, "body_html": t.body_html} for t in templates}
@@ -384,6 +421,53 @@ def message_compose(request):
             "config": get_required_config("messages"),
             "templates": templates,
             "templates_json": templates_json,
+            "recipients": recipients,
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_POST
+def bulk_compose(request):
+    """Zbiera zaznaczone adresy z listy i przerzuca do edytora wiadomości."""
+    raw_emails = request.POST.getlist("emails")
+    cleaned, seen = [], set()
+    for email in raw_emails:
+        email = (email or "").strip()
+        key = email.lower()
+        if email and key not in seen:
+            seen.add(key)
+            cleaned.append(email)
+
+    back = request.POST.get("back", "")
+    # Tylko ścieżki względne — nie pozwalamy przekierować poza panel.
+    fallback = back if back.startswith("/") and not back.startswith("//") else reverse("dashboard:home")
+    if not cleaned:
+        messages.error(request, "Zaznacz przynajmniej jednego odbiorcę.")
+        return redirect(fallback)
+
+    request.session["compose_recipients"] = cleaned
+    return redirect("dashboard:message_compose")
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
+def base_layout_edit(request):
+    """Edycja szablonu bazowego (wzorka), w który owijamy każdego maila."""
+    template = MessageTemplate.objects.filter(system_key=BASE_LAYOUT_KEY).first()
+    if template is None:
+        raise Http404("Brak szablonu bazowego.")
+    if request.method == "POST":
+        template.body_html = request.POST.get("body_html", "")
+        template.save(update_fields=["body_html", "updated_at"])
+        messages.success(request, "Szablon bazowy zapisany.")
+        return redirect("dashboard:base_layout_edit")
+    return render(
+        request,
+        "dashboard/base_layout_form.html",
+        {
+            "template": template,
             "sections": get_sections(),
         },
     )
@@ -419,6 +503,8 @@ def build_email_template_row(template):
 @require_http_methods(["GET", "POST"])
 def email_template_edit(request, pk):
     template = get_object_or_404(MessageTemplate, pk=pk)
+    if template.system_key == BASE_LAYOUT_KEY:
+        return redirect("dashboard:base_layout_edit")
     if request.method == "POST":
         template.subject = request.POST.get("subject", "").strip()
         template.body_html = request.POST.get("body_html", "")
@@ -508,7 +594,7 @@ def model_list(request, model_slug):
         queryset = apply_user_admin_filters(request, queryset, active_filters)
         queryset = queryset.order_by("-date_joined")
     elif config.model is MessageTemplate:
-        queryset = queryset.order_by("-is_system", "name")
+        queryset = queryset.exclude(system_key=BASE_LAYOUT_KEY).order_by("-is_system", "name")
     elif config.model is Message:
         box = request.GET.get("box", "")
         if box == "inbound":
@@ -939,10 +1025,21 @@ def outfit_workspace(request, pk):
         prefix="images",
         queryset=OutfitImage.objects.filter(outfit=outfit),
     )
+    hotspot_formset = OutfitHotspotFormSet(
+        request.POST or None,
+        instance=outfit,
+        prefix="hotspots",
+        queryset=OutfitHotspot.objects.filter(outfit=outfit).select_related("product"),
+    )
 
     if request.method == "POST":
         new_image_files, rejected_image_names = filter_product_image_files(request.FILES.getlist("new_images"))
-        if outfit_form.is_valid() and item_formset.is_valid() and image_formset.is_valid():
+        if (
+            outfit_form.is_valid()
+            and item_formset.is_valid()
+            and image_formset.is_valid()
+            and hotspot_formset.is_valid()
+        ):
             if rejected_image_names:
                 messages.error(
                     request,
@@ -956,8 +1053,11 @@ def outfit_workspace(request, pk):
                     item_formset.save()
                     image_formset.instance = outfit
                     image_formset.save()
+                    hotspot_formset.instance = outfit
+                    hotspot_formset.save()
                     delete_workspace_outfit_images(outfit, request.POST.get("deleted_image_ids", ""))
                     delete_workspace_outfit_items(outfit, request.POST.get("deleted_item_ids", ""))
+                    delete_workspace_outfit_hotspots(outfit, request.POST.get("deleted_hotspot_ids", ""))
                     create_outfit_images(outfit, new_image_files)
                     sync_outfit_main_image(outfit)
                 messages.success(request, "Stylizacja zapisana razem z produktami i zdjęciami.")
@@ -972,6 +1072,8 @@ def outfit_workspace(request, pk):
             "outfit_form": outfit_form,
             "item_formset": item_formset,
             "image_formset": image_formset,
+            "hotspot_formset": hotspot_formset,
+            "hotspot_product_catalog": build_order_product_catalog_data(),
             "fieldsets": build_outfit_fieldsets(outfit_form),
             "featured_field": outfit_form["is_featured"],
             "image_accept": PRODUCT_IMAGE_ACCEPT,
@@ -2883,6 +2985,12 @@ def delete_workspace_outfit_items(outfit, raw_ids):
     item_ids = parse_id_list(raw_ids)
     if item_ids:
         OutfitItem.objects.filter(outfit=outfit, pk__in=item_ids).delete()
+
+
+def delete_workspace_outfit_hotspots(outfit, raw_ids):
+    hotspot_ids = parse_id_list(raw_ids)
+    if hotspot_ids:
+        OutfitHotspot.objects.filter(outfit=outfit, pk__in=hotspot_ids).delete()
 
 
 def parse_id_list(raw_ids):

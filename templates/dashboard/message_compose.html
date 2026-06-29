@@ -20,10 +20,20 @@
     {% csrf_token %}
 
     <div class="mailform__meta">
-        <label class="dashboard-field">
-            <span>Do (adres e-mail)</span>
-            <input class="dashboard-input" type="email" name="to_email" placeholder="klientka@email.pl" autocomplete="off">
-        </label>
+        {% if recipients %}
+            <div class="dashboard-field dashboard-field--full">
+                <span>Odbiorcy ({{ recipients|length }}) — zaznaczeni na liście</span>
+                <div class="dashboard-recipient-chips" role="list">
+                    {% for email in recipients %}<span class="dashboard-recipient-chip" role="listitem">{{ email }}</span>{% endfor %}
+                </div>
+                <small class="dashboard-muted">Każdy odbiorca dostaje osobną wiadomość. Aby zmienić listę, wróć i zaznacz inne osoby.</small>
+            </div>
+        {% else %}
+            <label class="dashboard-field">
+                <span>Do (adres e-mail)</span>
+                <input class="dashboard-input" type="email" name="to_email" placeholder="klientka@email.pl" autocomplete="off">
+            </label>
+        {% endif %}
         <label class="dashboard-field">
             <span>Zacznij od szablonu</span>
             <select class="dashboard-input" data-template-picker>

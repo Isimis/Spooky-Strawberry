@@ -25,6 +25,9 @@
                 <div class="t" data-gallery-thumb data-full="{{ image.image.url }}"><img src="{{ image.image.url }}" alt="{{ image.alt_text }}"></div>
             {% endfor %}
         </div>
+        <div class="pdp-gallery-data" hidden aria-hidden="true">
+            {% for image in product.images.all %}<span data-gallery-src data-full="{{ image.image.url }}" data-alt="{{ image.alt_text|default:product.name }}"></span>{% endfor %}
+        </div>
         {% endif %}
     </div>
 
@@ -87,15 +90,15 @@
 
         <div class="acc">
             {% if product.description %}
-            <div class="acc-i"><div class="acc-h">Szczegóły produktu <span class="acc-ic">+</span></div>
-                <div class="acc-c">{{ product.description|formatted_text }}</div></div>
+            <div class="acc-i"><div class="acc-h">Szczegóły produktu <span class="acc-ic">–</span></div>
+                <div class="acc-c open">{{ product.description|formatted_text }}</div></div>
             {% endif %}
             {% if product.styling_tips %}
-            <div class="acc-i"><div class="acc-h">Jak stylizować? <span class="acc-ic">+</span></div>
-                <div class="acc-c">{{ product.styling_tips|formatted_text }}</div></div>
+            <div class="acc-i"><div class="acc-h">Jak stylizować? <span class="acc-ic">–</span></div>
+                <div class="acc-c acc-c--tip open">{{ product.styling_tips|formatted_text }}</div></div>
             {% endif %}
             <div class="acc-i"><div class="acc-h">Dostawa i zwroty <span class="acc-ic">+</span></div>
-                <div class="acc-c">Wysyłka w 24h. Darmowa dostawa od 50 zł. Paczkomat, kurier lub poczta. 30 dni na zwrot bez podawania przyczyny.</div></div>
+                <div class="acc-c acc-c--ship">Wysyłka w 24h. Darmowa dostawa od 50 zł. Paczkomat, kurier lub poczta. 30 dni na zwrot bez podawania przyczyny.</div></div>
         </div>
     </div>
 </div>
@@ -111,7 +114,7 @@
 
 {% if related_products %}
 <section class="sec">
-    <div class="sec-head"><div><div class="eyebrow">Może Ci się spodobać</div><h2 class="h-lg">Podobne produkty</h2></div>
+    <div class="sec-head"><div><div class="eyebrow">Dobrane do Twojego klimatu</div><h2 class="h-lg">Pasujące produkty</h2></div>
         <a class="link" href="{% url 'catalog:product_list' %}">Wszystkie →</a></div>
     <div class="pgrid">
         {% for product in related_products %}{% include "catalog/includes/product_card.html" %}{% endfor %}

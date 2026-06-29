@@ -124,18 +124,34 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 dni
 SESSION_SAVE_EVERY_REQUEST = True  # odświeża ważność przy aktywności
 
-# E-mail — w dev wypisujemy na konsolę; realną skrzynkę podłączymy później.
-EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Spooky Strawberry <hello@spookystrawberry.pl>")
+# E-mail — skrzynka pocztowa (cyber-folks.pl).
+# Lokalnie, bez konfiguracji w .env, maile trafiają na konsolę. Po ustawieniu
+# EMAIL_HOST + EMAIL_HOST_USER (np. w .env) automatycznie wysyłamy realnie przez SMTP.
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "465"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+# Port 465 = SSL (domyślnie u cyber-folks), port 587 = STARTTLS.
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", EMAIL_PORT == 465)
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "20"))
+
+_default_email_backend = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST and EMAIL_HOST_USER
+    else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", _default_email_backend)
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    EMAIL_HOST_USER or "Spooky Strawberry <kontakt@spookystrawberry.pl>",
+)
+SERVER_EMAIL = os.environ.get("SERVER_EMAIL", EMAIL_HOST_USER or DEFAULT_FROM_EMAIL)
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Lokalnie (brak DATABASE_URL) używamy SQLite — zero konfiguracji.
-# Na serwerze ustawiamy DATABASE_URL, np.:
-#   postgres://user:haslo@host:5432/spooky
-# i wtedy automatycznie wchodzi PostgreSQL.
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL:

@@ -1,0 +1,27 @@
+{% load catalog_extras l10n %}
+{% comment %}
+Hotspot („plusik") na zdjęciu stylizacji.
+- klik w „+"  → dodaje produkt do koszyka (AJAX, jak reszta sklepu),
+- najechanie → podgląd produktu (zdjęcie + nazwa + cena),
+- klik w podgląd → przejście do karty produktu.
+Wymaga w kontekście: product, pos_x, pos_y (procenty, środek punktu).
+{% endcomment %}
+<div class="dot-wrap" style="left:{{ pos_x|unlocalize }}%;top:{{ pos_y|unlocalize }}%">
+    <form method="post" action="{% url 'cart:add' %}" class="js-cart-add dot-form">
+        {% csrf_token %}
+        <input type="hidden" name="variant_id" value="{% if product.default_variant %}{{ product.default_variant.id }}{% endif %}">
+        <input type="hidden" name="quantity" value="1">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="dot" aria-label="Dodaj „{{ product.name }}” do koszyka">+</button>
+    </form>
+    <a class="dot-card" href="{{ product.get_absolute_url }}">
+        {% with img=product.main_image %}
+            {% if img %}<img src="{{ img.image.url }}" alt="{{ product.name }}">{% else %}<span class="dot-card-ph"></span>{% endif %}
+        {% endwith %}
+        <span class="dc-info">
+            <b>{{ product.name }}</b>
+            <span class="dc-cat">{{ product.category.name }}</span>
+            <span class="dc-price">{{ product.current_price|money }}</span>
+        </span>
+    </a>
+</div>

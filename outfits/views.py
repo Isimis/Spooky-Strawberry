@@ -38,6 +38,8 @@ def outfit_detail(request, slug):
             "items__product__images",
             "items__variant__color",
             "items__variant__size",
+            "hotspots__product__images",
+            "hotspots__product__category",
         ),
         slug=slug,
         status=Outfit.STATUS_ACTIVE,

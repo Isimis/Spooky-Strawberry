@@ -8,9 +8,21 @@
     <div>
         <div class="look-hero" style="{% with main=outfit.main_image %}{% if main %}background-image:url('{{ main.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ outfit.aesthetics.all.0.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}{% endwith %}">
             {% if outfit.is_featured %}<span class="ltag">Polecana stylizacja</span>{% endif %}
-            {% for item in outfit.items.all|slice:":3" %}
-                <a class="dot" href="{{ item.product.get_absolute_url }}" style="top:{{ forloop.counter0|add:2 }}5%;left:{{ forloop.counter|add:2 }}0%">+</a>
-            {% endfor %}
+            {% if outfit.hotspots.all %}
+                {% for hs in outfit.hotspots.all %}
+                    {% include "outfits/includes/hotspot.html" with product=hs.product pos_x=hs.pos_x pos_y=hs.pos_y %}
+                {% endfor %}
+            {% else %}
+                {% for item in outfit.items.all|slice:":3" %}
+                    {% if forloop.counter == 1 %}
+                        {% include "outfits/includes/hotspot.html" with product=item.product pos_x="32" pos_y="28" %}
+                    {% elif forloop.counter == 2 %}
+                        {% include "outfits/includes/hotspot.html" with product=item.product pos_x="46" pos_y="46" %}
+                    {% else %}
+                        {% include "outfits/includes/hotspot.html" with product=item.product pos_x="60" pos_y="64" %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         </div>
     </div>
     <div>
@@ -18,7 +30,7 @@
         <div class="eyebrow">{% for a in outfit.aesthetics.all %}{{ a.name }}{% if not forloop.last %} · {% endif %}{% endfor %} · {{ outfit.items.count }} {% if outfit.items.count == 1 %}element{% else %}elementy{% endif %}</div>
         <h1 class="h-md" style="font-size:28px;margin:6px 0 10px">{{ outfit.name }}</h1>
         {% if outfit.short_description %}<p class="serif-it muted" style="font-size:15px;margin-bottom:6px">„{{ outfit.short_description }}”</p>{% endif %}
-        {% if outfit.mood_description %}<div class="serif-it muted" style="font-size:15px;margin-bottom:6px">{{ outfit.mood_description|formatted_text }}</div>{% endif %}
+        {% if outfit.mood_description and outfit.mood_description != outfit.short_description %}<div class="serif-it muted" style="font-size:15px;margin-bottom:6px">{{ outfit.mood_description|formatted_text }}</div>{% endif %}
         {% if outfit.styling_tips %}<div style="font-size:14px;color:var(--ink-soft);margin-bottom:6px">{{ outfit.styling_tips|formatted_text }}</div>{% endif %}
 
         <h2 class="h-md" style="font-size:16px;margin:14px 0 2px">Produkty w zestawie</h2>

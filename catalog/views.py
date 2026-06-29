@@ -128,6 +128,44 @@ def product_list(request):
     )
 
 
+def get_related_products(product, limit=4):
+    """Produkty do sekcji „Pasujące produkty".
+
+    Najpierw produkty o wspólnej estetyce (w losowej kolejności), a potem
+    losowe dopełnienie pozostałymi produktami — tak, by sekcja zawsze była
+    wypełniona i za każdym razem trochę inna.
+    """
+    base = (
+        Product.objects.filter(status=Product.STATUS_ACTIVE)
+        .exclude(pk=product.pk)
+        .prefetch_related("images", "aesthetics", "variants__color", "variants__size")
+    )
+
+    selected = []
+    seen = {product.pk}
+
+    def take_from(queryset):
+        for candidate in queryset:
+            if candidate.pk in seen:
+                continue
+            selected.append(candidate)
+            seen.add(candidate.pk)
+            if len(selected) >= limit:
+                return True
+        return False
+
+    # 1) wspólna estetyka, w losowej kolejności
+    aesthetic_ids = list(product.aesthetics.values_list("id", flat=True))
+    if aesthetic_ids:
+        aesthetic_matches = base.filter(aesthetics__in=aesthetic_ids).distinct().order_by("?")
+        if take_from(aesthetic_matches):
+            return selected
+
+    # 2) losowe dopełnienie pozostałymi produktami
+    take_from(base.order_by("?"))
+    return selected
+
+
 def product_detail(request, slug):
     product = get_object_or_404(
         Product.objects.select_related("category").prefetch_related(
@@ -142,12 +180,7 @@ def product_detail(request, slug):
     selected_variant = get_selected_variant(product, request.GET.get("variant"))
     track_event(request, "product_view", product=product, variant=selected_variant)
 
-    related_products = (
-        Product.objects.filter(status=Product.STATUS_ACTIVE, category=product.category)
-        .exclude(pk=product.pk)
-        .prefetch_related("images", "aesthetics", "variants__color", "variants__size")
-        .order_by("sort_order", "-created_at")[:4]
-    )
+    related_products = get_related_products(product, limit=4)
     related_outfits = (
         Outfit.objects.filter(status=Outfit.STATUS_ACTIVE, products=product)
         .prefetch_related("images", "items__product")

@@ -1,4 +1,4 @@
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
@@ -152,3 +152,47 @@ class OutfitImage(models.Model):
 
     def __str__(self):
         return f"Image for {self.outfit.name}"
+
+
+class OutfitHotspot(models.Model):
+    """Klikalny punkt („plusik") na zdjęciu stylizacji, kierujący do produktu.
+
+    Pozycja jest zapisywana w procentach (0–100) względem szerokości/wysokości
+    zdjęcia, dzięki czemu skaluje się poprawnie na każdym ekranie.
+    """
+
+    outfit = models.ForeignKey(
+        Outfit,
+        on_delete=models.CASCADE,
+        related_name="hotspots",
+    )
+    product = models.ForeignKey(
+        "catalog.Product",
+        on_delete=models.CASCADE,
+        related_name="outfit_hotspots",
+    )
+    pos_x = models.DecimalField(
+        "Pozycja X (%)",
+        max_digits=5,
+        decimal_places=2,
+        default=50,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Pozycja w poziomie od lewej krawędzi zdjęcia (0–100%).",
+    )
+    pos_y = models.DecimalField(
+        "Pozycja Y (%)",
+        max_digits=5,
+        decimal_places=2,
+        default=50,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Pozycja w pionie od górnej krawędzi zdjęcia (0–100%).",
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Punkt na zdjęciu (hotspot)"
+        verbose_name_plural = "Punkty na zdjęciu (hotspots)"
+
+    def __str__(self):
+        return f"{self.outfit.name} → {self.product.name}"

@@ -1,0 +1,67 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Szablon bazowy maili | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Szablon bazowy</p>
+        <h1>Wygląd maili (wzór)</h1>
+        <p>Wspólna ramka wszystkich maili — nagłówek z logo, obramowanie i stopka. Treść każdej
+           wiadomości wstawiamy w miejsce znacznika <code>{% verbatim %}{{ content }}{% endverbatim %}</code>.</p>
+    </div>
+    <div class="dashboard-heading__actions">
+        <a href="{% url 'dashboard:model_list' 'email-templates' %}" class="button button--secondary">← Szablony maili</a>
+        <button type="submit" form="base-layout-form" class="button">Zapisz wzór</button>
+    </div>
+</section>
+
+<form id="base-layout-form" method="post" class="mailform">
+    {% csrf_token %}
+
+    <div class="mailform__meta">
+        <div class="mailform__system-note">
+            <span class="dashboard-status-pill dashboard-status-pill--best">Szablon bazowy</span>
+            <p>Edytujesz tylko ramkę maila. Pamiętaj, by zostawić znacznik
+               <code>{% verbatim %}{{ content }}{% endverbatim %}</code> — bez niego treść nie ma się gdzie pojawić.</p>
+        </div>
+    </div>
+
+    <div class="mailcomposer" data-mailcomposer>
+        <div class="mailcomposer__edit">
+            <div class="mailcomposer__editor">
+                <div class="mailcomposer__toolbar" role="toolbar" aria-label="Formatowanie treści">
+                    <button type="button" class="mailcomposer__tool mailcomposer__tool--right" data-mc-source title="Edytuj kod HTML">&lt;/&gt; HTML</button>
+                </div>
+                <div class="mailcomposer__area" contenteditable="true" data-mc-area
+                     aria-label="Kod szablonu bazowego" data-placeholder="Kod HTML ramki maila…">{{ template.body_html|safe }}</div>
+                <textarea class="mailcomposer__source" name="body_html" data-mc-input hidden spellcheck="false">{{ template.body_html }}</textarea>
+            </div>
+            <p class="mailcomposer__hint">Kliknij <b>&lt;/&gt; HTML</b>, aby edytować kod ramki ręcznie. Znacznik
+               <code>{% verbatim %}{{ content }}{% endverbatim %}</code> zostaje zastąpiony treścią maila przy wysyłce.</p>
+        </div>
+
+        <aside class="mailcomposer__preview" aria-label="Podgląd ramki">
+            <div class="mailcomposer__preview-bar">
+                <span class="mailcomposer__preview-dot"></span>
+                <span class="mailcomposer__preview-dot"></span>
+                <span class="mailcomposer__preview-dot"></span>
+                <span class="mailcomposer__preview-title">Podgląd ramki</span>
+            </div>
+            <div class="mailcomposer__device">
+                <div class="mailcomposer__mail" data-mc-preview-body></div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="mailform__save-bar">
+        <a href="{% url 'dashboard:model_list' 'email-templates' %}" class="button button--secondary">Anuluj</a>
+        <button type="submit" class="button">Zapisz wzór</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/mail-editor.js' %}?v=20260624-mail"></script>
+{% endblock %}
