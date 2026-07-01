@@ -1,7 +1,13 @@
+from decimal import Decimal
+
 from django.test import TestCase
 from django.urls import reverse
 
 from catalog.models import Category, Product, ProductVariant
+from orders.models import ShippingMethod
+from orders.shipping import FREE_SHIPPING_THRESHOLD
+
+from .views import get_shipping_estimate
 
 
 class SessionCartTests(TestCase):
@@ -66,6 +72,35 @@ class SessionCartTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Twój koszyk jest pusty")
+
+
+class CartShippingEstimateTests(TestCase):
+    def setUp(self):
+        ShippingMethod.objects.update_or_create(
+            code="paczkomat",
+            defaults={
+                "name": "Paczkomat",
+                "description": "Dostawa do paczkomatu InPost w 1-2 dni robocze.",
+                "price": Decimal("10.99"),
+                "free_from_amount": FREE_SHIPPING_THRESHOLD,
+                "is_active": True,
+                "sort_order": 10,
+            },
+        )
+
+    def test_cart_below_free_shipping_threshold_uses_paczkomat_price(self):
+        shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("59.99"))
+
+        self.assertEqual(shipping_cost, Decimal("10.99"))
+        self.assertEqual(free_from, Decimal("60.00"))
+        self.assertEqual(remaining, Decimal("0.01"))
+
+    def test_cart_at_free_shipping_threshold_is_free(self):
+        shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("60.00"))
+
+        self.assertEqual(shipping_cost, Decimal("0.00"))
+        self.assertEqual(free_from, Decimal("60.00"))
+        self.assertEqual(remaining, Decimal("0.00"))
 
 
 class PersistentCartTests(TestCase):

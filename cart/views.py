@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,7 +6,7 @@ from django.views.decorators.http import require_POST
 
 from analytics.services import track_event
 from catalog.models import Product, ProductVariant
-from orders.models import ShippingMethod
+from orders.shipping import get_shipping_estimate as get_default_shipping_estimate
 
 from .services import (
     add_to_cart,
@@ -22,13 +20,7 @@ from .services import (
 
 
 def get_shipping_estimate(subtotal):
-    """Zwraca (koszt dostawy, próg darmowej dostawy, ile brakuje) na bazie najtańszej metody."""
-    method = ShippingMethod.objects.filter(is_active=True).order_by("price").first()
-    base = method.price if method else Decimal("8.99")
-    free_from = method.free_from_amount if method and method.free_from_amount else Decimal("50.00")
-    if subtotal >= free_from:
-        return Decimal("0.00"), free_from, Decimal("0.00")
-    return base, free_from, free_from - subtotal
+    return get_default_shipping_estimate(subtotal)
 
 
 def cart_detail(request):

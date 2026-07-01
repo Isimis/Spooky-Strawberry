@@ -9,6 +9,7 @@ from django.utils.text import slugify
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size, unique_slug_for
 from core.models import NewsletterSubscriber, SiteSettings
+from inventory.models import StockEntry
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
 
@@ -640,6 +641,7 @@ class ProductDashboardForm(DashboardFormMixin, forms.ModelForm):
             "styling_tips": "Krótka inspiracja: do czego pasuje produkt i jak go nosić.",
             "regular_price": "Podstawowa cena produktu.",
             "sale_price": "Cena po obniżce. Zostaw puste, jeśli produkt nie jest w promocji.",
+            "is_featured": "Wyróżnia produkt na stronie głównej i w sekcjach „polecane”.",
             "is_new": "Pokazuje etykietę „Nowość” na karcie produktu.",
             "is_bestseller": "Pokazuje etykietę „Bestseller” na karcie produktu.",
             "disable_low_stock_badge": "Wyłącza automatyczne „ostatnie sztuki” dla tego produktu, nawet gdy stan jest niski.",
@@ -842,6 +844,13 @@ class ProductVariantInlineForm(DashboardFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.apply_dashboard_widgets()
+        # Magazyn jest źródłem prawdy: dla istniejących wariantów stan zmienia się
+        # tylko przez ruchy magazynowe, więc pole jest tu tylko do odczytu.
+        if self.instance and self.instance.pk:
+            field = self.fields["stock_quantity"]
+            field.disabled = True
+            field.help_text = "Stan zmieniasz w Magazynie (przyjęcia/wydania)."
+            field.widget.attrs["readonly"] = True
 
 
 class ProductImageInlineForm(DashboardFormMixin, forms.ModelForm):
@@ -1125,3 +1134,79 @@ class UserAccountCreateForm(DashboardFormMixin, forms.ModelForm):
             profile.accepts_marketing = self.cleaned_data.get("accepts_marketing", False)
             profile.save(update_fields=["accepts_marketing"])
         return user
+
+
+class StockEntryForm(DashboardFormMixin, forms.ModelForm):
+    """Formularz przyjęcia magazynowego (zakup / reklamacja / korekta)."""
+
+    class Meta:
+        model = StockEntry
+        fields = [
+            "source",
+            "quantity",
+            "occurred_at",
+            "unit_price_net",
+            "vat_rate",
+            "unit_price_gross",
+            "customs_amount",
+            "supplier_url",
+            "invoice",
+            "note",
+        ]
+        labels = {
+            "source": "Źródło",
+            "quantity": "Ilość sztuk",
+            "occurred_at": "Data",
+            "unit_price_net": "Cena netto (szt.)",
+            "vat_rate": "VAT (%)",
+            "unit_price_gross": "Cena brutto (szt.)",
+            "customs_amount": "Cło",
+            "supplier_url": "Link do produktu u dostawcy",
+            "invoice": "Faktura (załącznik)",
+            "note": "Notatka",
+        }
+        widgets = {
+            "occurred_at": forms.DateInput(attrs={"type": "date"}),
+            "supplier_url": forms.URLInput(attrs={"placeholder": "https://..."}),
+        }
+
+    # Źródła dostępne przy ręcznym przyjęciu (sprzedaż podpinamy automatycznie osobno).
+    ALLOWED_SOURCES = [
+        StockEntry.SOURCE_PURCHASE,
+        StockEntry.SOURCE_COMPLAINT,
+        StockEntry.SOURCE_ADJUSTMENT,
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_dashboard_widgets()
+        self.fields["source"].choices = [
+            (value, label)
+            for value, label in StockEntry.SOURCE_CHOICES
+            if value in self.ALLOWED_SOURCES
+        ]
+        self.fields["source"].initial = StockEntry.SOURCE_PURCHASE
+        if not self.is_bound and not self.initial.get("occurred_at"):
+            from django.utils import timezone
+
+            self.fields["occurred_at"].initial = timezone.localdate()
+        for name in ("unit_price_net", "vat_rate", "unit_price_gross", "customs_amount", "supplier_url", "note"):
+            self.fields[name].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        net = cleaned.get("unit_price_net")
+        vat = cleaned.get("vat_rate")
+        gross = cleaned.get("unit_price_gross")
+
+        # Uzupełnij brakujące pole z trójki netto / VAT / brutto (spójnie z JS).
+        if net is not None and vat is not None and gross is None:
+            cleaned["unit_price_gross"] = (net * (Decimal(1) + vat / Decimal(100))).quantize(Decimal("0.01"))
+        elif net is not None and gross is not None and vat is None and net != 0:
+            cleaned["vat_rate"] = ((gross / net - Decimal(1)) * Decimal(100)).quantize(Decimal("0.01"))
+        elif vat is not None and gross is not None and net is None:
+            cleaned["unit_price_net"] = (gross / (Decimal(1) + vat / Decimal(100))).quantize(Decimal("0.01"))
+
+        return cleaned
+
+

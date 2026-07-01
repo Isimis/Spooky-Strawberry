@@ -25,8 +25,11 @@ from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
 from core.models import Message, MessageTemplate, NewsletterSubscriber, SiteSettings
+from core.mailbox import MailboxConfigurationError, sync_mailbox
 from core.mailer import BASE_LAYOUT_KEY, send_message
 from dashboard.models import DataQualityIssue
+from inventory.models import StockEntry
+from inventory.services import recalculate_variant_stock
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
 
@@ -42,6 +45,7 @@ from .forms import (
     ProductImageFormSet,
     ProductVariantFormSet,
     SiteSettingsDashboardForm,
+    StockEntryForm,
     UserAccountCreateForm,
     UserAccountForm,
     build_model_form,
@@ -328,6 +332,8 @@ def user_account_detail(request, pk):
 
 def build_message_row(message):
     counterpart = message.from_email if message.direction == Message.DIRECTION_INBOUND else message.to_email
+    display_date = message.received_at if message.direction == Message.DIRECTION_INBOUND else message.sent_at
+    is_unread = message.direction == Message.DIRECTION_INBOUND and message.read_at is None
     return {
         "object": message,
         "subject": message.subject or "(bez tematu)",
@@ -336,7 +342,8 @@ def build_message_row(message):
         "direction_label": message.get_direction_display(),
         "status": message.status,
         "status_label": message.get_status_display(),
-        "created_at": message.created_at,
+        "is_unread": is_unread,
+        "created_at": display_date or message.created_at,
         "admin_url": reverse("dashboard:message_detail", args=[message.pk]),
     }
 
@@ -347,6 +354,10 @@ def build_message_summary():
         "total_count": queryset.count(),
         "inbound_count": queryset.filter(direction=Message.DIRECTION_INBOUND).count(),
         "outbound_count": queryset.filter(direction=Message.DIRECTION_OUTBOUND).count(),
+        "unread_count": queryset.filter(
+            direction=Message.DIRECTION_INBOUND,
+            read_at__isnull=True,
+        ).count(),
         "draft_count": queryset.filter(status=Message.STATUS_DRAFT).count(),
     }
 
@@ -429,6 +440,23 @@ def message_compose(request):
 
 @staff_required
 @require_POST
+def sync_messages(request):
+    try:
+        imported = sync_mailbox()
+    except MailboxConfigurationError as exc:
+        messages.error(request, str(exc))
+    except Exception:
+        messages.error(request, "Nie udało się połączyć ze skrzynką. Sprawdź dane IMAP i hasło.")
+    else:
+        if imported:
+            messages.success(request, f"Pobrano {len(imported)} nowych wiadomości.")
+        else:
+            messages.info(request, "Skrzynka jest aktualna. Nie ma nowych wiadomości.")
+    return redirect("dashboard:model_list", model_slug="messages")
+
+
+@staff_required
+@require_POST
 def bulk_compose(request):
     """Zbiera zaznaczone adresy z listy i przerzuca do edytora wiadomości."""
     raw_emails = request.POST.getlist("emails")
@@ -476,6 +504,9 @@ def base_layout_edit(request):
 @staff_required
 def message_detail(request, pk):
     message = get_object_or_404(Message.objects.select_related("template"), pk=pk)
+    if message.direction == Message.DIRECTION_INBOUND and message.read_at is None:
+        message.read_at = timezone.now()
+        message.save(update_fields=["read_at"])
     return render(
         request,
         "dashboard/message_detail.html",
@@ -739,6 +770,23 @@ def model_list(request, model_slug):
     )
 
 
+def seed_variant_opening_balances(variant_formset, user):
+    """Dla nowo utworzonych wariantów zapisuje początkowy stan jako wpis magazynowy.
+
+    Pierwsze wprowadzenie ilości w zakładce Produkty jest bilansem otwarcia; dalsze zmiany
+    stanu robi się już przez przyjęcia w Magazynie.
+    """
+    for variant in variant_formset.new_objects:
+        if variant.stock_quantity:
+            StockEntry.objects.create(
+                variant=variant,
+                direction=StockEntry.DIRECTION_IN,
+                source=StockEntry.SOURCE_OPENING,
+                quantity=variant.stock_quantity,
+                created_by=user if getattr(user, "pk", None) else None,
+            )
+
+
 def seed_product_low_stock_defaults(form):
     """Ustawia początkowe wartości „ostatnich sztuk” dla nowego produktu na bazie Ustawień strony."""
     settings_obj = SiteSettings.load()
@@ -755,6 +803,8 @@ def model_create(request, model_slug):
     if config.readonly:
         messages.info(request, "Dane analityczne są zapisywane automatycznie i nie można dodawać ich ręcznie.")
         return redirect("dashboard:model_list", model_slug=config.slug)
+    if config.model is Product:
+        return redirect("dashboard:product_create_workspace")
     if config.model is Outfit:
         return redirect("dashboard:outfit_create_workspace")
     if config.model is Article:
@@ -898,6 +948,39 @@ def model_delete(request, model_slug, pk):
 
 @staff_required
 @require_http_methods(["GET", "POST"])
+def product_create_workspace(request):
+    product = Product()
+    product_form = ProductDashboardForm(request.POST or None, request.FILES or None, instance=product, prefix="product")
+
+    if request.method == "POST":
+        if product_form.is_valid():
+            product = product_form.save()
+            messages.success(request, "Produkt utworzony. Teraz dodaj warianty i zdjęcia.")
+            return redirect("dashboard:product_workspace", pk=product.pk)
+        messages.error(request, "Nie udało się utworzyć produktu. Sprawdź błędy w formularzu.")
+    else:
+        seed_product_low_stock_defaults(product_form)
+
+    return render(
+        request,
+        "dashboard/product_workspace.html",
+        {
+            "product": None,
+            "product_form": product_form,
+            "variant_formset": None,
+            "image_formset": None,
+            "quality_issues": None,
+            "fieldsets": build_product_fieldsets(product_form),
+            "featured_field": product_form["is_featured"],
+            "image_accept": PRODUCT_IMAGE_ACCEPT,
+            "product_stats": None,
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_http_methods(["GET", "POST"])
 def product_workspace(request, pk):
     product = get_object_or_404(
         Product.objects.select_related("category").prefetch_related(
@@ -945,6 +1028,9 @@ def product_workspace(request, pk):
                     delete_workspace_variants(product, request.POST.get("deleted_variant_ids", ""))
                     create_product_images(product, new_image_files)
                     sync_product_main_image(product)
+                    seed_variant_opening_balances(variant_formset, request.user)
+                    for variant in ProductVariant.objects.filter(product=product):
+                        recalculate_variant_stock(variant)
                     refresh_product_quality_issues(product)
                 messages.success(request, "Produkt zapisany razem z wariantami i zdjęciami.")
                 return redirect("dashboard:product_workspace", pk=product.pk)
@@ -1233,6 +1319,141 @@ def order_item_detail(request, pk):
             "sections": get_sections(),
         },
     )
+
+
+def build_stock_entry_row(entry):
+    invoice_url = ""
+    if entry.invoice:
+        try:
+            invoice_url = entry.invoice.url
+        except ValueError:
+            invoice_url = ""
+    return {
+        "object": entry,
+        "occurred_at": entry.occurred_at,
+        "direction": entry.direction,
+        "is_in": entry.direction == StockEntry.DIRECTION_IN,
+        "source_label": entry.get_source_display(),
+        "signed_quantity": entry.signed_quantity,
+        "quantity": entry.quantity,
+        "unit_price_net": entry.unit_price_net,
+        "vat_rate": entry.vat_rate,
+        "unit_price_gross": entry.unit_price_gross,
+        "customs_amount": entry.customs_amount,
+        "invoice_url": invoice_url,
+        "supplier_url": entry.supplier_url,
+        "note": entry.note,
+        "created_by": entry.created_by,
+        "delete_url": reverse("dashboard:warehouse_delete_entry", args=[entry.pk]),
+    }
+
+
+def build_warehouse_variant(variant):
+    entries = list(variant.stock_entries.all())
+    return {
+        "object": variant,
+        "label": str(variant),
+        "color": variant.color.name if variant.color else "",
+        "size": variant.size.name if variant.size else "",
+        "sku": variant.sku or "",
+        "is_active": variant.is_active,
+        "stock_quantity": variant.stock_quantity,
+        "entries": [build_stock_entry_row(entry) for entry in entries],
+        "entry_count": len(entries),
+        "add_entry_url": reverse("dashboard:warehouse_add_entry", args=[variant.pk]),
+    }
+
+
+def build_warehouse_row(product):
+    image = product.main_image
+    image_url = ""
+    if image and image.image:
+        try:
+            image_url = image.image.url
+        except ValueError:
+            image_url = ""
+    variants = [build_warehouse_variant(v) for v in product.variants.all()]
+    return {
+        "object": product,
+        "name": product.name,
+        "category": product.category,
+        "admin_url": reverse("dashboard:product_workspace", args=[product.pk]),
+        "image_url": image_url,
+        "image_alt": (image.alt_text or product.name) if image else product.name,
+        "variants": variants,
+        "variant_count": len(variants),
+        "total_stock": sum(v["stock_quantity"] for v in variants),
+    }
+
+
+@staff_required
+def warehouse(request):
+    queryset = (
+        Product.objects.select_related("category")
+        .prefetch_related(
+            "images",
+            "variants__color",
+            "variants__size",
+            "variants__stock_entries__created_by",
+        )
+        .order_by("name")
+    )
+    query = request.GET.get("q", "").strip()
+    if query:
+        queryset = queryset.filter(name__icontains=query)
+
+    paginator = Paginator(queryset, 25)
+    page = paginator.get_page(request.GET.get("page"))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+
+    rows = [build_warehouse_row(product) for product in page.object_list]
+    return render(
+        request,
+        "dashboard/warehouse.html",
+        {
+            "rows": rows,
+            "page": page,
+            "query": query,
+            "query_string": query_params.urlencode(),
+            "stock_entry_form": StockEntryForm(),
+            "sections": get_sections(),
+        },
+    )
+
+
+@staff_required
+@require_POST
+def warehouse_add_entry(request, pk):
+    variant = get_object_or_404(ProductVariant.objects.select_related("product"), pk=pk)
+    form = StockEntryForm(request.POST, request.FILES)
+    if form.is_valid():
+        with transaction.atomic():
+            entry = form.save(commit=False)
+            entry.variant = variant
+            entry.direction = StockEntry.DIRECTION_IN
+            entry.created_by = request.user
+            entry.save()
+            recalculate_variant_stock(variant)
+        messages.success(request, f"Dodano przyjęcie: {variant} × {entry.quantity}.")
+    else:
+        error_summary = "; ".join(
+            f"{form.fields[field].label or field}: {', '.join(errors)}"
+            for field, errors in form.errors.items()
+        )
+        messages.error(request, f"Nie udało się dodać przyjęcia. {error_summary}")
+    return redirect(request.POST.get("next") or "dashboard:warehouse")
+
+
+@staff_required
+@require_POST
+def warehouse_delete_entry(request, pk):
+    entry = get_object_or_404(StockEntry.objects.select_related("variant"), pk=pk)
+    variant = entry.variant
+    entry.delete()
+    recalculate_variant_stock(variant)
+    messages.success(request, "Usunięto wpis magazynowy.")
+    return redirect(request.POST.get("next") or "dashboard:warehouse")
 
 
 @staff_required
@@ -3196,7 +3417,7 @@ def build_product_fieldsets(form):
         {
             "title": "Oznaczenia i etykiety",
             "description": "Etykiety na karcie produktu. „Promocja” pojawia się automatycznie, gdy ustawisz cenę promocyjną. „Ostatnie sztuki” pojawia się automatycznie, gdy stan spadnie do progu poniżej — chyba że je wyłączysz.",
-            "fields": [form[name] for name in ["is_new", "is_bestseller", "disable_low_stock_badge", "low_stock_threshold"]],
+            "fields": [form[name] for name in ["is_new", "is_bestseller", "is_featured", "disable_low_stock_badge", "low_stock_threshold"]],
         },
         {
             "title": "SEO",

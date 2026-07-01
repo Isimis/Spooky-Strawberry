@@ -9,7 +9,7 @@ class SiteSettings(models.Model):
     announcement_is_active = models.BooleanField(default=True)
     announcement_text = models.CharField(
         max_length=255,
-        default="🦇 Darmowa dostawa od 50 zł · 30 dni na zwrot",
+        default="🦇 Darmowa dostawa od 60 zł · 30 dni na zwrot",
         blank=True,
     )
 
@@ -192,6 +192,9 @@ class Message(models.Model):
     body_html = models.TextField(blank=True)
     from_email = models.EmailField(blank=True)
     to_email = models.EmailField(blank=True)
+    external_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    received_at = models.DateTimeField(null=True, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
     template = models.ForeignKey(
         MessageTemplate,
         on_delete=models.SET_NULL,
@@ -206,6 +209,7 @@ class Message(models.Model):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["direction", "created_at"], name="message_dir_created_idx"),
+            models.Index(fields=["direction", "read_at"], name="message_dir_read_idx"),
         ]
 
     def __str__(self):

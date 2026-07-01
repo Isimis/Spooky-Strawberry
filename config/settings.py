@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "cart",
     "analytics",
     "orders",
+    "inventory",
     "checkout",
     "blog",
     "accounts",
@@ -107,6 +108,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 "cart.context_processors.cart",
                 "core.context_processors.site_settings",
+                "dashboard.context_processors.unread_messages",
             ],
         },
     },
@@ -136,10 +138,15 @@ EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", EMAIL_PORT == 465)
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", False)
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "20"))
 
+# Prefiks doklejany do tematu KAŻDEGO maila.
+# Lokalnie DEBUG=True oznacza maile jako testowe; produkcja DEBUG=False zostaje bez prefiksu.
+_default_mail_subject_prefix = "[SERWER TESTOWY]" if DEBUG else ""
+MAIL_SUBJECT_PREFIX = os.environ.get("MAIL_SUBJECT_PREFIX", _default_mail_subject_prefix)
+
 _default_email_backend = (
-    "django.core.mail.backends.smtp.EmailBackend"
+    "core.mail_backends.PrefixedSMTPEmailBackend"
     if EMAIL_HOST and EMAIL_HOST_USER
-    else "django.core.mail.backends.console.EmailBackend"
+    else "core.mail_backends.PrefixedConsoleEmailBackend"
 )
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", _default_email_backend)
 DEFAULT_FROM_EMAIL = os.environ.get(
@@ -147,6 +154,15 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     EMAIL_HOST_USER or "Spooky Strawberry <kontakt@spookystrawberry.pl>",
 )
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", EMAIL_HOST_USER or DEFAULT_FROM_EMAIL)
+
+# IMAP - synchronizacja wiadomości przychodzących do panelowej skrzynki.
+MAILBOX_IMAP_HOST = os.environ.get("MAILBOX_IMAP_HOST", EMAIL_HOST)
+MAILBOX_IMAP_PORT = int(os.environ.get("MAILBOX_IMAP_PORT", "993"))
+MAILBOX_IMAP_USE_SSL = env_bool("MAILBOX_IMAP_USE_SSL", True)
+MAILBOX_IMAP_USER = os.environ.get("MAILBOX_IMAP_USER", EMAIL_HOST_USER)
+MAILBOX_IMAP_PASSWORD = os.environ.get("MAILBOX_IMAP_PASSWORD", EMAIL_HOST_PASSWORD)
+MAILBOX_IMAP_FOLDER = os.environ.get("MAILBOX_IMAP_FOLDER", "INBOX")
+MAILBOX_SYNC_LIMIT = int(os.environ.get("MAILBOX_SYNC_LIMIT", "50"))
 
 
 # Database

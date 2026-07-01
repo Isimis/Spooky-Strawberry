@@ -7,9 +7,13 @@
     <div>
         <p class="eyebrow">Komunikacja</p>
         <h1>Skrzynka</h1>
-        <p>Wiadomości przychodzące i wychodzące. Realną pocztę podłączymy później — teraz to miejsce na komunikację i wysyłkę z szablonów.</p>
+        <p>Wiadomości przychodzące i wychodzące z oficjalnej skrzynki sklepu.</p>
     </div>
     <div class="dashboard-heading__actions">
+        <form method="post" action="{% url 'dashboard:sync_messages' %}">
+            {% csrf_token %}
+            <button type="submit" class="button button--secondary">Odśwież pocztę</button>
+        </form>
         <a href="{% url 'dashboard:message_compose' %}" class="button">Napisz wiadomość</a>
     </div>
 </section>
@@ -18,7 +22,7 @@
     <article><span>Wszystkie</span><strong>{{ message_summary.total_count }}</strong><small>wiadomości</small></article>
     <article><span>Odebrane</span><strong>{{ message_summary.inbound_count }}</strong><small>przychodzące</small></article>
     <article><span>Wysłane</span><strong>{{ message_summary.outbound_count }}</strong><small>wychodzące</small></article>
-    <article><span>Szkice</span><strong>{{ message_summary.draft_count }}</strong><small>niewysłane</small></article>
+    <article><span>Nieprzeczytane</span><strong>{{ message_summary.unread_count }}</strong><small>do sprawdzenia</small></article>
 </section>
 
 <div class="dashboard-active-filters" style="margin-bottom:4px">
@@ -42,8 +46,11 @@
         </thead>
         <tbody>
             {% for row in rows %}
-                <tr>
-                    <td><a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.subject }}</a></td>
+                <tr class="{% if row.is_unread %}dashboard-message-row--unread{% endif %}">
+                    <td>
+                        <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.subject }}</a>
+                        {% if row.is_unread %}<span class="dashboard-unread-badge">Nowa</span>{% endif %}
+                    </td>
                     <td>{% if row.direction == "inbound" %}<span class="dashboard-status-pill dashboard-status-pill--active">Odebrana</span>{% else %}<span class="dashboard-status-pill dashboard-status-pill--best">Wysłana</span>{% endif %}</td>
                     <td><span class="dashboard-muted">{{ row.counterpart }}</span></td>
                     <td>{{ row.status_label }}</td>

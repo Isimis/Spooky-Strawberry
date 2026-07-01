@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load l10n %}
 
 {% block title %}Statystyki | Spooky Admin{% endblock %}
 
@@ -71,7 +72,7 @@
                     </div>
                     <p>{{ step.detail }}</p>
                     <div class="stats-funnel__bar">
-                        <i style="--progress: {{ step.width }}%"></i>
+                        <i style="--progress: {{ step.width|unlocalize }}%"></i>
                     </div>
                     <small>{{ step.rate }} względem poprzedniego kroku</small>
                 </article>
@@ -190,7 +191,7 @@
                 <article>
                     <time datetime="{{ row.date|date:'Y-m-d' }}">{{ row.label }}</time>
                     <div class="stats-day-list__bar">
-                        <i style="--progress: {{ row.width }}%"></i>
+                        <i style="--progress: {{ row.width|unlocalize }}%"></i>
                     </div>
                     <dl>
                         <div>
@@ -236,7 +237,7 @@
                             <span>{{ page.unique }} unikalnych użytkowników</span>
                         </div>
                         <b>{{ page.count }}</b>
-                        <i style="--progress: {{ page.width }}%"></i>
+                        <i style="--progress: {{ page.width|unlocalize }}%"></i>
                     </article>
                 {% endfor %}
             </div>
@@ -259,7 +260,7 @@
                         <div>
                             <span>{{ source.source }}</span>
                             <strong>{{ source.count }}</strong>
-                            <i style="--progress: {{ source.percent }}%"></i>
+                            <i style="--progress: {{ source.percent|unlocalize }}%"></i>
                         </div>
                     {% endfor %}
                 </div>
@@ -281,7 +282,7 @@
                         <div>
                             <span>{{ item.device }}</span>
                             <strong>{{ item.count }}</strong>
-                            <i style="--progress: {{ item.percent }}%"></i>
+                            <i style="--progress: {{ item.percent|unlocalize }}%"></i>
                         </div>
                     {% endfor %}
                 </div>

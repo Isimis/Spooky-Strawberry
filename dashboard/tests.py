@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
@@ -116,6 +117,7 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(list_resp.status_code, 200)
         self.assertTemplateUsed(list_resp, "dashboard/message_list.html")
         self.assertContains(list_resp, "Skrzynka")
+        self.assertContains(list_resp, "Odśwież pocztę")
 
         compose = self.client.post(
             reverse("dashboard:message_compose"),
@@ -128,6 +130,46 @@ class DashboardAccessTests(TestCase):
 
         detail = self.client.get(reverse("dashboard:message_detail", args=[message.pk]))
         self.assertContains(detail, "Cześć")
+
+    def test_unread_inbound_message_shows_in_topbar_and_marks_read(self):
+        from core.models import Message
+
+        message = Message.objects.create(
+            direction=Message.DIRECTION_INBOUND,
+            status=Message.STATUS_RECEIVED,
+            subject="Nowa odpowiedź",
+            body_html="<p>Treść odpowiedzi klientki.</p>",
+            from_email="klientka@example.pl",
+            to_email="kontakt@spookystrawberry.pl",
+            received_at=timezone.now(),
+        )
+
+        self.client.login(username="staff", password="pass")
+        home_response = self.client.get(reverse("dashboard:home"))
+        list_response = self.client.get(reverse("dashboard:model_list", args=["messages"]), {"box": "inbound"})
+        detail_response = self.client.get(reverse("dashboard:message_detail", args=[message.pk]))
+
+        self.assertContains(home_response, "dashboard-mail-alert is-hot")
+        self.assertContains(home_response, "<strong>1</strong>", html=True)
+        self.assertContains(list_response, "dashboard-message-row--unread")
+        self.assertContains(list_response, "Nowa")
+        self.assertContains(detail_response, "Wiadomość przychodząca")
+        message.refresh_from_db()
+        self.assertIsNotNone(message.read_at)
+
+        home_after_read = self.client.get(reverse("dashboard:home"))
+        self.assertNotContains(home_after_read, "dashboard-mail-alert is-hot")
+        self.assertContains(home_after_read, "<strong>0</strong>", html=True)
+
+    @patch("dashboard.views.sync_mailbox")
+    def test_message_sync_button_refreshes_mailbox(self, sync_mailbox_mock):
+        sync_mailbox_mock.return_value = []
+
+        self.client.login(username="staff", password="pass")
+        response = self.client.post(reverse("dashboard:sync_messages"))
+
+        self.assertRedirects(response, reverse("dashboard:model_list", args=["messages"]))
+        sync_mailbox_mock.assert_called_once_with()
 
     def test_bulk_compose_selects_recipients_and_sends(self):
         from django.core import mail
@@ -1259,6 +1301,7 @@ class DashboardAccessTests(TestCase):
         self.assertNotContains(detail_response, "Nowa nazwa w katalogu")
 
     def test_shipping_method_list_and_detail_use_custom_workspace(self):
+        ShippingMethod.objects.all().delete()
         shipping_method = ShippingMethod.objects.create(
             name="Paczkomat InPost",
             code="paczkomat-inpost",
@@ -1491,3 +1534,100 @@ class DashboardAccessTests(TestCase):
             shipping_total="0.00",
             grand_total=grand_total,
         )
+
+
+class WarehouseViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.staff_user = user_model.objects.create_user(username="whstaff", password="pass", is_staff=True)
+        self.regular_user = user_model.objects.create_user(username="whregular", password="pass", is_staff=False)
+        self.category = Category.objects.create(name="Magazynowa")
+        self.product = Product.objects.create(name="Choker", category=self.category, regular_price=Decimal("59.00"))
+        self.variant = ProductVariant.objects.create(product=self.product, stock_quantity=0, is_active=True)
+
+    def test_warehouse_requires_staff(self):
+        self.client.login(username="whregular", password="pass")
+        response = self.client.get(reverse("dashboard:warehouse"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("dashboard:login"), response["Location"])
+
+    def test_warehouse_renders_products(self):
+        self.client.login(username="whstaff", password="pass")
+        response = self.client.get(reverse("dashboard:warehouse"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "dashboard/warehouse.html")
+        self.assertContains(response, "Choker")
+
+    def test_add_entry_increases_stock(self):
+        from inventory.models import StockEntry
+
+        self.client.login(username="whstaff", password="pass")
+        response = self.client.post(
+            reverse("dashboard:warehouse_add_entry", args=[self.variant.pk]),
+            {
+                "source": StockEntry.SOURCE_PURCHASE,
+                "quantity": "5",
+                "occurred_at": timezone.localdate().isoformat(),
+                "unit_price_net": "10.00",
+                "vat_rate": "23",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 5)
+        entry = StockEntry.objects.get(variant=self.variant)
+        self.assertEqual(entry.direction, StockEntry.DIRECTION_IN)
+        self.assertEqual(entry.created_by, self.staff_user)
+        # brutto wyliczone serwerowo z netto + VAT
+        self.assertEqual(entry.unit_price_gross, Decimal("12.30"))
+
+    def test_delete_entry_recalculates_stock(self):
+        from inventory.models import StockEntry
+        from inventory.services import recalculate_variant_stock
+
+        entry = StockEntry.objects.create(
+            variant=self.variant, direction=StockEntry.DIRECTION_IN,
+            source=StockEntry.SOURCE_PURCHASE, quantity=7,
+        )
+        recalculate_variant_stock(self.variant)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 7)
+
+        self.client.login(username="whstaff", password="pass")
+        response = self.client.post(reverse("dashboard:warehouse_delete_entry", args=[entry.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 0)
+
+    def test_new_variant_in_workspace_creates_opening_entry(self):
+        from inventory.models import StockEntry
+
+        product = Product.objects.create(name="Kolczyki", category=self.category, regular_price=Decimal("39.00"))
+        self.client.login(username="whstaff", password="pass")
+        response = self.client.post(
+            reverse("dashboard:product_workspace", args=[product.pk]),
+            {
+                "product-name": product.name,
+                "product-category": self.category.pk,
+                "product-regular_price": "39.00",
+                "product-status": Product.STATUS_DRAFT,
+                "product-low_stock_threshold": "3",
+                "variants-TOTAL_FORMS": "1",
+                "variants-INITIAL_FORMS": "0",
+                "variants-MIN_NUM_FORMS": "0",
+                "variants-MAX_NUM_FORMS": "1000",
+                "variants-0-stock_quantity": "8",
+                "variants-0-sort_order": "0",
+                "variants-0-is_active": "on",
+                "images-TOTAL_FORMS": "0",
+                "images-INITIAL_FORMS": "0",
+                "images-MIN_NUM_FORMS": "0",
+                "images-MAX_NUM_FORMS": "1000",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        new_variant = product.variants.get()
+        opening = StockEntry.objects.get(variant=new_variant, source=StockEntry.SOURCE_OPENING)
+        self.assertEqual(opening.quantity, 8)
+        new_variant.refresh_from_db()
+        self.assertEqual(new_variant.stock_quantity, 8)

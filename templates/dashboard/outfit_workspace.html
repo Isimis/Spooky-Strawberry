@@ -622,7 +622,7 @@
                     return;
                 }
                 event.preventDefault();
-                const nextCard = getNextImageCard(imageGrid, event.clientY);
+                const nextCard = getNextImageCard(imageGrid, event.clientX, event.clientY);
                 if (nextCard) {
                     imageGrid.insertBefore(dragCard, nextCard);
                 } else {
@@ -715,19 +715,21 @@
             });
         }
 
-        function getNextImageCard(container, yPosition) {
+        function getNextImageCard(container, xPosition, yPosition) {
+            // Działa dla poziomego rzędu i dla siatki wielowierszowej:
+            // idziemy w kolejności DOM (wiersz po wierszu) i wstawiamy przed
+            // pierwszą kartą, która jest „za" kursorem.
             const cards = [...container.querySelectorAll("[data-image-card]:not([hidden]):not(.is-dragging)")];
-            return cards.reduce(
-                (closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = yPosition - box.top - box.height / 2;
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset, element: child };
-                    }
-                    return closest;
-                },
-                { offset: Number.NEGATIVE_INFINITY, element: null }
-            ).element;
+            for (const card of cards) {
+                const box = card.getBoundingClientRect();
+                if (yPosition < box.top) {
+                    return card;
+                }
+                if (yPosition <= box.bottom && xPosition < box.left + box.width / 2) {
+                    return card;
+                }
+            }
+            return null;
         }
     }
 

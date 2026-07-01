@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load l10n %}
 
 {% block title %}Newsletter | Spooky Admin{% endblock %}
 
@@ -200,7 +201,7 @@
                     <div>
                         <span>{{ source.label }}</span>
                         <strong>{{ source.active_count }} / {{ source.total_count }}</strong>
-                        <i style="--source-width: {{ source.bar_width }}%;"></i>
+                        <i style="--source-width: {{ source.bar_width|unlocalize }}%;"</i>
                         <small>{% if source.latest_at %}Ostatni zapis: {{ source.latest_at|date:"d.m.Y" }}{% else %}Brak zapisów{% endif %}</small>
                     </div>
                 {% endfor %}

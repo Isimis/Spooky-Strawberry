@@ -16,13 +16,14 @@
                 {% if product.has_sale_price %}<span class="badge badge-sale">-{{ product|discount_percent }}%</span>{% endif %}
             </div>
             {% with main=product.main_image %}
-                {% if main %}<img id="pdpMain" src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}">{% else %}<img id="pdpMain" src="{% load static %}{% static 'img/hero.png' %}" alt="{{ product.name }}">{% endif %}
+                {% if main %}<img id="pdpMain" src="{{ main.image.url }}" alt="{{ main.alt_text|default:product.name }}" data-variant="{% firstof main.variant.color.name main.variant.size.name '' %}">{% else %}<img id="pdpMain" src="{% load static %}{% static 'img/hero.png' %}" alt="{{ product.name }}" data-variant="">{% endif %}
             {% endwith %}
+            <span class="pdp-variant-tag" id="pdpVariantTag" hidden></span>
         </div>
         {% if product.images.all %}
         <div class="pdp-grid">
             {% for image in product.images.all|slice:":6" %}
-                <div class="t" data-gallery-thumb data-full="{{ image.image.url }}"><img src="{{ image.image.url }}" alt="{{ image.alt_text }}"></div>
+                <div class="t" data-gallery-thumb data-full="{{ image.image.url }}" data-variant="{% firstof image.variant.color.name image.variant.size.name '' %}"><img src="{{ image.image.url }}" alt="{{ image.alt_text }}"></div>
             {% endfor %}
         </div>
         <div class="pdp-gallery-data" hidden aria-hidden="true">
@@ -42,7 +43,7 @@
             <span class="badge badge-sale">-{{ product|discount_percent }}%</span>{% endif %}
         </div>
 
-        {% if product.styling_tips %}<p class="serif-it muted" style="font-size:14.5px;margin:10px 0 4px">„{{ product.styling_tips|truncatechars:120 }}”</p>{% endif %}
+        {% if product.styling_tips %}<p class="serif-it muted" style="font-size:14.5px;margin:10px 0 4px">„{{ product.styling_tips }}”</p>{% endif %}
 
         {% if color_options %}
         <div class="varrow">
@@ -98,7 +99,7 @@
                 <div class="acc-c acc-c--tip open">{{ product.styling_tips|formatted_text }}</div></div>
             {% endif %}
             <div class="acc-i"><div class="acc-h">Dostawa i zwroty <span class="acc-ic">+</span></div>
-                <div class="acc-c acc-c--ship">Wysyłka w 24h. Darmowa dostawa od 50 zł. Paczkomat, kurier lub poczta. 30 dni na zwrot bez podawania przyczyny.</div></div>
+                <div class="acc-c acc-c--ship">Wysyłka w 24h. Paczkomat 10,99 zł, kurier 13,99 zł. Darmowa dostawa od 60 zł. 30 dni na zwrot bez podawania przyczyny.</div></div>
         </div>
     </div>
 </div>

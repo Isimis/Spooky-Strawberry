@@ -1,5 +1,5 @@
 {% extends "dashboard/base.html" %}
-{% load catalog_extras %}
+{% load catalog_extras l10n %}
 
 {% block title %}Zamówienia | Spooky Admin{% endblock %}
 
@@ -160,7 +160,7 @@
                     <div>
                         <span>{{ row.label }}</span>
                         <strong>{{ row.count }}</strong>
-                        <i class="dashboard-order-status-bar--{{ row.class }}" style="--order-status-width: {{ row.bar_width }}%;"></i>
+                        <i class="dashboard-order-status-bar--{{ row.class }}" style="--order-status-width: {{ row.bar_width|unlocalize }}%;"</i>
                     </div>
                 {% endfor %}
             </div>

@@ -1,20 +1,25 @@
 {% extends "dashboard/base.html" %}
 
-{% block title %}{{ product.name }} | Spooky Admin{% endblock %}
+{% block title %}{% if product %}{{ product.name }}{% else %}Nowy produkt{% endif %} | Spooky Admin{% endblock %}
 
 {% block content %}
 <section class="dashboard-heading dashboard-heading--row">
     <div>
         <p class="eyebrow">Produkt</p>
-        <h1>{{ product.name }}</h1>
-        <p>Edytuj najważniejsze dane produktu, warianty, zdjęcia i SEO w jednym spokojnym widoku.</p>
+        <h1>{% if product %}{{ product.name }}{% else %}Nowy produkt{% endif %}</h1>
+        {% if product %}
+            <p>Edytuj najważniejsze dane produktu, warianty, zdjęcia i SEO w jednym spokojnym widoku.</p>
+        {% else %}
+            <p>Uzupełnij podstawy i zapisz produkt — potem dodasz warianty, zdjęcia i dopniesz SEO.</p>
+        {% endif %}
     </div>
     <div class="dashboard-heading__actions">
-        <a href="{{ product.get_absolute_url }}" class="button button--secondary">Podgląd w sklepie</a>
+        {% if product %}<a href="{{ product.get_absolute_url }}" class="button button--secondary">Podgląd w sklepie</a>{% endif %}
         <a href="{% url 'dashboard:model_list' 'products' %}" class="button button--secondary">Lista produktów</a>
     </div>
 </section>
 
+{% if product %}
 <section class="dashboard-product-summary" aria-label="Podsumowanie produktu">
     <article>
         <span>Status</span>
@@ -128,6 +133,7 @@
         <p>Nie znaleziono otwartych problemów danych dla tego produktu.</p>
     </section>
 {% endif %}
+{% endif %}
 
 <form method="post" enctype="multipart/form-data" class="dashboard-product-form" data-product-form>
     {% csrf_token %}
@@ -143,7 +149,7 @@
                         <h2>{{ fieldset.title }}</h2>
                         <p>{{ fieldset.description }}</p>
                     </div>
-                    <div class="dashboard-form-fields">
+                    <div class="dashboard-form-fields{% if fieldset.title == 'Oznaczenia i etykiety' %} dashboard-form-fields--badges{% endif %}">
                         {% for field in fieldset.fields %}
                             {% if field.name == "aesthetics" %}
                                 <div class="dashboard-field dashboard-field--choices">
@@ -184,6 +190,25 @@
                             {% endif %}
                         {% endfor %}
                     </div>
+                    {% if fieldset.title == "SEO" %}
+                        <div class="dashboard-seo-preview" data-seo-preview
+                             data-suffix=" — Spooky Strawberry"
+                             data-fallback-title="{% if product %}{{ product.name }}{% else %}Nazwa produktu{% endif %}"
+                             data-fallback-desc="{% if product %}{{ product.seo_description|default:product.description|striptags|truncatechars:160 }}{% endif %}">
+                            <span class="dashboard-seo-preview__tag">Podgląd w Google</span>
+                            <div class="dashboard-seo-preview__card">
+                                <div class="dashboard-seo-preview__site">
+                                    <span class="dashboard-seo-preview__favicon">🍓</span>
+                                    <div class="dashboard-seo-preview__meta">
+                                        <span class="dashboard-seo-preview__name">Spooky Strawberry</span>
+                                        <span class="dashboard-seo-preview__url">spookystrawberry.pl › produkt › {% if product %}{{ product.slug }}{% else %}nazwa-produktu{% endif %}</span>
+                                    </div>
+                                </div>
+                                <div class="dashboard-seo-preview__title" data-seo-title-out></div>
+                                <div class="dashboard-seo-preview__desc" data-seo-desc-out></div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </section>
             {% endfor %}
         </div>
@@ -194,6 +219,7 @@
                     <h2>Szybki podgląd</h2>
                     <p>Te dane pomagają szybko ocenić, czy produkt jest gotowy do pokazania w sklepie.</p>
                 </div>
+                {% if product %}
                 <dl class="dashboard-status-list">
                     <div>
                         <dt>Widoczny w sklepie</dt>
@@ -212,18 +238,14 @@
                         <dd class="dashboard-status-list__slug">{{ product.slug }}</dd>
                     </div>
                 </dl>
-                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox dashboard-featured-control" data-field-name="{{ featured_field.name }}">
-                    <span>{{ featured_field.label }}</span>
-                    {{ featured_field }}
-                    {% if featured_field.help_text %}
-                        <small>{{ featured_field.help_text }}</small>
-                    {% endif %}
-                    {{ featured_field.errors }}
-                </label>
+                {% else %}
+                <p class="dashboard-empty-note">Status, dostępność i adres URL pojawią się tu po pierwszym zapisie.</p>
+                {% endif %}
             </section>
         </aside>
     </div>
 
+    {% if product %}
     <section class="dashboard-form-panel dashboard-variant-panel">
         <div class="dashboard-form-panel__heading dashboard-heading--row">
             <div>
@@ -332,6 +354,7 @@
                             <span>Brak zdjęcia</span>
                         {% endif %}
                         <span class="dashboard-main-image-badge">Główne</span>
+                        <span class="dashboard-image-variant-tag" data-variant-tag></span>
                     </div>
                     <label class="dashboard-field">
                         <span>{{ form.variant.label }}</span>
@@ -345,10 +368,19 @@
             {% endfor %}
         </div>
     </section>
+    {% else %}
+    <section class="dashboard-quality-panel dashboard-quality-panel--ok">
+        <div>
+            <p class="eyebrow">Następny krok</p>
+            <h2>Zapisz produkt, żeby dodać warianty i zdjęcia</h2>
+        </div>
+        <p>Po pierwszym zapisie pojawią się sekcje wariantów (kolory, rozmiary, stany) oraz galeria zdjęć.</p>
+    </section>
+    {% endif %}
 
     <div class="dashboard-save-bar">
-        <button type="submit" class="button">Zapisz produkt</button>
-        <a href="{% url 'dashboard:model_delete' 'products' product.pk %}">Usuń produkt</a>
+        <button type="submit" class="button">{% if product %}Zapisz produkt{% else %}Utwórz produkt{% endif %}</button>
+        {% if product %}<a href="{% url 'dashboard:model_delete' 'products' product.pk %}">Usuń produkt</a>{% endif %}
     </div>
 </form>
 {% endblock %}
@@ -642,7 +674,7 @@
                     return;
                 }
                 event.preventDefault();
-                const nextCard = getNextImageCard(imageGrid, event.clientY);
+                const nextCard = getNextImageCard(imageGrid, event.clientX, event.clientY);
                 if (nextCard) {
                     imageGrid.insertBefore(dragCard, nextCard);
                 } else {
@@ -735,25 +767,71 @@
             });
         }
 
-        function getNextImageCard(container, yPosition) {
+        function getNextImageCard(container, xPosition, yPosition) {
+            // Działa dla poziomego rzędu i dla siatki wielowierszowej:
+            // idziemy w kolejności DOM (wiersz po wierszu) i wstawiamy przed
+            // pierwszą kartą, która jest „za" kursorem.
             const cards = [...container.querySelectorAll("[data-image-card]:not([hidden]):not(.is-dragging)")];
-            return cards.reduce(
-                (closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = yPosition - box.top - box.height / 2;
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset, element: child };
-                    }
-                    return closest;
-                },
-                { offset: Number.NEGATIVE_INFINITY, element: null }
-            ).element;
+            for (const card of cards) {
+                const box = card.getBoundingClientRect();
+                // Kursor jest w wyższym wierszu niż ta karta → wstaw przed nią.
+                if (yPosition < box.top) {
+                    return card;
+                }
+                // Kursor jest w wierszu tej karty, na lewo od jej środka → wstaw przed nią.
+                if (yPosition <= box.bottom && xPosition < box.left + box.width / 2) {
+                    return card;
+                }
+            }
+            return null; // za wszystkimi → dołącz na końcu
         }
+    }
+
+    function setupVariantTags() {
+        form.querySelectorAll("[data-image-card]").forEach((card) => {
+            const select = card.querySelector('select[name$="-variant"]');
+            const tag = card.querySelector("[data-variant-tag]");
+            if (!select || !tag) {
+                return;
+            }
+            const sync = () => {
+                const option = select.options[select.selectedIndex];
+                tag.textContent = option ? option.text.trim() : "";
+            };
+            sync();
+            select.addEventListener("change", sync);
+        });
+    }
+
+    function setupSeoPreview() {
+        const preview = form.querySelector("[data-seo-preview]");
+        if (!preview) {
+            return;
+        }
+        const titleInput = form.querySelector('[name$="-seo_title"]');
+        const descInput = form.querySelector('[name$="-seo_description"]');
+        const titleOut = preview.querySelector("[data-seo-title-out]");
+        const descOut = preview.querySelector("[data-seo-desc-out]");
+        const suffix = preview.dataset.suffix || "";
+        const fallbackTitle = preview.dataset.fallbackTitle || "";
+        const fallbackDesc = preview.dataset.fallbackDesc || "";
+
+        const sync = () => {
+            const title = (titleInput && titleInput.value.trim()) || fallbackTitle;
+            const desc = (descInput && descInput.value.trim()) || fallbackDesc;
+            titleOut.textContent = title + suffix;
+            descOut.textContent = desc;
+        };
+        sync();
+        if (titleInput) titleInput.addEventListener("input", sync);
+        if (descInput) descInput.addEventListener("input", sync);
     }
 
     setupVariantFormset();
     setupRichTextToolbar();
     setupProductImages();
+    setupVariantTags();
+    setupSeoPreview();
 })();
 </script>
 {% endblock %}

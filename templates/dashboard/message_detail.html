@@ -16,10 +16,31 @@
 
 <div class="dashboard-newsletter-layout">
     <div class="dashboard-newsletter-main">
-        <article class="dashboard-card">
-            <div class="dashboard-card__head"><div><h2>Treść wiadomości</h2><p>Podgląd HTML, który trafia do odbiorcy.</p></div></div>
-            <div class="dashboard-rich-area" style="border:1px solid var(--admin-line);border-radius:10px">{{ message.body_html|safe }}</div>
-        </article>
+        {% if message.direction == "inbound" %}
+            <article class="dashboard-card dashboard-message-card dashboard-message-card--inbound">
+                <div class="dashboard-card__head">
+                    <div>
+                        <h2>Wiadomość przychodząca</h2>
+                        <p>Treść maila odebranego z oficjalnej skrzynki sklepu.</p>
+                    </div>
+                </div>
+                <div class="dashboard-inbound-mail">
+                    <div class="dashboard-inbound-mail__meta" aria-label="Nagłówki wiadomości">
+                        <div><span>Od</span><strong>{{ message.from_email|default:"—" }}</strong></div>
+                        <div><span>Do</span><strong>{{ message.to_email|default:"—" }}</strong></div>
+                        <div><span>Odebrano</span><strong>{% if message.received_at %}{{ message.received_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></div>
+                    </div>
+                    <div class="dashboard-inbound-mail__body">
+                        {{ message.body_html|safe }}
+                    </div>
+                </div>
+            </article>
+        {% else %}
+            <article class="dashboard-card">
+                <div class="dashboard-card__head"><div><h2>Treść wiadomości</h2><p>Podgląd HTML, który trafia do odbiorcy.</p></div></div>
+                <div class="dashboard-rich-area" style="border:1px solid var(--admin-line);border-radius:10px">{{ message.body_html|safe }}</div>
+            </article>
+        {% endif %}
     </div>
     <aside class="dashboard-newsletter-side">
         <article class="dashboard-card">
@@ -31,11 +52,13 @@
                 <div><dt>Do</dt><dd>{{ message.to_email|default:"—" }}</dd></div>
                 <div><dt>Szablon</dt><dd>{% if message.template %}{{ message.template.name }}{% else %}—{% endif %}</dd></div>
                 <div><dt>Utworzono</dt><dd>{{ message.created_at|date:"d.m.Y H:i" }}</dd></div>
+                <div><dt>Odebrano</dt><dd>{% if message.received_at %}{{ message.received_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
+                <div><dt>Przeczytano</dt><dd>{% if message.read_at %}{{ message.read_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
                 <div><dt>Wysłano</dt><dd>{% if message.sent_at %}{{ message.sent_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
             </dl>
         </article>
         <article class="dashboard-card">
-            <div class="dashboard-card__head"><div><h2>Realna poczta</h2><p>Wiadomość jest zapisana w panelu. Wysyłka przez prawdziwą skrzynkę zostanie podpięta przy integracji e-mail.</p></div></div>
+            <div class="dashboard-card__head"><div><h2>Realna poczta</h2><p>Wiadomość jest zapisana w panelu i powiązana z oficjalną skrzynką sklepu.</p></div></div>
         </article>
     </aside>
 </div>

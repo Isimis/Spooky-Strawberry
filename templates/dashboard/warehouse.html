@@ -1,0 +1,281 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Magazyn | Spooky Admin{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading dashboard-heading--row">
+    <div>
+        <p class="eyebrow">Magazyn</p>
+        <h1>Stany magazynowe</h1>
+    </div>
+</section>
+
+<form method="get" class="dashboard-search">
+    <input type="search" name="q" value="{{ query }}" placeholder="Szukaj produktu">
+    <button type="submit">Szukaj</button>
+    {% if query %}
+        <a href="{% url 'dashboard:warehouse' %}">Wyczyść</a>
+    {% endif %}
+</form>
+
+<div class="warehouse-list">
+    {% for row in rows %}
+        <article class="warehouse-product">
+            <header class="warehouse-product__head">
+                <div class="warehouse-product__media">
+                    {% if row.image_url %}
+                        <img src="{{ row.image_url }}" alt="{{ row.image_alt }}" loading="lazy">
+                    {% else %}
+                        <span class="warehouse-product__media-empty" aria-hidden="true">🦇</span>
+                    {% endif %}
+                </div>
+                <div class="warehouse-product__meta">
+                    <a href="{{ row.admin_url }}" class="warehouse-product__name">{{ row.name }}</a>
+                    <p class="warehouse-product__category">{{ row.category }}</p>
+                </div>
+                <div class="warehouse-product__totals">
+                    <span class="warehouse-product__stock">{{ row.total_stock }} szt.</span>
+                    <span class="warehouse-product__variant-count">{{ row.variant_count }} wariant(y)</span>
+                </div>
+            </header>
+
+            <ul class="warehouse-variants">
+                {% for variant in row.variants %}
+                    <li class="warehouse-variant" data-variant="{{ variant.object.pk }}">
+                        <div class="warehouse-variant__row">
+                            <button type="button" class="warehouse-variant__toggle" aria-expanded="false" data-toggle-history>
+                                <span class="warehouse-variant__caret" aria-hidden="true">▸</span>
+                                <span class="warehouse-variant__label">
+                                    {% if variant.color or variant.size %}
+                                        {{ variant.color }}{% if variant.color and variant.size %} · {% endif %}{{ variant.size }}
+                                    {% else %}
+                                        Wariant domyślny
+                                    {% endif %}
+                                    {% if not variant.is_active %}<em>(nieaktywny)</em>{% endif %}
+                                </span>
+                                {% if variant.sku %}<span class="warehouse-variant__sku">{{ variant.sku }}</span>{% endif %}
+                            </button>
+                            <span class="warehouse-variant__stock">{{ variant.stock_quantity }} szt.</span>
+                            <button
+                                type="button"
+                                class="button button--small"
+                                data-open-entry
+                                data-action="{{ variant.add_entry_url }}"
+                                data-variant-name="{{ row.name }} — {% if variant.color or variant.size %}{{ variant.color }} {{ variant.size }}{% else %}wariant domyślny{% endif %}"
+                            >Dodaj przyjęcie</button>
+                        </div>
+
+                        <div class="warehouse-variant__history" hidden>
+                            {% if variant.entries %}
+                                <table class="warehouse-history">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Ruch</th>
+                                            <th>Ilość</th>
+                                            <th>Netto</th>
+                                            <th>VAT</th>
+                                            <th>Brutto</th>
+                                            <th>Cło</th>
+                                            <th>Faktura</th>
+                                            <th>Dostawca</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entry in variant.entries %}
+                                            <tr class="{% if entry.is_in %}warehouse-history__in{% else %}warehouse-history__out{% endif %}">
+                                                <td>{{ entry.occurred_at|date:"Y-m-d" }}</td>
+                                                <td>{{ entry.source_label }}</td>
+                                                <td>{{ entry.signed_quantity }}</td>
+                                                <td>{% if entry.unit_price_net != None %}{{ entry.unit_price_net }}{% else %}—{% endif %}</td>
+                                                <td>{% if entry.vat_rate != None %}{{ entry.vat_rate }}%{% else %}—{% endif %}</td>
+                                                <td>{% if entry.unit_price_gross != None %}{{ entry.unit_price_gross }}{% else %}—{% endif %}</td>
+                                                <td>{% if entry.customs_amount != None %}{{ entry.customs_amount }}{% else %}—{% endif %}</td>
+                                                <td>
+                                                    {% if entry.invoice_url %}
+                                                        <a href="{{ entry.invoice_url }}" target="_blank" rel="noopener">Otwórz</a>
+                                                    {% else %}—{% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if entry.supplier_url %}
+                                                        <a href="{{ entry.supplier_url }}" target="_blank" rel="noopener">Link</a>
+                                                    {% else %}—{% endif %}
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{{ entry.delete_url }}" onsubmit="return confirm('Usunąć ten wpis? Stan magazynowy zostanie przeliczony.');">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                                        <button type="submit" class="warehouse-history__delete" title="Usuń wpis">✕</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% if entry.note %}
+                                                <tr class="warehouse-history__note-row">
+                                                    <td colspan="10">{{ entry.note }}</td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <p class="warehouse-history__empty">Brak ruchów magazynowych dla tego wariantu.</p>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </article>
+    {% empty %}
+        <p class="dashboard-empty">Brak produktów. Dodaj je najpierw w zakładce Produkty.</p>
+    {% endfor %}
+</div>
+
+{% if page.has_other_pages %}
+    <nav class="dashboard-pagination" aria-label="Paginacja">
+        {% if page.has_previous %}
+            <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page.previous_page_number }}">← Poprzednia</a>
+        {% endif %}
+        <span>Strona {{ page.number }} z {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}
+            <a href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ page.next_page_number }}">Następna →</a>
+        {% endif %}
+    </nav>
+{% endif %}
+
+<div class="warehouse-modal" id="entry-modal" hidden>
+    <div class="warehouse-modal__backdrop" data-close-entry></div>
+    <div class="warehouse-modal__panel" role="dialog" aria-modal="true" aria-labelledby="entry-modal-title">
+        <div class="warehouse-modal__head">
+            <h2 id="entry-modal-title">Dodaj przyjęcie</h2>
+            <button type="button" class="warehouse-modal__close" data-close-entry aria-label="Zamknij">✕</button>
+        </div>
+        <p class="warehouse-modal__variant" id="entry-modal-variant"></p>
+        <form method="post" id="entry-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <div class="warehouse-form-grid">
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.source.label }}</span>
+                    {{ stock_entry_form.source }}
+                </label>
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.quantity.label }}</span>
+                    {{ stock_entry_form.quantity }}
+                </label>
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.occurred_at.label }}</span>
+                    {{ stock_entry_form.occurred_at }}
+                </label>
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.unit_price_net.label }}</span>
+                    {{ stock_entry_form.unit_price_net }}
+                </label>
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.vat_rate.label }}</span>
+                    {{ stock_entry_form.vat_rate }}
+                </label>
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.unit_price_gross.label }}</span>
+                    {{ stock_entry_form.unit_price_gross }}
+                </label>
+                <label class="warehouse-field">
+                    <span>{{ stock_entry_form.customs_amount.label }}</span>
+                    {{ stock_entry_form.customs_amount }}
+                </label>
+                <label class="warehouse-field warehouse-field--wide">
+                    <span>{{ stock_entry_form.supplier_url.label }}</span>
+                    {{ stock_entry_form.supplier_url }}
+                </label>
+                <label class="warehouse-field warehouse-field--wide">
+                    <span>{{ stock_entry_form.invoice.label }}</span>
+                    {{ stock_entry_form.invoice }}
+                </label>
+                <label class="warehouse-field warehouse-field--wide">
+                    <span>{{ stock_entry_form.note.label }}</span>
+                    {{ stock_entry_form.note }}
+                </label>
+            </div>
+            <div class="warehouse-modal__actions">
+                <button type="button" class="button button--secondary" data-close-entry>Anuluj</button>
+                <button type="submit" class="button">Zapisz przyjęcie</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    // Rozwijanie historii wariantu
+    document.querySelectorAll("[data-toggle-history]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var variant = btn.closest(".warehouse-variant");
+            var history = variant.querySelector(".warehouse-variant__history");
+            var expanded = btn.getAttribute("aria-expanded") === "true";
+            btn.setAttribute("aria-expanded", String(!expanded));
+            history.hidden = expanded;
+            variant.classList.toggle("is-open", !expanded);
+        });
+    });
+
+    // Modal przyjęcia
+    var modal = document.getElementById("entry-modal");
+    var form = document.getElementById("entry-form");
+    var variantLabel = document.getElementById("entry-modal-variant");
+
+    function openModal(action, name) {
+        form.setAttribute("action", action);
+        variantLabel.textContent = name;
+        modal.hidden = false;
+        document.body.classList.add("warehouse-modal-open");
+    }
+    function closeModal() {
+        modal.hidden = true;
+        document.body.classList.remove("warehouse-modal-open");
+    }
+
+    document.querySelectorAll("[data-open-entry]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            openModal(btn.getAttribute("data-action"), btn.getAttribute("data-variant-name") || "");
+        });
+    });
+    document.querySelectorAll("[data-close-entry]").forEach(function (el) {
+        el.addEventListener("click", closeModal);
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !modal.hidden) closeModal();
+    });
+
+    // Live wyliczanie netto / VAT / brutto
+    var net = form.querySelector("#id_unit_price_net");
+    var vat = form.querySelector("#id_vat_rate");
+    var gross = form.querySelector("#id_unit_price_gross");
+
+    function num(el) {
+        var v = parseFloat((el.value || "").replace(",", "."));
+        return isNaN(v) ? null : v;
+    }
+    function round2(v) { return Math.round(v * 100) / 100; }
+
+    function recompute(changed) {
+        var n = num(net), v = num(vat), g = num(gross);
+        // Uzupełnij brakujące, faworyzując pole właśnie edytowane.
+        if (changed !== "gross" && n !== null && v !== null) {
+            gross.value = round2(n * (1 + v / 100));
+        } else if (changed !== "vat" && n !== null && g !== null && n !== 0) {
+            vat.value = round2((g / n - 1) * 100);
+        } else if (changed !== "net" && v !== null && g !== null) {
+            net.value = round2(g / (1 + v / 100));
+        }
+    }
+
+    if (net && vat && gross) {
+        net.addEventListener("input", function () { recompute("net"); });
+        vat.addEventListener("input", function () { recompute("vat"); });
+        gross.addEventListener("input", function () { recompute("gross"); });
+    }
+})();
+</script>
+{% endblock %}

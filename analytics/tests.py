@@ -5,11 +5,22 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import AnalyticsEvent, AnalyticsSession
-from .services import VISITOR_COOKIE_NAME
+from .services import ANALYTICS_CONSENT_COOKIE_NAME, VISITOR_COOKIE_NAME
 
 
 class AnalyticsMiddlewareTests(TestCase):
-    def test_get_request_creates_page_view_event(self):
+    def _grant_analytics_consent(self):
+        self.client.cookies[ANALYTICS_CONSENT_COOKIE_NAME] = "1"
+
+    def test_get_request_without_consent_does_not_create_event_or_cookie(self):
+        response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(AnalyticsEvent.objects.exists())
+        self.assertNotIn(VISITOR_COOKIE_NAME, response.cookies)
+
+    def test_get_request_with_consent_creates_page_view_event(self):
+        self._grant_analytics_consent()
         response = self.client.get(reverse("core:home"))
 
         self.assertEqual(response.status_code, 200)
@@ -19,8 +30,10 @@ class AnalyticsMiddlewareTests(TestCase):
                 path="/",
             ).exists()
         )
+        self.assertIn(VISITOR_COOKIE_NAME, response.cookies)
 
     def test_visitor_cookie_is_reused_across_django_sessions(self):
+        self._grant_analytics_consent()
         first_response = self.client.get(reverse("core:home"))
         visitor_id = first_response.cookies[VISITOR_COOKIE_NAME].value
 
@@ -39,6 +52,7 @@ class AnalyticsMiddlewareTests(TestCase):
         )
 
     def test_new_event_refreshes_session_last_seen_at(self):
+        self._grant_analytics_consent()
         self.client.get(reverse("core:home"))
         session = AnalyticsSession.objects.get()
         old_last_seen = timezone.now() - timedelta(hours=2)
@@ -48,3 +62,13 @@ class AnalyticsMiddlewareTests(TestCase):
 
         session.refresh_from_db()
         self.assertGreater(session.last_seen_at, old_last_seen)
+
+    def test_missing_consent_deletes_existing_visitor_cookie(self):
+        self.client.cookies[VISITOR_COOKIE_NAME] = "legacy-visitor"
+
+        response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(AnalyticsEvent.objects.exists())
+        self.assertIn(VISITOR_COOKIE_NAME, response.cookies)
+        self.assertEqual(response.cookies[VISITOR_COOKIE_NAME]["max-age"], 0)

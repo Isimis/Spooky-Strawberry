@@ -47,13 +47,27 @@
   });
 
   // --- Galeria PDP: kliknięcie miniatury podmienia główne zdjęcie ---
+  function ssSetVariantTag(value) {
+    var tag = document.getElementById("pdpVariantTag");
+    if (!tag) return;
+    var v = (value || "").trim();
+    tag.textContent = v;
+    tag.hidden = !v;
+  }
   document.addEventListener("click", function (e) {
     var thumb = e.target.closest("[data-gallery-thumb]");
     if (!thumb) return;
     var main = document.getElementById("pdpMain");
     var src = thumb.getAttribute("data-full");
     if (main && src) main.src = src;
+    if (main) main.setAttribute("data-variant", thumb.getAttribute("data-variant") || "");
+    ssSetVariantTag(thumb.getAttribute("data-variant"));
   });
+  // Inicjalizacja znacznika wariantu z głównego zdjęcia.
+  (function () {
+    var main = document.getElementById("pdpMain");
+    if (main) ssSetVariantTag(main.getAttribute("data-variant"));
+  })();
 
   // --- Lightbox PDP: klik w główne zdjęcie otwiera galerię na środku ekranu ---
   (function pdpLightbox() {
@@ -149,12 +163,38 @@
 
   // --- Baner cookie ---
   var COOKIE_KEY = "ss_cookie_consent";
+  var ANALYTICS_COOKIE = "ss_analytics_consent";
+  var COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+  function setConsentCookie(name, value) {
+    var cookie = name + "=" + encodeURIComponent(value) + "; Max-Age=" + COOKIE_MAX_AGE + "; Path=/; SameSite=Lax";
+    if (window.location.protocol === "https:") cookie += "; Secure";
+    document.cookie = cookie;
+  }
+
+  function storedAnalyticsConsent(consent) {
+    if (!consent) return null;
+    if (consent === "all") return true;
+    if (consent === "essential") return false;
+    try {
+      return JSON.parse(consent).analytics === true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function syncAnalyticsConsent(consent) {
+    var analytics = storedAnalyticsConsent(consent);
+    if (analytics !== null) setConsentCookie(ANALYTICS_COOKIE, analytics ? "1" : "0");
+  }
+
   function hideCookieBar() {
     var bar = document.getElementById("cookieBar");
     if (bar) bar.hidden = true;
   }
   window.ssCookie = function (level) {
     try { localStorage.setItem(COOKIE_KEY, level); } catch (err) {}
+    syncAnalyticsConsent(level);
     hideCookieBar();
   };
   window.ssSaveCookiePrefs = function (acceptAll) {
@@ -164,6 +204,7 @@
       if (acceptAll) sw.classList.add("on");
     });
     try { localStorage.setItem(COOKIE_KEY, JSON.stringify(prefs)); } catch (err) {}
+    syncAnalyticsConsent(JSON.stringify(prefs));
     hideCookieBar();
     var note = document.getElementById("cookieSaved");
     if (note) note.style.display = "block";
@@ -175,6 +216,22 @@
     if (!sw || sw.classList.contains("lock")) return;
     sw.classList.toggle("on");
   });
+
+  (function initCookiePrefs() {
+    var switches = document.querySelectorAll(".switch[data-pref]");
+    if (!switches.length) return;
+    var consent = null;
+    try { consent = localStorage.getItem(COOKIE_KEY); } catch (err) {}
+    var prefs = {};
+    if (consent === "all") {
+      switches.forEach(function (sw) { prefs[sw.getAttribute("data-pref")] = true; });
+    } else if (consent && consent !== "essential") {
+      try { prefs = JSON.parse(consent) || {}; } catch (err) { prefs = {}; }
+    }
+    switches.forEach(function (sw) {
+      sw.classList.toggle("on", prefs[sw.getAttribute("data-pref")] === true);
+    });
+  })();
 
   // Radio-cards (dostawa / płatność): zaznaczenie wizualne
   document.addEventListener("change", function (e) {
@@ -194,6 +251,7 @@
     if (!bar) return;
     var consent = null;
     try { consent = localStorage.getItem(COOKIE_KEY); } catch (err) {}
+    syncAnalyticsConsent(consent);
     if (!consent) bar.hidden = false;
   })();
 

@@ -1,30 +1,72 @@
 {% extends "base.html" %}
 
-{% block title %}Regulamin — Spooky Strawberry{% endblock %}
+{% block title %}Regulamin - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#1c1018,#3a1d2c)">
-    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Regulamin</h1><p>Zasady korzystania ze sklepu Spooky Strawberry.</p></div>
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Regulamin</h1><p>Zasady zakupów w sklepie Spooky Strawberry.</p></div>
 </section>
 <section class="sec">
     <div class="legal">
-        <div class="legal-meta">Dokument poglądowy (wzór do uzupełnienia treścią prawną).</div>
-        <h2>1. Postanowienia ogólne</h2>
-        <p>Sklep internetowy Spooky Strawberry, dostępny pod adresem spookystrawberry.pl, prowadzony jest przez [dane sprzedawcy]. Regulamin określa zasady i warunki korzystania ze sklepu oraz zawierania umów sprzedaży.</p>
-        <h2>2. Definicje</h2>
-        <ul><li>Sprzedawca — podmiot prowadzący sklep.</li><li>Klient — osoba dokonująca zakupów.</li><li>Produkt — towar dostępny w sklepie.</li></ul>
-        <h2>3. Składanie zamówień</h2>
-        <p>Zamówienia można składać 24/7 przez stronę sklepu. Umowa zostaje zawarta w chwili potwierdzenia przyjęcia zamówienia przez Sprzedawcę.</p>
-        <h2>4. Ceny i płatności</h2>
-        <p>Wszystkie ceny podane są w złotych polskich i zawierają podatek VAT. Dostępne metody płatności: BLIK, karta, Przelewy24, Apple/Google Pay.</p>
-        <h2>5. Dostawa</h2>
-        <p>Szczegóły dotyczące metod i kosztów dostawy znajdziesz na stronie <a href="{% url 'core:shipping' %}">Dostawa</a>.</p>
-        <h2>6. Prawo odstąpienia</h2>
-        <p>Klient ma prawo odstąpić od umowy w ciągu 30 dni. Szczegóły na stronie <a href="{% url 'core:returns' %}">Zwroty</a>.</p>
-        <h2>7. Reklamacje</h2>
-        <p>Reklamacje rozpatrywane są w terminie do 14 dni od ich zgłoszenia.</p>
-        <h2>8. Dane osobowe</h2>
-        <p>Zasady przetwarzania danych opisuje <a href="{% url 'core:privacy' %}">Polityka prywatności</a>.</p>
+        <div class="legal-meta">Dane sprzedawcy według CEIDG. Data rozpoczęcia działalności: 1 lipca 2026 r.</div>
+
+        <h2>1. Sprzedawca i kontakt</h2>
+        <p>Sklep internetowy Spooky Strawberry, dostępny pod adresem spookystrawberry.pl, prowadzony jest przez Wizards &amp; Strawberries Patryk Lewandowski, ul. ppłk. pil. Romualda Sulińskiego 8B, 96-100 Skierniewice, Polska, NIP: 8361881374, REGON: 523748067.</p>
+        <p>Kontakt ze sklepem: <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a>, tel. <a href="tel:+48668639593">668 639 593</a> albo formularz na stronie <a href="{% url 'core:contact' %}">Kontakt</a>.</p>
+
+        <h2>2. Najważniejsze pojęcia</h2>
+        <ul>
+            <li>Sprzedawca - Wizards &amp; Strawberries Patryk Lewandowski.</li>
+            <li>Sklep - sklep internetowy Spooky Strawberry prowadzony pod adresem spookystrawberry.pl.</li>
+            <li>Klientka - osoba składająca zamówienie w sklepie.</li>
+            <li>Konsumentka - osoba fizyczna kupująca w celu niezwiązanym bezpośrednio z działalnością gospodarczą lub zawodową.</li>
+            <li>Przedsiębiorczyni na prawach konsumentki - osoba fizyczna zawierająca umowę bezpośrednio związaną z działalnością gospodarczą, gdy z treści umowy wynika, że nie ma ona dla tej osoby charakteru zawodowego.</li>
+            <li>Produkt - rzecz dostępna w sklepie, w szczególności akcesoria, dodatki, biżuteria i elementy stylizacji.</li>
+        </ul>
+
+        <h2>3. Korzystanie ze sklepu</h2>
+        <p>Do korzystania ze sklepu potrzebne jest urządzenie z dostępem do internetu, aktualna przeglądarka internetowa oraz aktywny adres e-mail. Sklep może korzystać z plików cookie niezbędnych do działania koszyka, sesji, bezpieczeństwa i zapamiętania ustawień.</p>
+        <p>Klientka powinna podawać prawdziwe i aktualne dane potrzebne do realizacji zamówienia. Osoby niepełnoletnie mogą składać zamówienia tylko za zgodą rodzica albo opiekuna prawnego, jeżeli taka zgoda jest wymagana przez przepisy.</p>
+
+        <h2>4. Produkty, ceny i promocje</h2>
+        <p>Informacje o produkcie, jego cenie, wariantach, dostępności i głównych cechach są pokazane na karcie produktu. Ceny podawane są w złotych polskich i obejmują należne podatki.</p>
+        <p>Koszt dostawy jest doliczany w koszyku i checkoutcie, chyba że zamówienie spełnia warunki darmowej dostawy. Jeżeli produkt jest objęty obniżką, sklep powinien pokazywać także najniższą cenę z 30 dni przed obniżką, gdy wymagają tego przepisy.</p>
+
+        <h2>5. Składanie zamówienia</h2>
+        <p>Zamówienie składa się przez dodanie produktów do koszyka, wybór dostawy, podanie danych do wysyłki, wybór płatności i potwierdzenie zakupu. Przed złożeniem zamówienia klientka widzi podsumowanie: produkty, cenę, dostawę, łączną kwotę do zapłaty i dane potrzebne do realizacji zamówienia.</p>
+        <p>Umowa sprzedaży zostaje zawarta po skutecznym złożeniu zamówienia z obowiązkiem zapłaty i przyjęciu go przez Sprzedawcę. Potwierdzenie zamówienia wysyłamy na adres e-mail podany w checkoutcie.</p>
+
+        <h2>6. Płatności</h2>
+        <p>Dostępne metody płatności mogą obejmować BLIK, kartę płatniczą, Przelewy24, Apple Pay i Google Pay. Aktualna lista metod płatności jest widoczna w checkoutcie.</p>
+        <p>Zamówienie jest realizowane po otrzymaniu płatności albo pozytywnym potwierdzeniu transakcji przez operatora płatności. Operator płatności może mieć własny regulamin i wymagania bezpieczeństwa.</p>
+
+        <h2>7. Dostawa</h2>
+        <p>Dostawa na terenie Polski jest realizowana metodami pokazanymi w checkoutcie. Aktualne stawki: Paczkomat 10,99 zł, Kurier 13,99 zł. Darmowa dostawa obowiązuje od 60 zł wartości produktów po rabatach.</p>
+        <p>Szczegóły czasu realizacji i śledzenia przesyłki znajdują się na stronie <a href="{% url 'core:shipping' %}">Dostawa</a>. Ryzyko przypadkowej utraty lub uszkodzenia produktu przechodzi na konsumentkę dopiero z chwilą wydania przesyłki konsumentce.</p>
+
+        <h2>8. Odstąpienie od umowy i zwroty</h2>
+        <p>Konsumentka oraz przedsiębiorczyni na prawach konsumentki może odstąpić od umowy bez podania przyczyny. Ustawowy termin wynosi 14 dni od otrzymania produktu, a Spooky Strawberry wydłuża go dobrowolnie do 30 dni.</p>
+        <p>Żeby zgłosić odstąpienie, napisz na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> albo użyj formularza na stronie <a href="{% url 'core:contact' %}">Kontakt</a>. W wiadomości podaj numer zamówienia, imię i nazwisko oraz produkty, których dotyczy zwrot. Odesłanie produktu powinno nastąpić nie później niż 14 dni od zgłoszenia odstąpienia.</p>
+        <p>Zwrot płatności następuje nie później niż 14 dni od otrzymania oświadczenia o odstąpieniu, ale możemy wstrzymać się ze zwrotem do chwili otrzymania produktu albo dowodu jego odesłania. Zwrot obejmuje cenę produktu oraz koszt najtańszej zwykłej dostawy dostępnej w sklepie. Koszt odesłania produktu ponosi klientka, chyba że uzgodnimy inaczej albo zwrot wynika z reklamacji.</p>
+
+        <h2>9. Wyjątki od prawa odstąpienia</h2>
+        <p>Prawo odstąpienia może nie przysługiwać w przypadkach wskazanych w ustawie o prawach konsumenta, m.in. dla produktów dostarczanych w zapieczętowanym opakowaniu, których po otwarciu nie można zwrócić ze względów ochrony zdrowia lub higieny, jeżeli opakowanie zostało otwarte po dostarczeniu.</p>
+
+        <h2>10. Reklamacje</h2>
+        <p>Jeżeli produkt jest niezgodny z umową, możesz złożyć reklamację. Napisz na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> albo skorzystaj z formularza na stronie <a href="{% url 'core:contact' %}">Kontakt</a>. W zgłoszeniu podaj numer zamówienia, opisz problem i, jeśli to możliwe, dodaj zdjęcia.</p>
+        <p>Reklamację rozpatrujemy w terminie 14 dni od jej otrzymania. W przypadku uzasadnionej reklamacji stosujemy rozwiązania przewidziane przez przepisy, w szczególności naprawę, wymianę, obniżenie ceny albo zwrot pieniędzy.</p>
+
+        <h2>11. Usługi elektroniczne</h2>
+        <p>Sklep może umożliwiać założenie konta, zapis do newslettera, korzystanie z koszyka, formularza kontaktowego i statusu zamówienia. Usługi elektroniczne są świadczone nieodpłatnie. Konto można usunąć, a zgodę newsletterową wycofać w każdej chwili.</p>
+
+        <h2>12. Dane osobowe i cookie</h2>
+        <p>Zasady przetwarzania danych osobowych opisuje <a href="{% url 'core:privacy' %}">Polityka prywatności</a>. Zasady plików cookie i ustawienia zgód znajdują się na stronie <a href="{% url 'core:cookies' %}">Ustawienia cookie</a>.</p>
+
+        <h2>13. Pozasądowe rozwiązywanie sporów</h2>
+        <p>Konsumentka może skorzystać z pomocy miejskiego lub powiatowego rzecznika konsumentów, Inspekcji Handlowej, organizacji konsumenckich oraz informacji dostępnych na stronie <a href="https://prawakonsumenta.uokik.gov.pl/" target="_blank" rel="noopener">UOKiK - Prawa konsumenta</a>.</p>
+
+        <h2>14. Zmiany regulaminu</h2>
+        <p>Regulamin może zostać zmieniony, jeżeli zmienią się przepisy, funkcje sklepu, metody płatności, dostawy albo dane Sprzedawcy. Do zamówień złożonych przed zmianą stosuje się regulamin obowiązujący w chwili złożenia zamówienia.</p>
     </div>
 </section>
 {% endblock %}

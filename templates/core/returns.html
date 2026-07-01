@@ -1,30 +1,46 @@
 {% extends "base.html" %}
 
-{% block title %}Zwroty i reklamacje — Spooky Strawberry{% endblock %}
+{% block title %}Zwroty i reklamacje - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
-    <div class="ph-in"><div class="eyebrow">Pomoc</div><h1>Zwroty i reklamacje</h1><p>Masz 30 dni na zwrot bez podawania przyczyny. Bez stresu, bez tłumaczenia się.</p></div>
+    <div class="ph-in"><div class="eyebrow">Pomoc</div><h1>Zwroty i reklamacje</h1><p>Masz 30 dni na zwrot bez podawania przyczyny. W sprawach zwrotów i reklamacji napisz do nas mailowo albo przez formularz.</p></div>
 </section>
 <section class="sec">
     <div class="legal">
+        <h2>Kontakt w sprawie zwrotu lub reklamacji</h2>
+        <p>W sprawach zwrotów i reklamacji skontaktuj się z nami mailowo: <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> albo przez formularz na stronie <a href="{% url 'core:contact' %}">Kontakt</a>. Wybierz temat „Zwrot / reklamacja”, żeby wiadomość od razu trafiła do właściwej sprawy.</p>
+        <p>W wiadomości podaj numer zamówienia, imię i nazwisko, adres e-mail użyty przy zakupie oraz nazwę produktu. Przy reklamacji opisz problem i dołącz zdjęcia, jeżeli mogą pomóc w ocenie sprawy.</p>
+
         <h2>Jak zwrócić produkt?</h2>
         <div class="steps-num">
-            <div class="sn"><span class="num">1</span><div><b>Wypełnij formularz zwrotu</b><span>Dołączony do paczki lub dostępny po zalogowaniu na konto.</span></div></div>
-            <div class="sn"><span class="num">2</span><div><b>Zapakuj produkt</b><span>Najlepiej w oryginalne opakowanie, z metką. Produkt nieużywany.</span></div></div>
-            <div class="sn"><span class="num">3</span><div><b>Nadaj paczkę</b><span>Do paczkomatu lub kurierem na adres podany w formularzu.</span></div></div>
-            <div class="sn"><span class="num">4</span><div><b>Odbierz zwrot pieniędzy</b><span>Do 14 dni od otrzymania paczki, na to samo konto/metodę płatności.</span></div></div>
+            <div class="sn"><span class="num">1</span><div><b>Napisz do nas</b><span>Wyślij oświadczenie o odstąpieniu mailem albo przez formularz kontaktowy.</span></div></div>
+            <div class="sn"><span class="num">2</span><div><b>Poczekaj na instrukcję</b><span>Potwierdzimy zgłoszenie i podamy najwygodniejszy adres lub sposób odesłania paczki.</span></div></div>
+            <div class="sn"><span class="num">3</span><div><b>Odeślij produkt</b><span>Masz na to 14 dni od zgłoszenia odstąpienia. Zapakuj produkt bezpiecznie, najlepiej z metkami i opakowaniem.</span></div></div>
+            <div class="sn"><span class="num">4</span><div><b>Odbierz zwrot pieniędzy</b><span>Zwrócimy płatność nie później niż 14 dni od otrzymania oświadczenia, z możliwością wstrzymania do czasu otrzymania produktu lub dowodu nadania.</span></div></div>
         </div>
+
+        <h2>Termin na odstąpienie</h2>
+        <p>Ustawowo konsumentka ma 14 dni na odstąpienie od umowy zawartej przez internet. Spooky Strawberry wydłuża ten termin do 30 dni od otrzymania produktu.</p>
+        <p>Nie musisz podawać przyczyny zwrotu. Możesz ją dopisać dobrowolnie, jeśli chcesz pomóc nam ulepszyć produkty albo opisy.</p>
+
         <h2>Warunki zwrotu</h2>
         <ul>
-            <li>30 dni na odstąpienie od umowy bez podania przyczyny.</li>
-            <li>Produkt nieużywany, kompletny, w stanie nienaruszonym.</li>
-            <li>Ze względów higienicznych biżuteria i bielizna podlegają zwrotowi tylko nieotwarte / nieprzymierzane.</li>
+            <li>Produkt powinien być kompletny i zwrócony w stanie pozwalającym ocenić go tak, jak zrobiłabyś to w sklepie stacjonarnym.</li>
+            <li>Możemy obniżyć zwracaną kwotę, jeżeli produkt był używany w sposób wykraczający poza konieczny do sprawdzenia jego charakteru, cech i działania.</li>
+            <li>Prawo odstąpienia może nie przysługiwać dla produktów zapieczętowanych, których po otwarciu nie można zwrócić ze względów ochrony zdrowia lub higieny, jeżeli opakowanie zostało otwarte po dostarczeniu.</li>
+            <li>Koszt odesłania produktu przy zwrocie ponosi klientka, chyba że uzgodnimy inaczej albo zwrot wynika z uznanej reklamacji.</li>
         </ul>
+
+        <h2>Zwrot pieniędzy</h2>
+        <p>Zwrot płatności wykonujemy tą samą metodą, której użyto przy zakupie, chyba że wspólnie ustalimy inną metodę. Zwracamy cenę produktu oraz koszt najtańszej zwykłej dostawy dostępnej w sklepie. Jeżeli wybrałaś droższą dostawę, różnica między nią a najtańszą opcją nie podlega zwrotowi przy odstąpieniu.</p>
+
         <h2>Reklamacje</h2>
-        <p>Jeśli produkt ma wadę, opisz problem i dołącz zdjęcia przez formularz kontaktowy. Reklamacje rozpatrujemy do 14 dni. W razie uznania wymieniamy produkt lub zwracamy pełną kwotę wraz z kosztem dostawy.</p>
-        <h2>Masz pytania?</h2>
-        <p>Napisz do nas — pomożemy przejść przez proces krok po kroku. <a href="{% url 'core:contact' %}">Przejdź do kontaktu →</a></p>
+        <p>Jeżeli produkt jest wadliwy albo niezgodny z umową, złóż reklamację mailowo na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> albo przez formularz na stronie <a href="{% url 'core:contact' %}">Kontakt</a>. Reklamację rozpatrujemy w terminie 14 dni od jej otrzymania.</p>
+        <p>W zgłoszeniu możesz wskazać, czego oczekujesz: naprawy, wymiany, obniżenia ceny albo zwrotu pieniędzy, zgodnie z zasadami odpowiedzialności za niezgodność towaru z umową. Przy uznanej reklamacji koszty niezbędnego odesłania produktu pokrywa Sprzedawca.</p>
+
+        <h2>Adres Sprzedawcy</h2>
+        <p>Wizards &amp; Strawberries Patryk Lewandowski, ul. ppłk. pil. Romualda Sulińskiego 8B, 96-100 Skierniewice, Polska. Przed odesłaniem produktu skontaktuj się z nami, żeby dostać aktualną instrukcję zwrotu lub reklamacji.</p>
     </div>
 </section>
 {% endblock %}

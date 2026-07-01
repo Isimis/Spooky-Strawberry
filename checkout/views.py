@@ -7,8 +7,8 @@ from django.utils import timezone
 
 from analytics.services import track_event
 from cart.services import clear_cart, get_cart_summary
-from cart.views import get_shipping_estimate
 from orders.models import Order, OrderItem, ShippingMethod
+from orders.shipping import shipping_cost_for_method
 
 from .forms import CheckoutForm
 
@@ -24,13 +24,7 @@ PAYMENT_LABELS = {code: label for code, label, _ in PAYMENT_METHODS}
 
 
 def _shipping_cost_for(method, subtotal):
-    if method is None:
-        cost, _, _ = get_shipping_estimate(subtotal)
-        return cost
-    free_from = method.free_from_amount
-    if free_from is not None and subtotal >= free_from:
-        return Decimal("0.00")
-    return method.price
+    return shipping_cost_for_method(method, subtotal)
 
 
 def shipping(request):
@@ -61,6 +55,7 @@ def shipping(request):
     methods = list(ShippingMethod.objects.filter(is_active=True).order_by("sort_order", "price"))
     selected_method_id = saved.get("shipping_method") or (methods[0].id if methods else None)
     selected_method = next((m for m in methods if m.id == selected_method_id), methods[0] if methods else None)
+    selected_method_id = selected_method.id if selected_method else None
     shipping_cost = _shipping_cost_for(selected_method, summary["subtotal"])
 
     return render(
@@ -88,7 +83,7 @@ def payment(request):
     if not checkout_data:
         return redirect("checkout:shipping")
 
-    method = ShippingMethod.objects.filter(id=checkout_data.get("shipping_method")).first()
+    method = ShippingMethod.objects.filter(id=checkout_data.get("shipping_method"), is_active=True).first()
     shipping_cost = _shipping_cost_for(method, summary["subtotal"])
 
     if request.method == "POST":
@@ -98,7 +93,7 @@ def payment(request):
         request.session.pop(CHECKOUT_SESSION_KEY, None)
         request.session.modified = True
         track_event(request, "purchase", metadata={"order": order.order_number, "total": str(order.grand_total)})
-        return redirect("checkout:confirmation", order_number=order.order_number)
+        return redirect("checkout:confirmation", order_number=order.order_number, token=order.confirmation_token)
 
     return render(
         request,
@@ -157,9 +152,10 @@ def create_order(request, summary, data, method, shipping_cost, payment_method):
     return order
 
 
-def confirmation(request, order_number):
+def confirmation(request, order_number, token):
     order = get_object_or_404(
         Order.objects.select_related("shipping_method").prefetch_related("items__product__images"),
         order_number=order_number,
+        confirmation_token=token,
     )
     return render(request, "checkout/confirmation.html", {"order": order})

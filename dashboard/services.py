@@ -226,10 +226,20 @@ def build_funnel(events, orders):
             "value": value,
             "detail": detail,
             "rate": percent(value, previous_value),
-            "width": percentage(value, max_value),
+            # Pasek pokazuje to samo, co etykieta: konwersję względem poprzedniego
+            # kroku — dzięki temu słupek i procent się zgadzają.
+            "width": funnel_bar_width(value, previous_value),
         }
         for label, value, previous_value, detail in steps
     ]
+
+
+def funnel_bar_width(value, previous_value):
+    if value <= 0:
+        return 0
+    if previous_value <= 0:
+        return 100
+    return min(100, percentage(value, previous_value))
 
 
 def build_quality_metrics(events, sessions, orders):

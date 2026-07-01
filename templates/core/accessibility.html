@@ -1,27 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}Deklaracja dostępności — Spooky Strawberry{% endblock %}
+{% block title %}Deklaracja dostępności - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#1c1018,#3a1d2c)">
-    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Deklaracja dostępności</h1><p>Chcemy, by Spooky Strawberry był wygodny dla każdej osoby — niezależnie od sposobu korzystania z internetu.</p></div>
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Deklaracja dostępności</h1><p>Chcemy, by Spooky Strawberry był wygodny dla każdej osoby, niezależnie od sposobu korzystania z internetu.</p></div>
 </section>
 <section class="sec">
     <div class="legal">
-        <div class="legal-meta">Dokument poglądowy (wzór).</div>
+        <div class="legal-meta">Kontakt w sprawie dostępności: kontakt@spookystrawberry.pl.</div>
         <h2>Nasze zobowiązanie</h2>
-        <p>Dokładamy starań, aby sklep spełniał wytyczne WCAG 2.1 na poziomie AA. Oznacza to m.in. czytelny kontrast, obsługę klawiaturą, opisy alternatywne obrazów oraz logiczną strukturę nagłówków.</p>
-        <h2>Co już działa</h2>
+        <p>Dokładamy starań, aby sklep był możliwie prosty, czytelny i dostępny. Projektujemy go mobile first, z czytelną strukturą nagłówków, opisami alternatywnymi obrazów, widocznym fokusem i obsługą najważniejszych elementów z klawiatury.</p>
+
+        <h2>Co już wspieramy</h2>
         <ul>
-            <li>Nawigacja klawiaturą i widoczny fokus na elementach interaktywnych.</li>
-            <li>Etykiety przy przyciskach i polach formularzy (czytniki ekranu).</li>
-            <li>Responsywność i czytelne rozmiary tekstu na mobile i desktopie.</li>
-            <li>Kontrast tekstu zgodny z poziomem AA.</li>
+            <li>responsywny układ na telefonie, tablecie i desktopie,</li>
+            <li>widoczny fokus na elementach interaktywnych,</li>
+            <li>etykiety przy formularzach i przyciskach,</li>
+            <li>czytelne rozmiary tekstu i kontrast dopasowany do estetyki sklepu,</li>
+            <li>proste komunikaty błędów i potwierdzeń.</li>
         </ul>
+
         <h2>Znane ograniczenia</h2>
-        <p>Część treści osadzonych zewnętrznie (np. widgety) może nie być w pełni dostępna. Pracujemy nad ich poprawą.</p>
+        <p>Sklep jest rozwijany etapami. Część treści, zdjęć lub integracji zewnętrznych może wymagać dalszej poprawy dostępności. Jeżeli zauważysz problem, daj nam znać - potraktujemy to jako priorytet do poprawy.</p>
+
         <h2>Zgłoś problem</h2>
-        <p>Jeśli napotkasz barierę w korzystaniu ze sklepu, napisz na hello@spookystrawberry.pl — postaramy się szybko pomóc i poprawić dany element. <a href="{% url 'core:contact' %}">Przejdź do kontaktu →</a></p>
+        <p>Jeśli napotkasz barierę w korzystaniu ze sklepu, napisz na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a>, zadzwoń pod <a href="tel:+48668639593">668 639 593</a> albo użyj formularza na stronie <a href="{% url 'core:contact' %}">Kontakt</a>.</p>
     </div>
 </section>
 {% endblock %}

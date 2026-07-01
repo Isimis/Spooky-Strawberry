@@ -1,26 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}Polityka prywatności — Spooky Strawberry{% endblock %}
+{% block title %}Polityka prywatności - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#1c1018,#3a1d2c)">
-    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Polityka prywatności</h1><p>Jak chronimy i przetwarzamy Twoje dane.</p></div>
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Polityka prywatności</h1><p>Jak przetwarzamy i chronimy Twoje dane.</p></div>
 </section>
 <section class="sec">
     <div class="legal">
-        <div class="legal-meta">Dokument poglądowy (wzór do uzupełnienia treścią prawną).</div>
+        <div class="legal-meta">Administrator danych: Wizards &amp; Strawberries Patryk Lewandowski.</div>
+
         <h2>1. Administrator danych</h2>
-        <p>Administratorem Twoich danych osobowych jest [dane administratora]. W sprawach związanych z ochroną danych napisz na hello@spookystrawberry.pl.</p>
-        <h2>2. Jakie dane zbieramy</h2>
-        <ul><li>Dane podane przy zamówieniu (imię, adres, e-mail, telefon).</li><li>Dane o zamówieniach i płatnościach.</li><li>Dane techniczne i pliki cookie.</li></ul>
-        <h2>3. Cele przetwarzania</h2>
-        <p>Realizacja zamówień, obsługa klienta, marketing (za zgodą), analityka i poprawa działania sklepu.</p>
-        <h2>4. Twoje prawa</h2>
-        <p>Masz prawo dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania oraz przenoszenia. Możesz w każdej chwili wycofać zgodę marketingową.</p>
-        <h2>5. Pliki cookie</h2>
-        <p>Szczegóły dotyczące cookie oraz zarządzanie zgodami znajdziesz na stronie <a href="{% url 'core:cookies' %}">Ustawienia cookie</a>.</p>
-        <h2>6. Bezpieczeństwo</h2>
-        <p>Stosujemy szyfrowanie połączeń (SSL) oraz środki techniczne i organizacyjne chroniące Twoje dane.</p>
+        <p>Administratorem Twoich danych osobowych jest Wizards &amp; Strawberries Patryk Lewandowski, ul. ppłk. pil. Romualda Sulińskiego 8B, 96-100 Skierniewice, Polska, NIP: 8361881374, REGON: 523748067.</p>
+        <p>W sprawach związanych z danymi osobowymi napisz na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a>, zadzwoń pod <a href="tel:+48668639593">668 639 593</a> albo skorzystaj z formularza na stronie <a href="{% url 'core:contact' %}">Kontakt</a>.</p>
+
+        <h2>2. Jakie dane przetwarzamy</h2>
+        <ul>
+            <li>dane identyfikacyjne i kontaktowe: imię, nazwisko, adres e-mail, telefon, adres dostawy, dane podane w formularzu kontaktowym,</li>
+            <li>dane zamówienia: produkty, warianty, ceny, płatność, dostawa, status zamówienia, reklamacje i zwroty,</li>
+            <li>dane konta klientki, jeżeli założysz konto,</li>
+            <li>dane newsletterowe, jeżeli zapiszesz się do newslettera,</li>
+            <li>dane techniczne: adres IP, identyfikatory cookie, informacje o urządzeniu, przeglądarce, sesji i sposobie korzystania ze strony,</li>
+            <li>dane analityczne tylko wtedy, gdy wyrazisz zgodę na cookie analityczne.</li>
+        </ul>
+
+        <h2>3. Cele i podstawy przetwarzania</h2>
+        <p>Przetwarzamy dane, aby przyjąć i zrealizować zamówienie, obsłużyć płatność i dostawę, wysłać potwierdzenie, prowadzić konto klientki, odpowiedzieć na wiadomość, obsłużyć zwrot lub reklamację, spełnić obowiązki księgowe i podatkowe oraz dochodzić lub bronić roszczeń.</p>
+        <p>Podstawami przetwarzania są: wykonanie umowy lub działania przed jej zawarciem, obowiązki prawne Sprzedawcy, prawnie uzasadniony interes w obsłudze klientek, bezpieczeństwie i ochronie roszczeń, a także Twoja zgoda w przypadku newslettera, marketingu i analityki niewymaganej do działania sklepu.</p>
+
+        <h2>4. Newsletter i marketing</h2>
+        <p>Jeżeli zapiszesz się do newslettera, przetwarzamy Twój adres e-mail, aby wysyłać wiadomości o dropach, promocjach, inspiracjach i kodach rabatowych. Z newslettera możesz wypisać się w każdej chwili przez link w wiadomości albo pisząc na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a>.</p>
+        <p>Marketing oparty o cookie lub podobne technologie działa tylko po Twojej zgodzie, jeżeli takie narzędzia zostaną włączone w sklepie.</p>
+
+        <h2>5. Analityka</h2>
+        <p>Sklep prowadzi własną analitykę zachowania na stronie, ale zapisuje zdarzenia analityczne i cookie <code>spooky_visitor_id</code> dopiero po wyrażeniu zgody analitycznej. Bez tej zgody zapisujemy tylko informacje technicznie niezbędne do działania sklepu.</p>
+        <p>Zgodę możesz nadać, odmówić albo zmienić na stronie <a href="{% url 'core:cookies' %}">Ustawienia cookie</a>.</p>
+
+        <h2>6. Komu przekazujemy dane</h2>
+        <p>Dane mogą być przekazywane podmiotom, które pomagają prowadzić sklep: dostawcom hostingu i systemów IT, operatorom płatności, firmom kurierskim i paczkomatowym, dostawcom poczty e-mail, księgowości, doradcom prawnym, narzędziom bezpieczeństwa oraz podmiotom uprawnionym na podstawie przepisów.</p>
+        <p>Przekazujemy tylko dane potrzebne do konkretnego celu, np. dane adresowe przewoźnikowi albo dane transakcji operatorowi płatności.</p>
+
+        <h2>7. Jak długo przechowujemy dane</h2>
+        <ul>
+            <li>dane zamówień i dokumentów księgowych - przez okres wymagany przepisami podatkowymi i rachunkowymi,</li>
+            <li>dane konta - do czasu usunięcia konta, a później tylko w zakresie potrzebnym do rozliczeń, reklamacji lub roszczeń,</li>
+            <li>dane reklamacji i zwrotów - przez czas obsługi sprawy oraz okres przedawnienia roszczeń,</li>
+            <li>dane newsletterowe - do wycofania zgody lub wypisania się z newslettera,</li>
+            <li>dane analityczne - przez czas potrzebny do analizy działania sklepu, nie dłużej niż wynika to z ustawień danego narzędzia i udzielonej zgody.</li>
+        </ul>
+
+        <h2>8. Twoje prawa</h2>
+        <p>Masz prawo dostępu do danych, sprostowania, usunięcia, ograniczenia przetwarzania, przenoszenia danych, sprzeciwu wobec przetwarzania oraz wycofania zgody w dowolnym momencie. Wycofanie zgody nie wpływa na zgodność z prawem wcześniejszego przetwarzania.</p>
+        <p>Masz także prawo złożyć skargę do Prezesa Urzędu Ochrony Danych Osobowych. Więcej informacji o prawach wynikających z RODO znajdziesz na stronie <a href="https://uodo.gov.pl/pl/493" target="_blank" rel="noopener">UODO</a>.</p>
+
+        <h2>9. Czy podanie danych jest obowiązkowe</h2>
+        <p>Podanie danych do zamówienia jest dobrowolne, ale niezbędne, żeby zawrzeć i wykonać umowę sprzedaży. Bez adresu e-mail nie wyślemy potwierdzenia, bez danych dostawy nie nadamy paczki, a bez danych kontaktowych nie odpowiemy na wiadomość.</p>
+
+        <h2>10. Przekazywanie danych poza EOG</h2>
+        <p>Jeżeli któryś dostawca technologiczny przetwarza dane poza Europejskim Obszarem Gospodarczym, odbywa się to wyłącznie z zastosowaniem wymaganych zabezpieczeń prawnych, np. standardowych klauzul umownych albo decyzji stwierdzającej odpowiedni stopień ochrony.</p>
+
+        <h2>11. Bezpieczeństwo</h2>
+        <p>Stosujemy środki techniczne i organizacyjne mające chronić dane, w tym szyfrowane połączenie, ograniczony dostęp do danych, kopie zapasowe i zabezpieczenia panelu administracyjnego.</p>
+
+        <h2>12. Pliki cookie</h2>
+        <p>Szczegółowe informacje o plikach cookie, kategoriach zgód i sposobie zmiany preferencji znajdziesz na stronie <a href="{% url 'core:cookies' %}">Ustawienia cookie</a>.</p>
     </div>
 </section>
 {% endblock %}

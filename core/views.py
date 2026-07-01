@@ -1,42 +1,59 @@
+import html
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from analytics.services import track_event
 from blog.models import Article
 from catalog.models import Aesthetic, Product
+from orders.models import ShippingMethod
+from orders.shipping import FREE_SHIPPING_THRESHOLD
 from outfits.models import Outfit
-from .models import NewsletterSubscriber, SiteSettings
+from .models import Message, NewsletterSubscriber, SiteSettings
 
 
 POLICIES = {
     "polityka-prywatnosci": {
         "title": "Polityka prywatności",
-        "intro": "Miejsce na docelową politykę prywatności sklepu Spooky Strawberry.",
+        "intro": "Ten adres przekierowuje do aktualnej polityki prywatności sklepu Spooky Strawberry.",
     },
     "polityka-zwrotow": {
         "title": "Polityka zwrotów",
-        "intro": "Miejsce na zasady zwrotów, reklamacji i kontaktu po zakupie.",
+        "intro": "Ten adres przekierowuje do aktualnych zasad zwrotów i reklamacji.",
     },
     "regulamin": {
         "title": "Regulamin",
-        "intro": "Miejsce na regulamin sklepu przed uruchomieniem sprzedaży.",
+        "intro": "Ten adres przekierowuje do aktualnego regulaminu sklepu.",
     },
     "polityka-wysylki": {
         "title": "Polityka wysyłki",
-        "intro": "Miejsce na docelowe informacje o dostawie, kosztach i czasie realizacji.",
+        "intro": "Ten adres przekierowuje do aktualnych informacji o dostawie.",
     },
     "dane-kontaktowe": {
         "title": "Dane kontaktowe",
-        "intro": "Miejsce na dane firmy, gdy sklep będzie gotowy do sprzedaży.",
+        "intro": "Ten adres przekierowuje do aktualnych danych kontaktowych sklepu.",
     },
     "preferencje-cookie": {
         "title": "Preferencje dotyczące plików cookie",
-        "intro": "Miejsce na ustawienia i opis plików cookie.",
+        "intro": "Ten adres przekierowuje do aktualnych ustawień plików cookie.",
     },
+}
+
+POLICY_REDIRECTS = {
+    "polityka-prywatnosci": "core:privacy",
+    "polityka-zwrotow": "core:returns",
+    "regulamin": "core:terms",
+    "polityka-wysylki": "core:shipping",
+    "dane-kontaktowe": "core:contact",
+    "preferencje-cookie": "core:cookies",
 }
 
 
@@ -95,11 +112,54 @@ def home_view(request):
 
 
 def contact_view(request):
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        email = request.POST.get("email", "").strip()
+        subject = request.POST.get("subject", "").strip() or "Wiadomość z formularza"
+        body = request.POST.get("message", "").strip()
+
+        if not email or not body:
+            messages.error(request, "Podaj e-mail i treść wiadomości.")
+            return redirect("core:contact")
+        try:
+            validate_email(email)
+        except ValidationError:
+            messages.error(request, "Podaj poprawny adres e-mail.")
+            return redirect("core:contact")
+
+        safe_name = html.escape(name or "Brak imienia")
+        safe_email = html.escape(email)
+        safe_subject = html.escape(subject)
+        safe_body = html.escape(body).replace("\n", "<br>")
+        Message.objects.create(
+            direction=Message.DIRECTION_INBOUND,
+            status=Message.STATUS_RECEIVED,
+            subject=f"Formularz kontaktowy: {subject}"[:200],
+            body_html=(
+                f"<p><strong>Imię:</strong> {safe_name}</p>"
+                f"<p><strong>E-mail:</strong> {safe_email}</p>"
+                f"<p><strong>Temat:</strong> {safe_subject}</p>"
+                f"<hr><p>{safe_body}</p>"
+            ),
+            from_email=email,
+            to_email=settings.EMAIL_HOST_USER or "kontakt@spookystrawberry.pl",
+            received_at=timezone.now(),
+        )
+        messages.success(request, "Dziękujemy za wiadomość. Odpowiemy najszybciej, jak się da.")
+        return redirect("core:contact")
     return render(request, "core/contact.html")
 
 
 def shipping_view(request):
-    return render(request, "core/shipping.html")
+    methods = ShippingMethod.objects.filter(is_active=True).order_by("sort_order", "price")
+    return render(
+        request,
+        "core/shipping.html",
+        {
+            "shipping_methods": methods,
+            "free_shipping_threshold": FREE_SHIPPING_THRESHOLD,
+        },
+    )
 
 
 def returns_view(request):
@@ -253,11 +313,15 @@ def newsletter_thanks_view(request):
 
 
 def policy_view(request, slug):
+    redirect_name = POLICY_REDIRECTS.get(slug)
+    if redirect_name:
+        return redirect(redirect_name)
+
     policy = POLICIES.get(slug)
     if policy is None:
         policy = {
             "title": slugify(slug).replace("-", " ").capitalize(),
-            "intro": "Ta strona zostanie uzupełniona przed publikacją sklepu.",
+            "intro": "Nie znaleziono takiego dokumentu w aktywnych politykach sklepu.",
         }
     return render(request, "core/policy.html", {"policy": policy})
 

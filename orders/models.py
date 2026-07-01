@@ -1,6 +1,12 @@
+import secrets
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+
+
+def generate_order_confirmation_token():
+    return secrets.token_urlsafe(32)
 
 
 class ShippingMethod(models.Model):
@@ -76,6 +82,12 @@ class Order(models.Model):
     ]
 
     order_number = models.CharField(max_length=40, unique=True, null=True, blank=True)
+    confirmation_token = models.CharField(
+        max_length=80,
+        unique=True,
+        blank=True,
+        default=generate_order_confirmation_token,
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

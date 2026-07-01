@@ -7,6 +7,7 @@ from .models import AnalyticsEvent, AnalyticsSession
 
 VISITOR_COOKIE_NAME = "spooky_visitor_id"
 VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+ANALYTICS_CONSENT_COOKIE_NAME = "ss_analytics_consent"
 
 
 def get_device_type(user_agent):
@@ -30,7 +31,16 @@ def get_or_create_visitor_id(request):
     return visitor_id
 
 
+def has_analytics_consent(request):
+    return request.COOKIES.get(ANALYTICS_CONSENT_COOKIE_NAME) == "1"
+
+
 def persist_visitor_cookie(request, response):
+    if not has_analytics_consent(request):
+        if request.COOKIES.get(VISITOR_COOKIE_NAME):
+            response.delete_cookie(VISITOR_COOKIE_NAME, samesite="Lax")
+        return
+
     visitor_id = getattr(request, "_analytics_visitor_id", "")
     should_set_cookie = getattr(request, "_analytics_set_visitor_cookie", False)
     if visitor_id and should_set_cookie:
@@ -70,6 +80,8 @@ def get_or_create_analytics_session(request):
 
 def track_event(request, event_type, product=None, variant=None, metadata=None):
     if request.path.startswith(("/static/", "/media/", "/admin/", "/django-admin/")):
+        return None
+    if not has_analytics_consent(request):
         return None
 
     session = get_or_create_analytics_session(request)
