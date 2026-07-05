@@ -19,8 +19,8 @@
             <b>#{{ order.order_number }}</b>.
         </p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
-            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment_return' %}">Sprawdź status</a>
-            <a class="btn btn-ghost btn-lg" href="{% url 'core:contact' %}">Pomoc</a>
+            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment_return' %}">Sprawdź status płatności</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}">Status zamówienia</a>
         </div>
     </div>
 </section>

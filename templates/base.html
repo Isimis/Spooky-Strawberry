@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260706-p24-footer2">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260706-footer-chips">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -93,6 +93,10 @@
     {% block content %}{% endblock %}
 </main>
 
+{% if site_settings.payments_sandbox %}{% if request.resolver_match.namespace == 'cart' or request.resolver_match.namespace == 'checkout' %}
+<div class="test-bubble" role="status">🧪 <b>Wersja testowa sklepu</b> — prawdziwe zakupy już wkrótce! 🍓</div>
+{% endif %}{% endif %}
+
 <footer class="ft">
     <div class="ft-main">
         <div>
@@ -136,14 +140,24 @@
     </div>
     <div class="ft-pay" aria-label="Obsługiwane metody płatności">
         <span class="ft-pay__label">Płatności obsługuje <b>Przelewy24</b></span>
-        <span class="ft-pay__flags">
-            <img src="{% static 'img/pay/blik.png' %}" alt="BLIK" loading="lazy">
-            <img src="{% static 'img/pay/visa.png' %}" alt="Visa" loading="lazy">
-            <img src="{% static 'img/pay/mastercard.png' %}" alt="Mastercard" loading="lazy">
-            <img src="{% static 'img/pay/applepay.png' %}" alt="Apple Pay" loading="lazy">
-            <img src="{% static 'img/pay/googlepay.png' %}" alt="Google Pay" loading="lazy">
-            <img src="{% static 'img/pay/paypo.png' %}" alt="PayPo" loading="lazy">
-        </span>
+        <div class="ft-pay__flags">
+            <span class="pchip"><img src="{% static 'img/pay/blik.png' %}" alt="BLIK" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/visa.png' %}" alt="Visa" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/mastercard.png' %}" alt="Mastercard" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/applepay.png' %}" alt="Apple Pay" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/googlepay.png' %}" alt="Google Pay" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/paypo.png' %}" alt="PayPo" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/mbank.png' %}" alt="mBank" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/pko.png' %}" alt="PKO Bank Polski" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/ing.png' %}" alt="ING" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/santander.png' %}" alt="Santander" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/pekao.png' %}" alt="Bank Pekao" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/millennium.png' %}" alt="Millennium" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/creditagricole.png' %}" alt="Credit Agricole" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/inteligo.png' %}" alt="Inteligo" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/citi.png' %}" alt="Citi Handlowy" loading="lazy"></span>
+            <span class="pchip"><img src="{% static 'img/pay/nest.png' %}" alt="Nest Bank" loading="lazy"></span>
+        </div>
     </div>
     <div class="ft-base">
         © {% now "Y" %} Spooky Strawberry · Wizards &amp; Strawberries Patryk Lewandowski · NIP 8361881374 · Zrobione z 🖤 w Polsce

@@ -1001,6 +1001,7 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             "announcement_text",
             "low_stock_default_enabled",
             "low_stock_threshold",
+            "payments_sandbox",
             "drop_is_active",
             "drop_eyebrow",
             "drop_heading",
@@ -1012,6 +1013,7 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             "announcement_text": "Tekst paska zapowiedzi",
             "low_stock_default_enabled": "Domyślnie pokazuj „ostatnie sztuki” dla nowych produktów",
             "low_stock_threshold": "Domyślny próg „ostatnich sztuk” (szt.)",
+            "payments_sandbox": "Tryb testowy płatności (Sandbox)",
             "drop_is_active": "Pokaż datę dropu na stronie głównej",
             "drop_eyebrow": "Nadtytuł dropu (nad hasłem hero)",
             "drop_heading": "Nagłówek sekcji „Najnowszy drop”",
@@ -1022,6 +1024,7 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             "announcement_text": "Tekst na czarnym pasku nad nagłówkiem. Możesz użyć emoji.",
             "low_stock_default_enabled": "Wartość domyślna dla NOWO dodawanych produktów: czy mają od razu mieć włączoną etykietę „ostatnie sztuki”. Nie zmienia produktów już dodanych — każdy produkt ma własne ustawienie.",
             "low_stock_threshold": "Domyślny próg dla NOWO dodawanych produktów. Każdy produkt ma własny próg, który możesz później zmienić w jego ustawieniach.",
+            "payments_sandbox": "WŁĄCZONE = Sandbox: płatności testowe (P24 sandbox), a zakupy NIE zmieniają stanów magazynowych. WYŁĄCZONE = Prawdziwe płatności: dopóki nie są uruchomione, w koszyku i checkoutcie pokazujemy dymek „wersja testowa — wkrótce startujemy”, a zamówienia nie są finalizowane.",
             "drop_eyebrow": "Tekst widoczny nad hasłem na stronie głównej, np. „Najnowszy drop”.",
             "drop_date": "Wyświetlana na hero, np. „piątek 20:00”. Zostaw puste, by nie pokazywać godziny.",
             "drop_products": "Produkty pokazywane w sekcji „Najnowszy drop”. Jeśli nic nie wybierzesz, pokażemy najnowsze produkty.",
@@ -1039,6 +1042,15 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
         self.fields["drop_products"].queryset = Product.objects.filter(
             status=Product.STATUS_ACTIVE
         ).order_by("sort_order", "name")
+        # Tryb "Prawdziwe płatności" jest na razie zablokowany — brak podłączonego
+        # produkcyjnego API Przelewy24. Pole trzymamy włączone (sandbox) i nieedytowalne.
+        self.initial["payments_sandbox"] = True
+        self.fields["payments_sandbox"].disabled = True
+        self.fields["payments_sandbox"].help_text = (
+            "Sklep działa w trybie testowym (Sandbox): płatności testowe, bez zmian stanów "
+            "magazynowych, a w koszyku/checkoutcie widnieje informacja „wersja testowa”. "
+            "Przełączenie na prawdziwe płatności będzie możliwe po podłączeniu produkcyjnego API Przelewy24."
+        )
         self.apply_dashboard_widgets()
 
 

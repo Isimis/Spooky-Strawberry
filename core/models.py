@@ -17,6 +17,11 @@ class SiteSettings(models.Model):
     low_stock_default_enabled = models.BooleanField(default=True)
     low_stock_threshold = models.PositiveIntegerField(default=3)
 
+    # Tryb płatności. True = Sandbox (płatności testowe, stany magazynowe NIE są ruszane).
+    # False = "Prawdziwe płatności" — dopóki nie są gotowe, w procesie zakupowym pokazujemy
+    # dymek "wersja testowa / wkrótce" i nie finalizujemy zakupu.
+    payments_sandbox = models.BooleanField(default=True)
+
     # Sekcja "Najnowszy drop" na stronie głównej
     drop_is_active = models.BooleanField(default=True)
     drop_eyebrow = models.CharField(max_length=120, blank=True, default="Najnowszy drop")

@@ -76,19 +76,39 @@ def handle_notification(data):
 
 
 def reconcile_payment(payment):
-    """Dopina weryfikację na stronie powrotu, gdy webhook się spóźnia.
+    """Dopina weryfikację na stronie powrotu, gdy webhook się spóźnia lub nie dotarł.
 
-    Działa tylko, gdy znamy już ``p24_order_id`` (ustawiany przez webhook).
+    Jeśli nie znamy jeszcze ``p24_order_id`` (webhook nie przyszedł), pytamy P24 o status
+    po naszym ``sessionId`` — dzięki temu strona powrotu jest samowystarczalna.
     """
-    if payment.is_paid or not payment.p24_order_id:
+    if payment.is_paid:
         return payment
-    ok, verify_raw = przelewy24.verify(
-        session_id=payment.session_id,
-        amount_grosze=payment.amount_grosze,
-        order_id=payment.p24_order_id,
-    )
+
+    order_id = payment.p24_order_id
+    if not order_id:
+        try:
+            info = przelewy24.by_session_id(payment.session_id)
+        except przelewy24.Przelewy24Error:
+            info = None
+        order_id = str(info.get("orderId")) if info and info.get("orderId") else ""
+        if order_id:
+            payment.p24_order_id = order_id
+            payment.save(update_fields=["p24_order_id", "updated_at"])
+
+    if not order_id:
+        return payment
+
+    try:
+        ok, verify_raw = przelewy24.verify(
+            session_id=payment.session_id,
+            amount_grosze=payment.amount_grosze,
+            order_id=order_id,
+        )
+    except przelewy24.Przelewy24Error:
+        return payment
+
     if ok:
-        _finalize_paid(payment.pk, p24_order_id=payment.p24_order_id, verify_raw=verify_raw)
+        _finalize_paid(payment.pk, p24_order_id=order_id, verify_raw=verify_raw)
         payment.refresh_from_db()
     return payment
 
@@ -115,7 +135,11 @@ def _finalize_paid(payment_pk, *, p24_order_id="", notification=None, verify_raw
         order.placed_at = now
     order.save(update_fields=["status", "placed_at", "updated_at"])
 
-    _create_sale_stock_entries(order)
+    # W trybie Sandbox (testowym) nie ruszamy stanów magazynowych.
+    from core.models import SiteSettings
+
+    if not SiteSettings.load().payments_sandbox:
+        _create_sale_stock_entries(order)
     _send_confirmation_email(order, payment)
     return payment
 

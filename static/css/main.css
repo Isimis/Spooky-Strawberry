@@ -13,7 +13,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:var(--f-body);background:var(--cream);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+body{font-family:var(--f-body);background:var(--cream);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+body>main{flex:1 0 auto}
+body>.ft{flex-shrink:0}
 svg{display:block}
 img{max-width:100%}
 a{color:inherit}
@@ -213,11 +215,15 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .pay-consent{display:flex;gap:9px;align-items:flex-start;margin-top:14px;font-size:12.5px;line-height:1.45;cursor:pointer}
 .pay-consent input{margin-top:2px;flex:0 0 auto;width:16px;height:16px;accent-color:var(--rose-deep)}
 .pay-consent a{text-decoration:underline}
-.ft-pay{background:#fff;border-radius:10px;padding:11px 18px;margin-bottom:16px}
-.ft-pay__label{display:block;font-size:11px;letter-spacing:.02em;color:#6b6470;margin-bottom:9px}
-.ft-pay__label b{color:#c9123b;font-weight:700}
-.ft-pay__flags{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap}
-.ft-pay__flags img{height:26px;width:auto;display:block}
+.test-bubble{position:fixed;left:16px;bottom:16px;z-index:149;background:var(--rose-deep,#b23a6b);color:#fff;padding:11px 16px;border-radius:16px 16px 16px 4px;font-size:13px;line-height:1.35;font-weight:600;box-shadow:0 12px 34px rgba(0,0,0,.3);max-width:min(92vw,340px)}
+.test-bubble b{font-weight:800}
+.ft-pay{border-top:1px solid rgba(255,255,255,.1);padding-top:18px;margin-bottom:16px}
+.ft-pay__label{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#B49DAC;margin-bottom:12px}
+.ft-pay__label b{color:#fff;font-weight:700}
+.ft-pay__flags{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+.pchip{flex:1 1 auto;min-width:62px;max-width:110px;height:34px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 9px;box-shadow:0 1px 0 rgba(0,0,0,.15)}
+.pchip img{max-height:19px;max-width:100%;width:auto;display:block}
+@media(max-width:560px){.pchip{flex:1 1 calc(25% - 8px);max-width:none}}
 .ft-base{border-top:1px solid rgba(255,255,255,.1);padding-top:16px;font-size:11.5px;color:#9D8898}
 
 /* ---------- KATALOG ---------- */

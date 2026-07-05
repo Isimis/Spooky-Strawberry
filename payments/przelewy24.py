@@ -76,6 +76,35 @@ def _request(path, body):
         raise Przelewy24Error(f"P24 nieczytelna odpowiedź: {raw[:200]}") from exc
 
 
+def _get(path):
+    cfg = _config()
+    url = f"{base_url()}{path}"
+    auth = base64.b64encode(f"{cfg['pos_id']}:{cfg['api_key']}".encode("utf-8")).decode("ascii")
+    request = urllib.request.Request(url, method="GET", headers={"Authorization": f"Basic {auth}"})
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        # 404 = brak takiej transakcji (np. jeszcze nieopłacona) — traktujemy jako brak danych.
+        if exc.code == 404:
+            return None
+        detail = exc.read().decode("utf-8", "replace")
+        raise Przelewy24Error(f"P24 HTTP {exc.code}: {detail}") from exc
+    except urllib.error.URLError as exc:
+        raise Przelewy24Error(f"P24 połączenie nieudane: {exc.reason}") from exc
+
+
+def by_session_id(session_id):
+    """Zwraca dane transakcji po naszym sessionId (m.in. orderId, status) albo None.
+
+    Pozwala stronie powrotu ustalić orderId bez czekania na webhook.
+    """
+    result = _get(f"/api/v1/transaction/by/sessionId/{session_id}")
+    if not result:
+        return None
+    return result.get("data") or None
+
+
 def register(*, session_id, amount_grosze, email, description, url_return, url_status, currency="PLN"):
     """Rejestruje transakcję. Zwraca token do przekierowania klienta."""
     cfg = _config()

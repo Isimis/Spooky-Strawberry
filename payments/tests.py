@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 
 from catalog.models import Category, Product, ProductVariant
+from core.models import SiteSettings
 from inventory.models import StockEntry
 from orders.models import Order, OrderItem
 from payments import przelewy24
@@ -66,6 +67,10 @@ class HandleNotificationTests(TestCase):
         self.payment = Payment.objects.create(
             order=self.order, session_id="sess-1", amount=Decimal("50.00"), status=Payment.STATUS_PENDING,
         )
+        # Domyślnie tryb sandbox pomija magazyn — testy stanów robimy w trybie realnym.
+        settings_obj = SiteSettings.load()
+        settings_obj.payments_sandbox = False
+        settings_obj.save(update_fields=["payments_sandbox"])
 
     def _notification(self, amount=5000):
         return {"sessionId": "sess-1", "amount": amount, "orderId": 4242, "currency": "PLN"}
@@ -96,6 +101,21 @@ class HandleNotificationTests(TestCase):
         self.variant.refresh_from_db()
         self.assertEqual(self.variant.stock_quantity, 7)  # nie zeszło drugi raz
         self.assertEqual(StockEntry.objects.filter(order_item=self.item, source=StockEntry.SOURCE_SALE).count(), 1)
+
+    @patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}}))
+    @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
+    def test_sandbox_mode_does_not_touch_stock(self, mock_sign, mock_verify):
+        settings_obj = SiteSettings.load()
+        settings_obj.payments_sandbox = True
+        settings_obj.save(update_fields=["payments_sandbox"])
+
+        self.assertTrue(handle_notification(self._notification()))
+        self.order.refresh_from_db()
+        self.variant.refresh_from_db()
+        # zamówienie opłacone, ale stany magazynowe nietknięte w trybie testowym
+        self.assertEqual(self.order.status, Order.STATUS_PLACED)
+        self.assertEqual(self.variant.stock_quantity, 10)
+        self.assertFalse(StockEntry.objects.filter(order_item=self.item, source=StockEntry.SOURCE_SALE).exists())
 
     @patch("payments.services.przelewy24.verify_notification_sign", return_value=False)
     def test_bad_signature_rejected(self, mock_sign):

@@ -634,7 +634,11 @@ def model_list(request, model_slug):
         elif box == "outbound":
             queryset = queryset.filter(direction=Message.DIRECTION_OUTBOUND)
             active_filters.append("Skrzynka: wysłane")
-        queryset = queryset.order_by("-created_at")
+        # Zawsze sortuj po faktycznej dacie wiadomości: odebrania (inbound) lub wysłania
+        # (outbound), a w ostateczności po dacie utworzenia.
+        queryset = queryset.annotate(
+            effective_date=Coalesce("received_at", "sent_at", "created_at")
+        ).order_by("-effective_date")
     elif is_taxonomy_model(config.model):
         queryset = prepare_taxonomy_queryset(config.model, queryset)
         queryset = apply_taxonomy_filters(request, queryset, active_filters)
