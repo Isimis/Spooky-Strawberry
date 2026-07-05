@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}Przetwarzamy płatność — Spooky Strawberry{% endblock %}
+
+{% block content %}
+<section class="sec">
+    <div class="steps" style="justify-content:center">
+        <div class="step done"><span class="n">✓</span> Koszyk</div><span class="step-sep"></span>
+        <div class="step done"><span class="n">✓</span> Dostawa</div><span class="step-sep"></span>
+        <div class="step active"><span class="n">3</span> Płatność</div><span class="step-sep"></span>
+        <div class="step"><span class="n">4</span> Gotowe</div>
+    </div>
+    <div class="confirm-wrap">
+        <h1 class="h-lg" style="margin-bottom:8px">Przetwarzamy Twoją płatność… ⏳</h1>
+        <p class="muted" style="max-width:440px;margin:0 auto">
+            Potwierdzenie z banku może zająć chwilę. Ta strona odświeży się automatycznie.
+            Gdy tylko płatność zostanie zaksięgowana, pokażemy podsumowanie zamówienia
+            <b>#{{ order.order_number }}</b>.
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment_return' %}">Sprawdź status</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:contact' %}">Pomoc</a>
+        </div>
+    </div>
+</section>
+<script>
+    // Odpytujemy stronę powrotu co 5 s — gdy webhook zaksięguje płatność, przejdziemy dalej.
+    setTimeout(function () { window.location.href = "{% url 'checkout:payment_return' %}"; }, 5000);
+</script>
+{% endblock %}

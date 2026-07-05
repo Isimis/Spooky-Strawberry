@@ -2584,10 +2584,29 @@ def build_order_item_detail_context(item):
     }
 
 
+def build_order_payment_info(order):
+    if not getattr(order, "pk", None):
+        return None
+    payment = order.payments.order_by("-created_at").first()
+    if payment is None:
+        return None
+    return {
+        "status": payment.status,
+        "status_label": payment.get_status_display(),
+        "provider_label": payment.get_provider_display(),
+        "method": payment.method,
+        "amount": payment.amount,
+        "p24_order_id": payment.p24_order_id,
+        "paid_at": payment.paid_at,
+        "is_paid": payment.is_paid,
+    }
+
+
 def build_order_detail_context(order):
     items = build_order_item_rows(order) if getattr(order, "pk", None) else []
     quantity_count = sum(item["quantity"] for item in items)
     return {
+        "payment": build_order_payment_info(order),
         "order_number": getattr(order, "order_number", "") or (f"Zamówienie #{order.pk}" if getattr(order, "pk", None) else "Nowe zamówienie"),
         "customer_name": get_order_customer_name(order) if getattr(order, "pk", None) else "Nowa klientka",
         "status_label": get_order_status_label(getattr(order, "status", Order.STATUS_DRAFT)),

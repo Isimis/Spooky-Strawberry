@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "orders",
     "inventory",
     "checkout",
+    "payments",
     "blog",
     "accounts",
     "dashboard",
@@ -163,6 +164,16 @@ MAILBOX_IMAP_USER = os.environ.get("MAILBOX_IMAP_USER", EMAIL_HOST_USER)
 MAILBOX_IMAP_PASSWORD = os.environ.get("MAILBOX_IMAP_PASSWORD", EMAIL_HOST_PASSWORD)
 MAILBOX_IMAP_FOLDER = os.environ.get("MAILBOX_IMAP_FOLDER", "INBOX")
 MAILBOX_SYNC_LIMIT = int(os.environ.get("MAILBOX_SYNC_LIMIT", "50"))
+
+
+# Płatności — Przelewy24. Wartości z panelu P24 (sandbox lub produkcja) przez .env.
+# Bez tych wartości integracja nie zadziała (rejestracja transakcji zwróci błąd).
+P24_MERCHANT_ID = os.environ.get("P24_MERCHANT_ID", "")
+P24_POS_ID = os.environ.get("P24_POS_ID", "") or P24_MERCHANT_ID
+P24_CRC = os.environ.get("P24_CRC", "")
+P24_API_KEY = os.environ.get("P24_API_KEY", "")
+# Domyślnie sandbox — na produkcji ustaw P24_SANDBOX=False.
+P24_SANDBOX = env_bool("P24_SANDBOX", True)
 
 
 # Database

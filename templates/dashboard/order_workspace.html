@@ -29,6 +29,12 @@
         <span>Razem</span>
         <strong>{% if order %}{{ order.grand_total|money }}{% else %}0,00 zł{% endif %}</strong>
     </article>
+    {% if order_detail.payment %}
+    <article>
+        <span>Płatność{% if order_detail.payment.method %} · {{ order_detail.payment.method }}{% endif %}</span>
+        <strong>{{ order_detail.payment.status_label }}{% if order_detail.payment.p24_order_id %} · P24 {{ order_detail.payment.p24_order_id }}{% endif %}</strong>
+    </article>
+    {% endif %}
 </section>
 
 <form id="order-workspace-form" method="post" class="dashboard-product-form dashboard-order-form">

@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260629-batch2square">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}?v=20260706-p24-compliance">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -134,7 +134,13 @@
             </div>
         </div>
     </div>
-    <div class="ft-base">© {% now "Y" %} Spooky Strawberry · Zrobione z 🖤 w Polsce</div>
+    <div class="ft-pay" aria-label="Obsługiwane metody płatności">
+        <img class="ft-pay__flags" src="{% static 'img/przelewy24/flagi_z_tlem/PNG/flagi_Przelewy24_5a.png' %}"
+             alt="Płatności obsługuje Przelewy24 – BLIK, Visa, Mastercard, Apple Pay, Google Pay, PayPo oraz przelewy bankowe" loading="lazy">
+    </div>
+    <div class="ft-base">
+        © {% now "Y" %} Spooky Strawberry · Wizards &amp; Strawberries Patryk Lewandowski · NIP 8361881374 · Zrobione z 🖤 w Polsce
+    </div>
 </footer>
 
 <div class="cookie-banner cookie-bar" id="cookieBar" hidden>

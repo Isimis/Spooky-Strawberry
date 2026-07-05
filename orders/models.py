@@ -66,6 +66,7 @@ class DiscountCode(models.Model):
 
 class Order(models.Model):
     STATUS_DRAFT = "draft"
+    STATUS_AWAITING_PAYMENT = "awaiting_payment"
     STATUS_PLACED = "placed"
     STATUS_CONFIRMED = "confirmed"
     STATUS_PACKED = "packed"
@@ -74,6 +75,7 @@ class Order(models.Model):
 
     STATUS_CHOICES = [
         (STATUS_DRAFT, "Draft"),
+        (STATUS_AWAITING_PAYMENT, "Oczekuje na płatność"),
         (STATUS_PLACED, "Placed"),
         (STATUS_CONFIRMED, "Confirmed"),
         (STATUS_PACKED, "Packed"),

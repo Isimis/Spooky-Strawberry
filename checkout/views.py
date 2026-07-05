@@ -9,10 +9,14 @@ from analytics.services import track_event
 from cart.services import clear_cart, get_cart_summary
 from orders.models import Order, OrderItem, ShippingMethod
 from orders.shipping import shipping_cost_for_method
+from payments.models import Payment
+from payments.przelewy24 import Przelewy24Error
+from payments.services import reconcile_payment, start_payment
 
 from .forms import CheckoutForm
 
 CHECKOUT_SESSION_KEY = "checkout"
+PAYMENT_SESSION_KEY = "payment_session_id"
 
 PAYMENT_METHODS = [
     ("blik", "BLIK", "Szybko, kodem z aplikacji banku"),
@@ -86,14 +90,28 @@ def payment(request):
     method = ShippingMethod.objects.filter(id=checkout_data.get("shipping_method"), is_active=True).first()
     shipping_cost = _shipping_cost_for(method, summary["subtotal"])
 
+    accepted_terms = request.POST.get("accept_terms") == "1"
+
     if request.method == "POST":
-        payment_method = request.POST.get("payment_method", "blik")
-        order = create_order(request, summary, checkout_data, method, shipping_cost, payment_method)
-        clear_cart(request)
-        request.session.pop(CHECKOUT_SESSION_KEY, None)
-        request.session.modified = True
-        track_event(request, "purchase", metadata={"order": order.order_number, "total": str(order.grand_total)})
-        return redirect("checkout:confirmation", order_number=order.order_number, token=order.confirmation_token)
+        if not accepted_terms:
+            # Wymóg P24 / ustawy: świadoma akceptacja regulaminu i polityki prywatności.
+            messages.error(request, "Aby złożyć zamówienie, zaakceptuj regulamin i politykę prywatności.")
+        else:
+            payment_method = request.POST.get("payment_method", "blik")
+            order = create_order(request, summary, checkout_data, method, shipping_cost, payment_method)
+            try:
+                gateway_url = start_payment(request, order, method=PAYMENT_LABELS.get(payment_method, payment_method))
+            except Przelewy24Error:
+                # Nie udało się zarejestrować transakcji (np. brak/niepoprawne klucze P24).
+                order.status = Order.STATUS_DRAFT
+                order.save(update_fields=["status"])
+                messages.error(request, "Nie udało się rozpocząć płatności. Spróbuj ponownie za chwilę.")
+                return redirect("checkout:payment")
+
+            payment = order.payments.order_by("-created_at").first()
+            request.session[PAYMENT_SESSION_KEY] = payment.session_id if payment else ""
+            request.session.modified = True
+            return redirect(gateway_url)
 
     return render(
         request,
@@ -105,6 +123,7 @@ def payment(request):
             "shipping_cost": shipping_cost,
             "grand_total": summary["subtotal"] + shipping_cost,
             "payment_methods": PAYMENT_METHODS,
+            "accept_terms": accepted_terms,
         },
     )
 
@@ -122,14 +141,14 @@ def create_order(request, summary, data, method, shipping_cost, payment_method):
         shipping_postal_code=data["postal_code"],
         shipping_city=data["city"],
         shipping_method=method,
-        status=Order.STATUS_PLACED,
+        status=Order.STATUS_AWAITING_PAYMENT,
         subtotal=subtotal,
         discount_total=Decimal("0.00"),
         shipping_total=shipping_cost,
         grand_total=subtotal + shipping_cost,
         customer_note=f"Płatność: {PAYMENT_LABELS.get(payment_method, payment_method)}",
         source_session_key=request.session.session_key or "",
-        placed_at=timezone.now(),
+        placed_at=None,
         user=request.user if request.user.is_authenticated else None,
     )
     order.order_number = f"SS-{10000 + order.pk}"
@@ -150,6 +169,42 @@ def create_order(request, summary, data, method, shipping_cost, payment_method):
             line_total=item["line_total"],
         )
     return order
+
+
+def payment_return(request):
+    """Adres powrotu z bramki P24 (urlReturn).
+
+    Webhook jest źródłem prawdy; tu tylko sprawdzamy stan i — gdy webhook się spóźnia —
+    próbujemy dokończyć weryfikację (``reconcile_payment``).
+    """
+    session_id = request.session.get(PAYMENT_SESSION_KEY)
+    payment = (
+        Payment.objects.filter(session_id=session_id).select_related("order").first()
+        if session_id
+        else None
+    )
+    if payment is None:
+        messages.info(request, "Nie znaleziono płatności do sfinalizowania.")
+        return redirect("cart:detail")
+
+    if not payment.is_paid:
+        reconcile_payment(payment)
+        payment.refresh_from_db()
+
+    if payment.is_paid:
+        order = payment.order
+        clear_cart(request)
+        request.session.pop(CHECKOUT_SESSION_KEY, None)
+        request.session.pop(PAYMENT_SESSION_KEY, None)
+        request.session.modified = True
+        track_event(request, "purchase", metadata={"order": order.order_number, "total": str(order.grand_total)})
+        return redirect("checkout:confirmation", order_number=order.order_number, token=order.confirmation_token)
+
+    return render(
+        request,
+        "checkout/payment_pending.html",
+        {"order": payment.order, "payment": payment},
+    )
 
 
 def confirmation(request, order_number, token):

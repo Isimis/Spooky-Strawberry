@@ -1,4 +1,5 @@
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -6,6 +7,7 @@ from django.urls import reverse
 from catalog.models import Category, Product, ProductVariant
 from orders.models import Order, ShippingMethod
 from orders.shipping import FREE_SHIPPING_THRESHOLD
+from payments.models import Payment
 
 
 class CheckoutConfirmationTests(TestCase):
@@ -119,16 +121,61 @@ class CheckoutConfirmationTests(TestCase):
         self.assertContains(response, "Kurier")
         self.assertContains(response, "13,99")
 
-    def test_payment_redirects_to_tokenized_confirmation_url(self):
+    @patch("checkout.views.start_payment", return_value="https://sandbox.przelewy24.pl/trnRequest/tok123")
+    def test_payment_creates_awaiting_order_and_redirects_to_gateway(self, mock_start):
+        self._put_product_in_cart()
+        self._put_checkout_data_in_session()
+
+        response = self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
+        order = Order.objects.get()
+
+        # zamówienie czeka na płatność, koszyk NIE jest jeszcze czyszczony
+        self.assertEqual(order.status, Order.STATUS_AWAITING_PAYMENT)
+        self.assertIsNone(order.placed_at)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "https://sandbox.przelewy24.pl/trnRequest/tok123")
+        self.assertIn("cart", self.client.session)
+        mock_start.assert_called_once()
+
+    @patch("checkout.views.start_payment")
+    def test_payment_requires_terms_acceptance(self, mock_start):
         self._put_product_in_cart()
         self._put_checkout_data_in_session()
 
         response = self.client.post(reverse("checkout:payment"), {"payment_method": "blik"})
-        order = Order.objects.get()
 
+        # bez zaznaczonego checkboxa: brak zamówienia, brak wywołania bramki, strona się przeładowuje
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())
+        mock_start.assert_not_called()
+
+    def test_payment_return_pending_when_not_paid(self):
+        order = self._create_order()
+        order.status = Order.STATUS_AWAITING_PAYMENT
+        order.save(update_fields=["status"])
+        payment = Payment.objects.create(
+            order=order, session_id="sess-pending", amount=order.grand_total, status=Payment.STATUS_PENDING,
+        )
+        session = self.client.session
+        session["payment_session_id"] = payment.session_id
+        session.save()
+
+        response = self.client.get(reverse("checkout:payment_return"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "checkout/payment_pending.html")
+
+    def test_payment_return_redirects_to_confirmation_when_paid(self):
+        order = self._create_order()
+        payment = Payment.objects.create(
+            order=order, session_id="sess-paid", amount=order.grand_total, status=Payment.STATUS_PAID,
+        )
+        session = self.client.session
+        session["payment_session_id"] = payment.session_id
+        session.save()
+
+        response = self.client.get(reverse("checkout:payment_return"))
         self.assertRedirects(
             response,
             reverse("checkout:confirmation", args=[order.order_number, order.confirmation_token]),
             fetch_redirect_response=False,
         )
-        self.assertIn(order.confirmation_token, response.url)
