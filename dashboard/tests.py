@@ -1631,3 +1631,49 @@ class WarehouseViewTests(TestCase):
         self.assertEqual(opening.quantity, 8)
         new_variant.refresh_from_db()
         self.assertEqual(new_variant.stock_quantity, 8)
+
+
+class InboxAndOrderStatusTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.staff = user_model.objects.create_user(username="inboxstaff", password="pass", is_staff=True)
+        self.client.login(username="inboxstaff", password="pass")
+
+    def _inbound(self, read=False):
+        from core.models import Message
+        return Message.objects.create(
+            direction=Message.DIRECTION_INBOUND,
+            status=Message.STATUS_RECEIVED,
+            subject="Pytanie",
+            from_email="klient@example.pl",
+            received_at=timezone.now(),
+            read_at=timezone.now() if read else None,
+        )
+
+    def test_opening_message_marks_read(self):
+        msg = self._inbound(read=False)
+        response = self.client.get(reverse("dashboard:message_detail", args=[msg.pk]))
+        self.assertEqual(response.status_code, 200)
+        msg.refresh_from_db()
+        self.assertIsNotNone(msg.read_at)
+
+    def test_bulk_mark_read_and_unread(self):
+        from core.models import Message
+        m1 = self._inbound(read=False)
+        m2 = self._inbound(read=False)
+        url = reverse("dashboard:bulk_message_action")
+
+        self.client.post(url, {"message_ids": [m1.pk, m2.pk], "bulk_action": "read"})
+        self.assertEqual(Message.objects.filter(read_at__isnull=True).count(), 0)
+
+        self.client.post(url, {"message_ids": [m1.pk], "bulk_action": "unread"})
+        m1.refresh_from_db()
+        self.assertIsNone(m1.read_at)
+
+    def test_order_status_label_is_polish(self):
+        from dashboard.views import get_order_status_label
+        from orders.models import Order
+        self.assertEqual(get_order_status_label(Order.STATUS_AWAITING_PAYMENT), "Oczekuje na płatność")
+        self.assertEqual(get_order_status_label(Order.STATUS_PLACED), "Złożone")
+        # etykieta modelu też po polsku
+        self.assertEqual(dict(Order.STATUS_CHOICES)[Order.STATUS_PLACED], "Złożone")

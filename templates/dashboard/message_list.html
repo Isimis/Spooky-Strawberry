@@ -32,35 +32,49 @@
 </div>
 
 {% if rows %}
-<div class="dashboard-table-wrap">
-    <table class="dashboard-table" aria-label="Lista wiadomości">
-        <thead>
-            <tr>
-                <th>Temat</th>
-                <th>Kierunek</th>
-                <th>Adres</th>
-                <th>Status</th>
-                <th>Data</th>
-                <th class="dashboard-col-actions">Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-                <tr class="{% if row.is_unread %}dashboard-message-row--unread{% endif %}">
-                    <td>
-                        <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.subject }}</a>
-                        {% if row.is_unread %}<span class="dashboard-unread-badge">Nowa</span>{% endif %}
-                    </td>
-                    <td>{% if row.direction == "inbound" %}<span class="dashboard-status-pill dashboard-status-pill--active">Odebrana</span>{% else %}<span class="dashboard-status-pill dashboard-status-pill--best">Wysłana</span>{% endif %}</td>
-                    <td><span class="dashboard-muted">{{ row.counterpart }}</span></td>
-                    <td>{{ row.status_label }}</td>
-                    <td><span class="dashboard-muted">{{ row.created_at|date:"d.m.Y H:i" }}</span></td>
-                    <td><div class="dashboard-row-actions"><a href="{{ row.admin_url }}">Otwórz</a></div></td>
+<form method="post" action="{% url 'dashboard:bulk_message_action' %}" id="messageBulkForm">
+    {% csrf_token %}
+    <input type="hidden" name="back" value="{{ request.get_full_path }}">
+    <div class="dashboard-bulkbar">
+        <select name="bulk_action" class="dashboard-input">
+            <option value="">— akcja masowa —</option>
+            <option value="read">Oznacz jako przeczytane</option>
+            <option value="unread">Oznacz jako nieprzeczytane</option>
+        </select>
+        <button type="submit" class="button button--secondary">Zastosuj do zaznaczonych</button>
+    </div>
+    <div class="dashboard-table-wrap">
+        <table class="dashboard-table" aria-label="Lista wiadomości">
+            <thead>
+                <tr>
+                    <th class="dashboard-col-check"><label class="dashboard-check-hit"><input type="checkbox" id="msgSelectAll" aria-label="Zaznacz wszystkie"></label></th>
+                    <th>Temat</th>
+                    <th>Kierunek</th>
+                    <th>Adres</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                    <th class="dashboard-col-actions">Akcje</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                    <tr class="{% if row.is_unread %}dashboard-message-row--unread{% endif %}">
+                        <td class="dashboard-col-check"><label class="dashboard-check-hit"><input type="checkbox" name="message_ids" value="{{ row.object.pk }}" class="msg-check"></label></td>
+                        <td>
+                            <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.subject }}</a>
+                            {% if row.is_unread %}<span class="dashboard-unread-badge">Nowa</span>{% endif %}
+                        </td>
+                        <td>{% if row.direction == "inbound" %}<span class="dashboard-status-pill dashboard-status-pill--active">Odebrana</span>{% else %}<span class="dashboard-status-pill dashboard-status-pill--best">Wysłana</span>{% endif %}</td>
+                        <td><span class="dashboard-muted">{{ row.counterpart }}</span></td>
+                        <td>{{ row.status_label }}</td>
+                        <td><span class="dashboard-muted">{{ row.created_at|date:"d.m.Y H:i" }}</span></td>
+                        <td><div class="dashboard-row-actions"><a href="{{ row.admin_url }}">Otwórz</a></div></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
 {% else %}
     <article class="dashboard-empty-card">
         <h2>Brak wiadomości</h2>
@@ -76,4 +90,22 @@
         {% if page.has_next %}<a href="?page={{ page.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Następna</a>{% endif %}
     </nav>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var all = document.getElementById("msgSelectAll");
+    if (!all) return;
+    var boxes = document.querySelectorAll(".msg-check");
+    all.addEventListener("change", function () {
+        boxes.forEach(function (b) { b.checked = all.checked; });
+    });
+    boxes.forEach(function (b) {
+        b.addEventListener("change", function () {
+            if (!b.checked) all.checked = false;
+        });
+    });
+})();
+</script>
 {% endblock %}

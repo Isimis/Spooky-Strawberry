@@ -74,13 +74,13 @@ class Order(models.Model):
     STATUS_CANCELLED = "cancelled"
 
     STATUS_CHOICES = [
-        (STATUS_DRAFT, "Draft"),
+        (STATUS_DRAFT, "Szkic"),
         (STATUS_AWAITING_PAYMENT, "Oczekuje na płatność"),
-        (STATUS_PLACED, "Placed"),
-        (STATUS_CONFIRMED, "Confirmed"),
-        (STATUS_PACKED, "Packed"),
-        (STATUS_SHIPPED, "Shipped"),
-        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_PLACED, "Złożone"),
+        (STATUS_CONFIRMED, "Potwierdzone"),
+        (STATUS_PACKED, "Spakowane"),
+        (STATUS_SHIPPED, "Wysłane"),
+        (STATUS_CANCELLED, "Anulowane"),
     ]
 
     order_number = models.CharField(max_length=40, unique=True, null=True, blank=True)

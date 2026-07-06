@@ -28,6 +28,7 @@ urlpatterns = [
     path("skrzynka/nowa/", views.message_compose, name="message_compose"),
     path("skrzynka/synchronizuj/", views.sync_messages, name="sync_messages"),
     path("skrzynka/wyslij-do-zaznaczonych/", views.bulk_compose, name="bulk_compose"),
+    path("skrzynka/akcja-masowa/", views.bulk_message_action, name="bulk_message_action"),
     path("skrzynka/<int:pk>/", views.message_detail, name="message_detail"),
     path("konta/<int:pk>/", views.user_account_detail, name="user_account_detail"),
     path("<slug:model_slug>/", views.model_list, name="model_list"),

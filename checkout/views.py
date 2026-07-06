@@ -148,7 +148,7 @@ def create_order(request, summary, data, method, shipping_cost, payment_method):
         grand_total=subtotal + shipping_cost,
         customer_note=f"Płatność: {PAYMENT_LABELS.get(payment_method, payment_method)}",
         source_session_key=request.session.session_key or "",
-        placed_at=None,
+        placed_at=timezone.now(),
         user=request.user if request.user.is_authenticated else None,
     )
     order.order_number = f"SS-{10000 + order.pk}"

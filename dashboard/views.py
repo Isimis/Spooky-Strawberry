@@ -480,6 +480,34 @@ def bulk_compose(request):
 
 
 @staff_required
+@require_POST
+def bulk_message_action(request):
+    """Akcja masowa w skrzynce: oznacz zaznaczone wiadomości jako (nie)przeczytane."""
+    ids = request.POST.getlist("message_ids")
+    action = request.POST.get("bulk_action", "")
+    back = request.POST.get("back", "")
+    fallback = back if back.startswith("/") and not back.startswith("//") else reverse(
+        "dashboard:model_list", args=["messages"]
+    )
+
+    if not ids:
+        messages.error(request, "Zaznacz przynajmniej jedną wiadomość.")
+        return redirect(fallback)
+
+    # Przeczytane/nieprzeczytane dotyczy tylko wiadomości przychodzących.
+    queryset = Message.objects.filter(pk__in=ids, direction=Message.DIRECTION_INBOUND)
+    if action == "read":
+        updated = queryset.filter(read_at__isnull=True).update(read_at=timezone.now())
+        messages.success(request, f"Oznaczono jako przeczytane: {updated}.")
+    elif action == "unread":
+        updated = queryset.filter(read_at__isnull=False).update(read_at=None)
+        messages.success(request, f"Oznaczono jako nieprzeczytane: {updated}.")
+    else:
+        messages.error(request, "Wybierz akcję z listy.")
+    return redirect(fallback)
+
+
+@staff_required
 @require_http_methods(["GET", "POST"])
 def base_layout_edit(request):
     """Edycja szablonu bazowego (wzorka), w który owijamy każdego maila."""
@@ -1712,6 +1740,7 @@ def get_newsletter_period_choices():
 def get_order_status_choices():
     return [
         (Order.STATUS_DRAFT, "Szkic"),
+        (Order.STATUS_AWAITING_PAYMENT, "Oczekuje na płatność"),
         (Order.STATUS_PLACED, "Złożone"),
         (Order.STATUS_CONFIRMED, "Potwierdzone"),
         (Order.STATUS_PACKED, "Spakowane"),
@@ -1735,6 +1764,7 @@ def get_order_period_choices():
 def get_order_status_class(status):
     return {
         Order.STATUS_DRAFT: "draft",
+        Order.STATUS_AWAITING_PAYMENT: "draft",
         Order.STATUS_PLACED: "placed",
         Order.STATUS_CONFIRMED: "confirmed",
         Order.STATUS_PACKED: "packed",

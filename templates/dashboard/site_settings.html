@@ -105,6 +105,16 @@
         </div>
 
         <div class="ss-card">
+            <div class="ss-card__title">Tryb płatności 🔒</div>
+            <p class="ss-card__hint">Sklep pracuje w trybie testowym (Sandbox) do czasu podłączenia produkcyjnego API Przelewy24.</p>
+            <div class="ss-toggle">
+                <span class="ss-label">{{ form.payments_sandbox.label }}</span>
+                <label class="ss-switch">{{ form.payments_sandbox }}<span class="ss-track"></span></label>
+            </div>
+            {% if form.payments_sandbox.help_text %}<p class="ss-help">{{ form.payments_sandbox.help_text }}</p>{% endif %}
+        </div>
+
+        <div class="ss-card">
             <div class="ss-card__title">Najnowszy drop (strona główna)</div>
             <p class="ss-card__hint">Data dropu na hero oraz produkty w sekcji „Najnowszy drop”.</p>
             <div class="ss-toggle">

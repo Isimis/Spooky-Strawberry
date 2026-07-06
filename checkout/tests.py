@@ -131,7 +131,8 @@ class CheckoutConfirmationTests(TestCase):
 
         # zamówienie czeka na płatność, koszyk NIE jest jeszcze czyszczony
         self.assertEqual(order.status, Order.STATUS_AWAITING_PAYMENT)
-        self.assertIsNone(order.placed_at)
+        # data złożenia uzupełnia się automatycznie już przy utworzeniu zamówienia
+        self.assertIsNotNone(order.placed_at)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, "https://sandbox.przelewy24.pl/trnRequest/tok123")
         self.assertIn("cart", self.client.session)
