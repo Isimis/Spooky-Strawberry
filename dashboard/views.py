@@ -2562,6 +2562,7 @@ def build_order_row(order):
         "status_label": get_order_status_label(order.status),
         "status_class": get_order_status_class(order.status),
         "is_test": order.is_test,
+        "admin_note": order.admin_note,
         "city": order.shipping_city,
         "shipping_method": order.shipping_method,
         "grand_total": order.grand_total,
@@ -3562,8 +3563,8 @@ def build_order_fieldsets(form):
             "fields": [form[name] for name in ["email", "phone", "first_name", "last_name"]],
         },
         {
-            "title": "Adres dostawy",
-            "description": "Adres, kraj i metoda dostawy. Płatności zostają poza tym etapem.",
+            "title": "Adres / punkt odbioru",
+            "description": "Adres dostawy (kurier) albo wybrany paczkomat (dostawa do punktu).",
             "fields": [
                 form[name]
                 for name in [
@@ -3573,12 +3574,15 @@ def build_order_fieldsets(form):
                     "shipping_city",
                     "shipping_country",
                     "shipping_method",
+                    "pickup_point_code",
+                    "pickup_point_name",
+                    "pickup_point_address",
                 ]
             ],
         },
         {
             "title": "Kwoty",
-            "description": "Podsumowanie wartości zamówienia. Na razie bez integracji płatności.",
+            "description": "Podsumowanie wartości zamówienia.",
             "fields": [
                 form[name]
                 for name in [
@@ -3591,9 +3595,9 @@ def build_order_fieldsets(form):
             ],
         },
         {
-            "title": "Notatki i analityka",
-            "description": "Wiadomość klientki oraz robocze powiązanie z późniejszą analityką ścieżki.",
-            "fields": [form[name] for name in ["customer_note", "source_session_key"]],
+            "title": "Notatki",
+            "description": "Komentarz administratora (wewnętrzny) oraz notatka klientki.",
+            "fields": [form[name] for name in ["admin_note", "customer_note", "source_session_key"]],
         },
     ]
 

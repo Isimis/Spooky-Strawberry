@@ -118,7 +118,8 @@ def payment(request):
             # Wymóg P24 / ustawy: świadoma akceptacja regulaminu i polityki prywatności.
             messages.error(request, "Aby złożyć zamówienie, zaakceptuj regulamin i politykę prywatności.")
         else:
-            payment_method = request.POST.get("payment_method", "blik")
+            # Metodę (BLIK/karta/przelew) klient wybiera już na stronie Przelewy24.
+            payment_method = request.POST.get("payment_method", "p24")
             order = _get_or_create_pending_order(request, summary, checkout_data, method, shipping_cost, payment_method)
             try:
                 gateway_url = start_payment(request, order, method=PAYMENT_LABELS.get(payment_method, payment_method))

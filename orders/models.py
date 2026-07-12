@@ -114,6 +114,8 @@ class Order(models.Model):
     pickup_point_name = models.CharField(max_length=180, blank=True)
     pickup_point_address = models.CharField(max_length=255, blank=True)
     customer_note = models.TextField(blank=True)
+    # Wewnętrzny komentarz obsługi — widoczny tylko w panelu, nigdy dla klienta.
+    admin_note = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     shipping_method = models.ForeignKey(
         ShippingMethod,

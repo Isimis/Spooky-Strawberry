@@ -98,6 +98,7 @@
                                     <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.order_number }}</a>
                                     {% if row.is_test %}<span class="dashboard-test-badge">TEST</span>{% endif %}
                                     <small class="dashboard-muted">{{ row.created_at|date:"d.m.Y H:i" }}</small>
+                                    {% if row.admin_note %}<small class="dashboard-admin-note" title="{{ row.admin_note }}">📝 {{ row.admin_note|truncatechars:44 }}</small>{% endif %}
                                 </div>
                             </td>
                             <td>

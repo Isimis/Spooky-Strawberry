@@ -17,16 +17,18 @@
         {% csrf_token %}
         <div class="cart-split">
             <div>
-                <h3 class="h-md" style="font-size:18px;margin-bottom:12px">Wybierz metodę płatności</h3>
-                {% for code, label, desc in payment_methods %}
-                <label class="radio-card {% if forloop.first %}sel{% endif %}">
-                    <input type="radio" name="payment_method" value="{{ code }}" {% if forloop.first %}checked{% endif %} required>
+                <h3 class="h-md" style="font-size:18px;margin-bottom:12px">Płatność online</h3>
+                <div class="radio-card sel" style="cursor:default">
                     <span class="rc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 9.5h19"/></svg></span>
-                    <div class="rc-meta"><b>{{ label }}</b><span>{{ desc }}</span></div>
-                    <span class="rc-radio"></span>
-                </label>
-                {% endfor %}
-                <div class="ship-note" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg> Płatności są szyfrowane i bezpieczne.</div>
+                    <div class="rc-meta"><b>Przelewy24</b><span>Metodę wybierzesz na następnym, bezpiecznym ekranie</span></div>
+                </div>
+                <ul class="pay-methods-list">
+                    <li>BLIK</li>
+                    <li>Karta (Visa, Mastercard)</li>
+                    <li>Szybki przelew z banku</li>
+                    <li>Apple Pay / Google Pay</li>
+                </ul>
+                <div class="ship-note" style="margin-top:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg> Płatności obsługuje Przelewy24 — szyfrowane i bezpieczne.</div>
             </div>
             <div>
                 <div class="summary">

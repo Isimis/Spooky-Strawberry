@@ -285,12 +285,16 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
             "shipping_city",
             "shipping_country",
             "shipping_method",
+            "pickup_point_code",
+            "pickup_point_name",
+            "pickup_point_address",
             "discount_code",
             "subtotal",
             "discount_total",
             "shipping_total",
             "grand_total",
             "customer_note",
+            "admin_note",
             "source_session_key",
         ]
         labels = {
@@ -307,12 +311,16 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
             "shipping_city": "Miasto",
             "shipping_country": "Kraj",
             "shipping_method": "Metoda dostawy",
+            "pickup_point_code": "Paczkomat — kod",
+            "pickup_point_name": "Paczkomat — nazwa",
+            "pickup_point_address": "Paczkomat — adres",
             "discount_code": "Kod rabatowy",
             "subtotal": "Wartość produktów",
             "discount_total": "Rabat",
             "shipping_total": "Koszt dostawy",
             "grand_total": "Razem",
             "customer_note": "Notatka klientki",
+            "admin_note": "Komentarz administratora (wewnętrzny)",
             "source_session_key": "Sesja źródłowa",
         }
         help_texts = {
@@ -322,11 +330,14 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
             "shipping_address_line_2": "Opcjonalnie mieszkanie, paczkomat albo dopisek adresowy.",
             "discount_code": "Kod użyty w zamówieniu, jeśli był przypisany.",
             "customer_note": "Wiadomość od klientki albo notatka robocza dla obsługi.",
+            "admin_note": "Widoczny tylko w panelu (w szczegółach i na liście). Klient go nie widzi.",
+            "pickup_point_address": "Wypełnione automatycznie, gdy klient wybierze paczkomat na mapie.",
             "source_session_key": "Techniczne powiązanie z sesją analityczną. Przyda się później do ścieżek zakupowych.",
         }
         widgets = {
             "placed_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "customer_note": forms.Textarea(attrs={"rows": 5}),
+            "admin_note": forms.Textarea(attrs={"rows": 4, "placeholder": "Notatka dla obsługi, np. ustalenia, wysyłka, uwagi…"}),
             "source_session_key": forms.TextInput(attrs={"placeholder": "np. session_key z analityki"}),
         }
 
