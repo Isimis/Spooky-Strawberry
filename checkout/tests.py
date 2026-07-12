@@ -262,3 +262,123 @@ class ShippingFormTests(TestCase):
         form = CheckoutForm(data)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["address_line_1"], "")  # adres czyszczony przy paczkomacie
+
+
+class FullPurchaseFlowTests(TestCase):
+    """Pełne ścieżki zakupowe przez realne widoki: dostawa → płatność → webhook → potwierdzenie."""
+
+    def setUp(self):
+        from decimal import Decimal as D
+        from core.models import SiteSettings
+        self.paczkomat, _ = ShippingMethod.objects.update_or_create(
+            code="paczkomat", defaults={"name": "Paczkomat", "price": D("10.99"), "is_active": True, "is_pickup_point": True, "sort_order": 10}
+        )
+        self.kurier, _ = ShippingMethod.objects.update_or_create(
+            code="kurier", defaults={"name": "Kurier", "price": D("13.99"), "is_active": True, "is_pickup_point": False, "sort_order": 20}
+        )
+        cat = Category.objects.create(name="Test", slug="flow-test")
+        self.product = Product.objects.create(name="Choker Flow", slug="choker-flow", category=cat, regular_price=D("29.00"), status=Product.STATUS_ACTIVE)
+        self.variant = ProductVariant.objects.create(product=self.product, stock_quantity=5, is_active=True)
+        self.settings = SiteSettings.load()
+
+    def _cart(self, qty=1):
+        s = self.client.session
+        s["cart"] = {str(self.variant.id): {"quantity": qty}}
+        s.save()
+
+    def _sandbox(self, on):
+        self.settings.payments_sandbox = on
+        self.settings.save(update_fields=["payments_sandbox"])
+
+    def _pay_and_confirm(self, order):
+        """Symuluje bramkę: znajduje płatność, odpala webhook, przechodzi payment_return."""
+        from payments.services import handle_notification
+        payment = order.payments.order_by("-created_at").first()
+        with patch("payments.services.przelewy24.verify_notification_sign", return_value=True), \
+             patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}})):
+            ok = handle_notification({
+                "sessionId": payment.session_id, "amount": payment.amount_grosze,
+                "orderId": 12345, "currency": "PLN",
+            })
+        self.assertTrue(ok, "webhook powinien potwierdzić płatność")
+        return self.client.get(reverse("checkout:payment_return"))
+
+    @patch("payments.services.przelewy24.register", return_value=("tok-pk", {}))
+    def test_paczkomat_full_flow_sandbox(self, mock_reg):
+        self._sandbox(True)
+        self._cart()
+        # 1) krok dostawy — paczkomat
+        r = self.client.post(reverse("checkout:shipping"), {
+            "first_name": "Ala", "last_name": "Kot", "email": "ala@example.pl", "phone": "500600700",
+            "shipping_method": self.paczkomat.id,
+            "pickup_point_code": "WAW104M", "pickup_point_name": "WAW104M",
+            "pickup_point_address": "Trakt Brzeski 55, 05-077 Warszawa",
+        })
+        self.assertRedirects(r, reverse("checkout:payment"))
+        self.assertEqual(self.client.session["checkout"]["pickup_point_code"], "WAW104M")
+        # 2) płatność
+        r = self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
+        order = Order.objects.get()
+        self.assertEqual(order.status, Order.STATUS_AWAITING_PAYMENT)
+        self.assertEqual(order.pickup_point_code, "WAW104M")
+        self.assertEqual(order.pickup_point_address, "Trakt Brzeski 55, 05-077 Warszawa")
+        self.assertEqual(order.shipping_address_line_1, "")   # brak adresu przy paczkomacie
+        self.assertTrue(order.is_test)                        # sandbox → test
+        self.assertIn("trnRequest/tok-pk", r.url)
+        # 3) webhook + powrót
+        r = self._pay_and_confirm(order)
+        order.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(order.status, Order.STATUS_PLACED)
+        self.assertEqual(self.variant.stock_quantity, 5)      # sandbox nie rusza magazynu
+        self.assertRedirects(r, reverse("checkout:confirmation", args=[order.order_number, order.confirmation_token]), fetch_redirect_response=False)
+        # 4) potwierdzenie dla klienta
+        c = self.client.get(reverse("checkout:confirmation", args=[order.order_number, order.confirmation_token]))
+        self.assertContains(c, "WAW104M")
+        self.assertContains(c, "Dziękujemy")
+        # 5) widok admina
+        from dashboard.views import get_order_address_lines, build_order_row
+        self.assertTrue(any("WAW104M" in l for l in get_order_address_lines(order)))
+        self.assertTrue(build_order_row(order)["is_test"])
+
+    @patch("payments.services.przelewy24.register", return_value=("tok-kur", {}))
+    def test_kurier_full_flow_real_mode_decrements_stock(self, mock_reg):
+        self._sandbox(False)   # tryb realny
+        self._cart(qty=2)
+        r = self.client.post(reverse("checkout:shipping"), {
+            "first_name": "Ola", "last_name": "Nowak", "email": "ola@example.pl", "phone": "600",
+            "shipping_method": self.kurier.id,
+            "address_line_1": "Ciemna 13", "postal_code": "00-001", "city": "Warszawa",
+        })
+        self.assertRedirects(r, reverse("checkout:payment"))
+        r = self.client.post(reverse("checkout:payment"), {"payment_method": "card", "accept_terms": "1"})
+        order = Order.objects.get()
+        self.assertEqual(order.shipping_address_line_1, "Ciemna 13")
+        self.assertEqual(order.pickup_point_code, "")         # brak paczkomatu przy kurierze
+        self.assertFalse(order.is_test)                       # tryb realny
+        self._pay_and_confirm(order)
+        order.refresh_from_db()
+        self.variant.refresh_from_db()
+        self.assertEqual(order.status, Order.STATUS_PLACED)
+        self.assertEqual(self.variant.stock_quantity, 3)      # 5 - 2 = 3 (tryb realny schodzi ze stanu)
+        c = self.client.get(reverse("checkout:confirmation", args=[order.order_number, order.confirmation_token]))
+        self.assertContains(c, "Ciemna 13")
+
+    def test_paczkomat_without_point_blocked(self):
+        self._cart()
+        r = self.client.post(reverse("checkout:shipping"), {
+            "first_name": "Ala", "last_name": "Kot", "email": "ala@example.pl", "phone": "500",
+            "shipping_method": self.paczkomat.id,
+        })
+        self.assertEqual(r.status_code, 200)   # nie przechodzi dalej
+        self.assertContains(r, "Wybierz paczkomat na mapie")
+        self.assertNotIn("checkout", self.client.session)
+
+    def test_kurier_without_address_blocked(self):
+        self._cart()
+        r = self.client.post(reverse("checkout:shipping"), {
+            "first_name": "Ala", "last_name": "Kot", "email": "ala@example.pl", "phone": "500",
+            "shipping_method": self.kurier.id,
+        })
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Podaj adres dostawy")
