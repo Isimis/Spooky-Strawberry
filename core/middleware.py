@@ -15,7 +15,7 @@ class CanonicalHostMiddleware:
         self.canonical = (getattr(settings, "CANONICAL_HOST", "") or "").strip()
 
     def __call__(self, request):
-        if self.canonical:
+        if self.canonical and not request.path.startswith("/.well-known/"):
             try:
                 host = request.get_host()
             except Exception:
