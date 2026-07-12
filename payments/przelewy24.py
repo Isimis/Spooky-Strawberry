@@ -62,7 +62,7 @@ def _sign(ordered_fields):
     return hashlib.sha384(payload.encode("utf-8")).hexdigest()
 
 
-def _request(path, body):
+def _request(path, body, method="POST"):
     cfg = _config()
     url = f"{base_url()}{path}"
     data = json.dumps(body, ensure_ascii=False).encode("utf-8")
@@ -70,7 +70,7 @@ def _request(path, body):
     request = urllib.request.Request(
         url,
         data=data,
-        method="POST",
+        method=method,
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Basic {auth}",
@@ -205,6 +205,7 @@ def verify(*, session_id, amount_grosze, order_id, currency="PLN"):
         "orderId": int(order_id),
         "sign": sign,
     }
-    result = _request("/api/v1/transaction/verify", body)
+    # UWAGA: endpoint verify w P24 REST wymaga metody PUT (nie POST).
+    result = _request("/api/v1/transaction/verify", body, method="PUT")
     status = (result.get("data") or {}).get("status")
     return status == "success", result
