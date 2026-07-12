@@ -6,7 +6,7 @@
 {% block content %}
 <section class="dashboard-heading dashboard-heading--row dashboard-order-heading">
     <div>
-        <p class="eyebrow">Zamówienie</p>
+        <p class="eyebrow">Zamówienie{% if order_detail.is_test %} <span class="dashboard-test-badge">TEST (sandbox)</span>{% endif %}</p>
         <h1>{{ order_detail.order_number }}</h1>
         <p>{{ order_detail.customer_name }} · status: {{ order_detail.status_label }}</p>
     </div>

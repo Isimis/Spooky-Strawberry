@@ -96,6 +96,7 @@
                             <td>
                                 <div>
                                     <a href="{{ row.admin_url }}" class="dashboard-cell-title">{{ row.order_number }}</a>
+                                    {% if row.is_test %}<span class="dashboard-test-badge">TEST</span>{% endif %}
                                     <small class="dashboard-muted">{{ row.created_at|date:"d.m.Y H:i" }}</small>
                                 </div>
                             </td>

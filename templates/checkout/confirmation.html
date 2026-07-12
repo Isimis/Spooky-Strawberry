@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Dziękujemy za zamówienie — Spooky Strawberry{% endblock %}
+{% block title %}{% if paid %}Dziękujemy za zamówienie{% else %}Zamówienie czeka na płatność{% endif %} — Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="sec">
+{% if paid %}
     <div class="steps" style="justify-content:center">
         <div class="step done"><span class="n">✓</span> Koszyk</div><span class="step-sep"></span>
         <div class="step done"><span class="n">✓</span> Dostawa</div><span class="step-sep"></span>
@@ -35,8 +36,27 @@
         </div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
             <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Kontynuuj zakupy</a>
-            <a class="btn btn-ghost btn-lg" href="{% url 'core:contact' %}">Status zamówienia</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}">Status zamówienia</a>
         </div>
     </div>
+{% else %}
+    <div class="steps" style="justify-content:center">
+        <div class="step done"><span class="n">✓</span> Koszyk</div><span class="step-sep"></span>
+        <div class="step done"><span class="n">✓</span> Dostawa</div><span class="step-sep"></span>
+        <div class="step active"><span class="n">3</span> Płatność</div><span class="step-sep"></span>
+        <div class="step"><span class="n">4</span> Gotowe</div>
+    </div>
+    <div class="confirm-wrap">
+        <h1 class="h-lg" style="margin-bottom:8px">Zamówienie czeka na płatność ⏳</h1>
+        <p class="muted" style="max-width:440px;margin:0 auto">
+            Zapisaliśmy Twoje zamówienie <b>#{{ order.order_number }}</b>, ale nie widzimy jeszcze
+            potwierdzenia płatności. Dokończ płatność, żeby je sfinalizować.
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment' %}">Dokończ płatność</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}">Status zamówienia</a>
+        </div>
+    </div>
+{% endif %}
 </section>
 {% endblock %}

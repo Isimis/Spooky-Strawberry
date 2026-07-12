@@ -59,6 +59,7 @@ class CheckoutConfirmationTests(TestCase):
             shipping_postal_code="00-001",
             shipping_city="Warszawa",
             shipping_method=self.shipping_method,
+            status=Order.STATUS_PLACED,
             subtotal=Decimal("29.00"),
             shipping_total=Decimal("10.99"),
             grand_total=Decimal("39.99"),
@@ -180,3 +181,48 @@ class CheckoutConfirmationTests(TestCase):
             reverse("checkout:confirmation", args=[order.order_number, order.confirmation_token]),
             fetch_redirect_response=False,
         )
+
+    @patch("checkout.views.start_payment", return_value="https://sandbox.przelewy24.pl/trnRequest/tok")
+    def test_repeated_payment_reuses_pending_order(self, mock_start):
+        self._put_product_in_cart()
+        self._put_checkout_data_in_session()
+        url = reverse("checkout:payment")
+        self.client.post(url, {"payment_method": "blik", "accept_terms": "1"})
+        self.client.post(url, {"payment_method": "blik", "accept_terms": "1"})
+        self.assertEqual(Order.objects.count(), 1)  # ponowna próba nie tworzy duplikatu
+
+    def test_payment_redirects_to_cart_when_stock_dropped(self):
+        self._put_product_in_cart(quantity=3)
+        self._put_checkout_data_in_session()
+        self.variant.stock_quantity = 1
+        self.variant.save(update_fields=["stock_quantity"])
+        response = self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
+        self.assertRedirects(response, reverse("cart:detail"))
+        self.assertFalse(Order.objects.exists())
+
+    def test_payment_return_shows_failure_after_max_attempts(self):
+        order = self._create_order()
+        order.status = Order.STATUS_AWAITING_PAYMENT
+        order.save(update_fields=["status"])
+        payment = Payment.objects.create(order=order, session_id="sess-fail", amount=order.grand_total, status=Payment.STATUS_PENDING)
+        session = self.client.session
+        session["payment_session_id"] = payment.session_id
+        session.save()
+        response = self.client.get(reverse("checkout:payment_return") + "?try=5")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Nie potwierdziliśmy płatności")
+
+    def test_confirmation_unpaid_shows_awaiting_state(self):
+        order = self._create_order()
+        order.status = Order.STATUS_AWAITING_PAYMENT
+        order.save(update_fields=["status"])
+        response = self.client.get(reverse("checkout:confirmation", args=[order.order_number, order.confirmation_token]))
+        self.assertContains(response, "czeka na płatność")
+        self.assertNotContains(response, "Dziękujemy za zamówienie")
+
+    @patch("checkout.views.start_payment", return_value="https://x/tok")
+    def test_sandbox_order_is_marked_test(self, mock_start):
+        self._put_product_in_cart()
+        self._put_checkout_data_in_session()
+        self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
+        self.assertTrue(Order.objects.get().is_test)

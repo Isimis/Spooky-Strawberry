@@ -127,6 +127,9 @@ class Order(models.Model):
     shipping_total = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0)
     grand_total = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0)
     source_session_key = models.CharField(max_length=80, blank=True)
+    # Zamówienie złożone w trybie testowym (Sandbox) — nie wpływa na magazyn i jest
+    # oznaczone w panelu, żeby nie mylić go z realną sprzedażą.
+    is_test = models.BooleanField(default=False)
     placed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

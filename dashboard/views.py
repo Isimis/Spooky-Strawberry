@@ -31,6 +31,7 @@ from dashboard.models import DataQualityIssue
 from inventory.models import StockEntry
 from inventory.services import recalculate_variant_stock
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
+from orders.services import expire_stale_pending_orders
 from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
 
 from .forms import (
@@ -623,6 +624,9 @@ def model_list(request, model_slug):
     elif config.model is NewsletterSubscriber:
         queryset = apply_newsletter_admin_filters(request, queryset, active_filters)
     elif config.model is Order:
+        # Samoczyszczenie: przy każdym wejściu na listę wygaszamy porzucone, nieopłacone
+        # zamówienia (nie blokują stanu — to tylko higiena panelu).
+        expire_stale_pending_orders()
         queryset = queryset.select_related("user", "shipping_method", "discount_code").prefetch_related("items")
         queryset = apply_order_admin_filters(request, queryset, active_filters)
     elif config.model is OrderItem:
@@ -2557,6 +2561,7 @@ def build_order_row(order):
         "status": order.status,
         "status_label": get_order_status_label(order.status),
         "status_class": get_order_status_class(order.status),
+        "is_test": order.is_test,
         "city": order.shipping_city,
         "shipping_method": order.shipping_method,
         "grand_total": order.grand_total,
@@ -2645,6 +2650,7 @@ def build_order_detail_context(order):
         "customer_name": get_order_customer_name(order) if getattr(order, "pk", None) else "Nowa klientka",
         "status_label": get_order_status_label(getattr(order, "status", Order.STATUS_DRAFT)),
         "status_class": get_order_status_class(getattr(order, "status", Order.STATUS_DRAFT)),
+        "is_test": getattr(order, "is_test", False),
         "item_count": len(items),
         "quantity_count": quantity_count,
         "items": items,

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from analytics.services import track_event
 from cart.services import clear_cart, get_cart_summary
+from core.models import SiteSettings
 from orders.models import Order, OrderItem, ShippingMethod
 from orders.shipping import shipping_cost_for_method
 from payments.models import Payment
@@ -17,6 +18,10 @@ from .forms import CheckoutForm
 
 CHECKOUT_SESSION_KEY = "checkout"
 PAYMENT_SESSION_KEY = "payment_session_id"
+PENDING_ORDER_SESSION_KEY = "pending_order_id"
+# Ile razy strona powrotu odświeży się w oczekiwaniu na potwierdzenie, zanim pokaże
+# komunikat o niepowodzeniu (5 prób × 5 s ≈ 25 s — realna płatność potwierdza się szybciej).
+MAX_RETURN_ATTEMPTS = 5
 
 PAYMENT_METHODS = [
     ("blik", "BLIK", "Szybko, kodem z aplikacji banku"),
@@ -87,6 +92,14 @@ def payment(request):
     if not checkout_data:
         return redirect("checkout:shipping")
 
+    # Koszyk sam koryguje ilości do bieżącego stanu magazynowego. Jeśli coś się zmieniło
+    # od dodania do koszyka, informujemy klientkę i wracamy do koszyka do potwierdzenia —
+    # zabezpiecza przed sprzedażą produktu, którego już nie ma.
+    if summary["adjustments"]:
+        for note in summary["adjustments"]:
+            messages.warning(request, note)
+        return redirect("cart:detail")
+
     method = ShippingMethod.objects.filter(id=checkout_data.get("shipping_method"), is_active=True).first()
     shipping_cost = _shipping_cost_for(method, summary["subtotal"])
 
@@ -98,13 +111,12 @@ def payment(request):
             messages.error(request, "Aby złożyć zamówienie, zaakceptuj regulamin i politykę prywatności.")
         else:
             payment_method = request.POST.get("payment_method", "blik")
-            order = create_order(request, summary, checkout_data, method, shipping_cost, payment_method)
+            order = _get_or_create_pending_order(request, summary, checkout_data, method, shipping_cost, payment_method)
             try:
                 gateway_url = start_payment(request, order, method=PAYMENT_LABELS.get(payment_method, payment_method))
             except Przelewy24Error:
                 # Nie udało się zarejestrować transakcji (np. brak/niepoprawne klucze P24).
-                order.status = Order.STATUS_DRAFT
-                order.save(update_fields=["status"])
+                # Zostawiamy zamówienie jako „oczekujące" — kolejna próba je ponowi (bez duplikatu).
                 messages.error(request, "Nie udało się rozpocząć płatności. Spróbuj ponownie za chwilę.")
                 return redirect("checkout:payment")
 
@@ -129,9 +141,24 @@ def payment(request):
 
 
 @transaction.atomic
-def create_order(request, summary, data, method, shipping_cost, payment_method):
+def _get_or_create_pending_order(request, summary, data, method, shipping_cost, payment_method):
+    """Zwraca zamówienie do opłacenia.
+
+    Jeśli w sesji jest już zamówienie „oczekujące na płatność" (poprzednia, nieudana próba),
+    ponawiamy je zamiast tworzyć duplikat. Zamówienie w trybie Sandbox jest oznaczane jako
+    testowe (``is_test``) — nie wpływa na magazyn i jest odróżnialne w panelu.
+    """
     subtotal = summary["subtotal"]
-    order = Order.objects.create(
+    is_test = SiteSettings.load().payments_sandbox
+
+    pending_id = request.session.get(PENDING_ORDER_SESSION_KEY)
+    order = (
+        Order.objects.filter(pk=pending_id, status=Order.STATUS_AWAITING_PAYMENT).first()
+        if pending_id
+        else None
+    )
+
+    fields = dict(
         email=data["email"],
         phone=data.get("phone", ""),
         first_name=data["first_name"],
@@ -148,11 +175,21 @@ def create_order(request, summary, data, method, shipping_cost, payment_method):
         grand_total=subtotal + shipping_cost,
         customer_note=f"Płatność: {PAYMENT_LABELS.get(payment_method, payment_method)}",
         source_session_key=request.session.session_key or "",
-        placed_at=timezone.now(),
+        is_test=is_test,
         user=request.user if request.user.is_authenticated else None,
     )
-    order.order_number = f"SS-{10000 + order.pk}"
-    order.save(update_fields=["order_number"])
+
+    if order is None:
+        order = Order.objects.create(placed_at=timezone.now(), **fields)
+        order.order_number = f"SS-{10000 + order.pk}"
+        order.save(update_fields=["order_number"])
+    else:
+        for key, value in fields.items():
+            setattr(order, key, value)
+        if not order.placed_at:
+            order.placed_at = timezone.now()
+        order.save()
+        order.items.all().delete()
 
     for item in summary["items"]:
         variant = item["variant"]
@@ -168,6 +205,9 @@ def create_order(request, summary, data, method, shipping_cost, payment_method):
             unit_price=item["unit_price"],
             line_total=item["line_total"],
         )
+
+    request.session[PENDING_ORDER_SESSION_KEY] = order.pk
+    request.session.modified = True
     return order
 
 
@@ -196,14 +236,28 @@ def payment_return(request):
         clear_cart(request)
         request.session.pop(CHECKOUT_SESSION_KEY, None)
         request.session.pop(PAYMENT_SESSION_KEY, None)
+        request.session.pop(PENDING_ORDER_SESSION_KEY, None)
         request.session.modified = True
         track_event(request, "purchase", metadata={"order": order.order_number, "total": str(order.grand_total)})
         return redirect("checkout:confirmation", order_number=order.order_number, token=order.confirmation_token)
 
+    try:
+        attempt = int(request.GET.get("try", 0))
+    except (TypeError, ValueError):
+        attempt = 0
+
     return render(
         request,
         "checkout/payment_pending.html",
-        {"order": payment.order, "payment": payment},
+        {
+            "order": payment.order,
+            "payment": payment,
+            "attempt": attempt,
+            "next_try": attempt + 1,
+            # Po kilku próbach bez potwierdzenia zakładamy niepowodzenie/anulowanie i
+            # pokazujemy jasny komunikat + możliwość ponowienia (koniec pętli odświeżania).
+            "timed_out": attempt >= MAX_RETURN_ATTEMPTS,
+        },
     )
 
 
@@ -213,4 +267,7 @@ def confirmation(request, order_number, token):
         order_number=order_number,
         confirmation_token=token,
     )
-    return render(request, "checkout/confirmation.html", {"order": order})
+    # Stronę „Dziękujemy" pokazujemy tylko dla realnie opłaconego zamówienia. Dla
+    # nieopłaconego (oczekuje na płatność) pokazujemy neutralny stan z możliwością zapłaty.
+    paid = order.status not in {Order.STATUS_DRAFT, Order.STATUS_AWAITING_PAYMENT}
+    return render(request, "checkout/confirmation.html", {"order": order, "paid": paid})

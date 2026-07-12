@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Przetwarzamy płatność — Spooky Strawberry{% endblock %}
+{% block title %}{% if timed_out %}Płatność niepotwierdzona{% else %}Przetwarzamy płatność{% endif %} — Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="sec">
@@ -11,6 +11,22 @@
         <div class="step active"><span class="n">3</span> Płatność</div><span class="step-sep"></span>
         <div class="step"><span class="n">4</span> Gotowe</div>
     </div>
+
+    {% if timed_out %}
+    <div class="confirm-wrap">
+        <h1 class="h-lg" style="margin-bottom:8px">Nie potwierdziliśmy płatności 😕</h1>
+        <p class="muted" style="max-width:460px;margin:0 auto">
+            Wygląda na to, że płatność za zamówienie <b>#{{ order.order_number }}</b> nie została
+            dokończona (mogła zostać anulowana lub przerwana). Jeśli pieniądze zostały pobrane —
+            napisz do nas, sprawdzimy i pomożemy. Możesz też spróbować zapłacić ponownie.
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment' %}">Zapłać ponownie</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'checkout:payment_return' %}">Sprawdź jeszcze raz</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:contact' %}">Napisz do nas</a>
+        </div>
+    </div>
+    {% else %}
     <div class="confirm-wrap">
         <h1 class="h-lg" style="margin-bottom:8px">Przetwarzamy Twoją płatność… ⏳</h1>
         <p class="muted" style="max-width:440px;margin:0 auto">
@@ -19,13 +35,17 @@
             <b>#{{ order.order_number }}</b>.
         </p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
-            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment_return' %}">Sprawdź status płatności</a>
+            <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment_return' %}?try={{ next_try }}">Sprawdź status płatności</a>
             <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}">Status zamówienia</a>
         </div>
     </div>
+    <script>
+        // Odpytujemy stronę powrotu co 5 s. Po kilku próbach widok sam pokaże komunikat
+        // o niepowodzeniu (parametr ?try rośnie), więc nie ma nieskończonej pętli.
+        setTimeout(function () {
+            window.location.href = "{% url 'checkout:payment_return' %}?try={{ next_try }}";
+        }, 5000);
+    </script>
+    {% endif %}
 </section>
-<script>
-    // Odpytujemy stronę powrotu co 5 s — gdy webhook zaksięguje płatność, przejdziemy dalej.
-    setTimeout(function () { window.location.href = "{% url 'checkout:payment_return' %}"; }, 5000);
-</script>
 {% endblock %}

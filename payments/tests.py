@@ -134,6 +134,16 @@ class HandleNotificationTests(TestCase):
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, Payment.STATUS_PENDING)
 
+    @patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}}))
+    @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
+    def test_late_payment_recovers_cancelled_order(self, mock_sign, mock_verify):
+        # zamówienie zdążyło wygasnąć (CANCELLED), ale płatność przyszła — musi wrócić do PLACED
+        self.order.status = Order.STATUS_CANCELLED
+        self.order.save(update_fields=["status"])
+        self.assertTrue(handle_notification(self._notification()))
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, Order.STATUS_PLACED)
+
 
 @override_settings(
     P24_MERCHANT_ID="111111", P24_POS_ID="111111", P24_CRC="crc-prod", P24_API_KEY="api-prod",

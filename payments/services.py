@@ -129,7 +129,9 @@ def _finalize_paid(payment_pk, *, p24_order_id="", notification=None, verify_raw
     payment.save()
 
     order = payment.order
-    if order.status == Order.STATUS_AWAITING_PAYMENT:
+    # Spóźniona płatność „odzyskuje" zamówienie, nawet jeśli zdążyło wygasnąć (CANCELLED)
+    # albo było szkicem — nie może być tak, że pieniądze wpłynęły, a zamówienie przepadło.
+    if order.status in {Order.STATUS_AWAITING_PAYMENT, Order.STATUS_CANCELLED, Order.STATUS_DRAFT}:
         order.status = Order.STATUS_PLACED
     if not order.placed_at:
         order.placed_at = now
