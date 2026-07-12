@@ -32,7 +32,13 @@
             <div class="sum-row"><span>Produkty</span><span>{{ order.subtotal|money }}</span></div>
             <div class="sum-row"><span>Dostawa{% if order.shipping_method %} · {{ order.shipping_method.name }}{% endif %}</span><span>{% if order.shipping_total > 0 %}{{ order.shipping_total|money }}{% else %}gratis{% endif %}</span></div>
             <div class="sum-row tot"><span>Razem</span><span class="big">{{ order.grand_total|money }}</span></div>
-            <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:12.5px;color:var(--muted)">Dostawa na: {{ order.shipping_address_line_1 }}{% if order.shipping_address_line_2 %}, {{ order.shipping_address_line_2 }}{% endif %}, {{ order.shipping_postal_code }} {{ order.shipping_city }}</div>
+            <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:12.5px;color:var(--muted)">
+                {% if order.pickup_point_code %}
+                    Odbiór w paczkomacie <b>{{ order.pickup_point_name|default:order.pickup_point_code }}</b>{% if order.pickup_point_address %} · {{ order.pickup_point_address }}{% endif %}
+                {% else %}
+                    Dostawa na: {{ order.shipping_address_line_1 }}{% if order.shipping_address_line_2 %}, {{ order.shipping_address_line_2 }}{% endif %}, {{ order.shipping_postal_code }} {{ order.shipping_city }}
+                {% endif %}
+            </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
             <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Kontynuuj zakupy</a>

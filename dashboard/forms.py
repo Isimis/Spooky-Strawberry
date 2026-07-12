@@ -378,6 +378,7 @@ class ShippingMethodDashboardForm(DashboardFormMixin, forms.ModelForm):
             "free_from_amount",
             "sort_order",
             "is_active",
+            "is_pickup_point",
         ]
         labels = {
             "name": "Nazwa metody dostawy",
@@ -387,6 +388,7 @@ class ShippingMethodDashboardForm(DashboardFormMixin, forms.ModelForm):
             "free_from_amount": "Darmowa od kwoty",
             "sort_order": "Kolejność",
             "is_active": "Aktywna w sklepie",
+            "is_pickup_point": "Dostawa do paczkomatu (wybór punktu na mapie)",
         }
         help_texts = {
             "name": "Nazwa widoczna w koszyku i później przy zamówieniu.",

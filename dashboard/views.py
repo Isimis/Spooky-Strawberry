@@ -2743,12 +2743,18 @@ def get_order_customer_name(order):
 def get_order_address_lines(order):
     if not getattr(order, "pk", None):
         return []
-    lines = [
-        order.shipping_address_line_1,
-        order.shipping_address_line_2,
-        f"{order.shipping_postal_code} {order.shipping_city}".strip(),
-        order.shipping_country,
-    ]
+    if getattr(order, "pickup_point_code", ""):
+        lines = [
+            f"Paczkomat {order.pickup_point_name or order.pickup_point_code}",
+            order.pickup_point_address,
+        ]
+    else:
+        lines = [
+            order.shipping_address_line_1,
+            order.shipping_address_line_2,
+            f"{order.shipping_postal_code} {order.shipping_city}".strip(),
+            order.shipping_country,
+        ]
     return [line for line in lines if line]
 
 

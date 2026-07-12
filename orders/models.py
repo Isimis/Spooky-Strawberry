@@ -23,6 +23,9 @@ class ShippingMethod(models.Model):
     )
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
+    # Dostawa do punktu odbioru (np. Paczkomat) — wtedy w checkoutcie klient wybiera punkt
+    # na mapie zamiast podawać adres.
+    is_pickup_point = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["sort_order", "name"]
@@ -101,11 +104,15 @@ class Order(models.Model):
     phone = models.CharField(max_length=40, blank=True)
     first_name = models.CharField(max_length=80)
     last_name = models.CharField(max_length=80)
-    shipping_address_line_1 = models.CharField(max_length=180)
+    shipping_address_line_1 = models.CharField(max_length=180, blank=True)
     shipping_address_line_2 = models.CharField(max_length=180, blank=True)
-    shipping_postal_code = models.CharField(max_length=20)
-    shipping_city = models.CharField(max_length=100)
+    shipping_postal_code = models.CharField(max_length=20, blank=True)
+    shipping_city = models.CharField(max_length=100, blank=True)
     shipping_country = models.CharField(max_length=80, default="Polska")
+    # Wybrany punkt odbioru (Paczkomat) — wypełnione zamiast adresu przy dostawie do punktu.
+    pickup_point_code = models.CharField(max_length=40, blank=True)
+    pickup_point_name = models.CharField(max_length=180, blank=True)
+    pickup_point_address = models.CharField(max_length=255, blank=True)
     customer_note = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     shipping_method = models.ForeignKey(

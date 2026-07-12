@@ -109,6 +109,13 @@
                     {% if form.is_active.help_text %}<small>{{ form.is_active.help_text }}</small>{% endif %}
                     {{ form.is_active.errors }}
                 </label>
+
+                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox" data-field-name="{{ form.is_pickup_point.name }}">
+                    <span>{{ form.is_pickup_point.label }}</span>
+                    {{ form.is_pickup_point }}
+                    {% if form.is_pickup_point.help_text %}<small>{{ form.is_pickup_point.help_text }}</small>{% endif %}
+                    {{ form.is_pickup_point.errors }}
+                </label>
             </div>
         </section>
 

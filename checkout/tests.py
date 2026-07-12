@@ -226,3 +226,39 @@ class CheckoutConfirmationTests(TestCase):
         self._put_checkout_data_in_session()
         self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
         self.assertTrue(Order.objects.get().is_test)
+
+
+class ShippingFormTests(TestCase):
+    def setUp(self):
+        from decimal import Decimal as D
+        self.paczkomat, _ = ShippingMethod.objects.update_or_create(
+            code="paczkomat", defaults={"name": "Paczkomat", "price": D("10.99"), "is_active": True, "is_pickup_point": True}
+        )
+        self.kurier, _ = ShippingMethod.objects.update_or_create(
+            code="kurier", defaults={"name": "Kurier", "price": D("13.99"), "is_active": True, "is_pickup_point": False}
+        )
+
+    def _base(self, method):
+        return {"first_name": "A", "last_name": "B", "email": "a@b.pl", "phone": "", "shipping_method": method.id}
+
+    def test_paczkomat_requires_point(self):
+        from checkout.forms import CheckoutForm
+        self.assertFalse(CheckoutForm(self._base(self.paczkomat)).is_valid())
+        data = self._base(self.paczkomat)
+        data["pickup_point_code"] = "KRA010"
+        self.assertTrue(CheckoutForm(data).is_valid())
+
+    def test_kurier_requires_address(self):
+        from checkout.forms import CheckoutForm
+        self.assertFalse(CheckoutForm(self._base(self.kurier)).is_valid())
+        data = self._base(self.kurier)
+        data.update({"address_line_1": "Ul. 1", "postal_code": "00-001", "city": "Wwa"})
+        self.assertTrue(CheckoutForm(data).is_valid())
+
+    def test_paczkomat_clears_address(self):
+        from checkout.forms import CheckoutForm
+        data = self._base(self.paczkomat)
+        data.update({"pickup_point_code": "KRA010", "address_line_1": "Zbędna 9"})
+        form = CheckoutForm(data)
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["address_line_1"], "")  # adres czyszczony przy paczkomacie

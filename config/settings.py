@@ -47,6 +47,10 @@ DEBUG = env_bool("DEBUG", True)
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
 
+# Kanoniczna domena — jeśli ustawiona, ruch z innych hostów (np. www) jest 301
+# przekierowywany tutaj. Puste = wyłączone (dev/testy). Na prod: spookystrawberry.pl
+CANONICAL_HOST = os.environ.get("CANONICAL_HOST", "").strip()
+
 # Domeny/adresy, którym ufamy przy sprawdzaniu CSRF (wymagane za HTTPS/nginx),
 # np. CSRF_TRUSTED_ORIGINS=https://spookystrawberry.pl,https://www.spookystrawberry.pl
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
@@ -85,6 +89,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "core.middleware.CanonicalHostMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     "analytics.middleware.AnalyticsMiddleware",
     'django.middleware.common.CommonMiddleware',
@@ -179,6 +184,20 @@ P24_SANDBOX_MERCHANT_ID = os.environ.get("P24_SANDBOX_MERCHANT_ID", "")
 P24_SANDBOX_POS_ID = os.environ.get("P24_SANDBOX_POS_ID", "") or P24_SANDBOX_MERCHANT_ID
 P24_SANDBOX_CRC = os.environ.get("P24_SANDBOX_CRC", "")
 P24_SANDBOX_API_KEY = os.environ.get("P24_SANDBOX_API_KEY", "")
+
+
+# Dostawa — InPost Paczkomat (Geowidget do wyboru punktu na mapie).
+# Token z panelu InPost (Manager Paczek / ShipX → API → Geowidget). Bez tokenu mapa się
+# nie załaduje, a checkout poprosi o wybór paczkomatu (do czasu skonfigurowania).
+INPOST_GEOWIDGET_TOKEN = os.environ.get("INPOST_GEOWIDGET_TOKEN", "")
+# Domyślnie sandbox Geowidgetu; na produkcji ustaw INPOST_GEOWIDGET_SANDBOX=False.
+INPOST_GEOWIDGET_SANDBOX = env_bool("INPOST_GEOWIDGET_SANDBOX", True)
+if INPOST_GEOWIDGET_SANDBOX:
+    INPOST_GEOWIDGET_JS = "https://sandbox-easy-geowidget-sdk.easypack24.net/inpost-geowidget.js"
+    INPOST_GEOWIDGET_CSS = "https://sandbox-easy-geowidget-sdk.easypack24.net/inpost-geowidget.css"
+else:
+    INPOST_GEOWIDGET_JS = "https://geowidget.inpost.pl/inpost-geowidget.js"
+    INPOST_GEOWIDGET_CSS = "https://geowidget.inpost.pl/inpost-geowidget.css"
 
 
 # Database

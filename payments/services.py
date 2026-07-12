@@ -176,12 +176,21 @@ def _send_confirmation_email(order, payment):
         + f" × {item.quantity} — {item.line_total} zł</li>"
         for item in order.items.all()
     )
+    if order.pickup_point_code:
+        delivery = f"Odbiór w paczkomacie {order.pickup_point_name or order.pickup_point_code}"
+        if order.pickup_point_address:
+            delivery += f" ({order.pickup_point_address})"
+    else:
+        delivery = (
+            f"{order.shipping_address_line_1}, {order.shipping_postal_code} {order.shipping_city}"
+        )
     body_html = (
         f"<p>Cześć {order.first_name},</p>"
         f"<p>dziękujemy! Twoja płatność za zamówienie <strong>{order.order_number}</strong> "
         f"została zaksięgowana.</p>"
         f"<ul>{lines}</ul>"
         f"<p>Do zapłaty: <strong>{order.grand_total} zł</strong> (opłacone).</p>"
+        f"<p>Dostawa: {delivery}</p>"
     )
     try:
         send_message(

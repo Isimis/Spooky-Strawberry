@@ -3,6 +3,20 @@
 
 {% block title %}Dostawa i dane — Spooky Strawberry{% endblock %}
 
+{% block extra_head %}
+    {% if geowidget_token %}
+    <link rel="stylesheet" href="{{ geowidget_css }}">
+    <script src="{{ geowidget_js }}" defer></script>
+    {% endif %}
+    <style>
+        .ship-paczkomat{display:none}
+        .geowidget-box{height:460px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:8px}
+        .geowidget-box inpost-geowidget{display:block;width:100%;height:100%}
+        .pk-chosen{display:none;margin-top:10px;padding:12px 14px;border:1.5px solid var(--rose-deep);border-radius:12px;background:var(--blush);font-size:14px}
+        .pk-chosen b{display:block}
+    </style>
+{% endblock %}
+
 {% block content %}
 <section class="sec">
     <h1 class="h-lg" style="margin-bottom:16px">Dostawa i dane</h1>
@@ -30,7 +44,7 @@
                 {{ form.shipping_method.errors }}
                 {% for m in shipping_methods %}
                 <label class="radio-card {% if m.id == selected_method_id %}sel{% endif %}">
-                    <input type="radio" name="shipping_method" value="{{ m.id }}" {% if m.id == selected_method_id %}checked{% endif %} required>
+                    <input type="radio" name="shipping_method" value="{{ m.id }}" data-pickup="{% if m.is_pickup_point %}1{% else %}0{% endif %}" {% if m.id == selected_method_id %}checked{% endif %} required>
                     <span class="rc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M3 8l3-4h12l3 4"/><path d="M12 4v4"/></svg></span>
                     <div class="rc-meta"><b>{{ m.name }}</b>{% if m.description %}<span>{{ m.description }}</span>{% endif %}</div>
                     <span class="rc-price">{% if m.price > 0 %}{{ m.price|money }}{% else %}0 zł{% endif %}</span>
@@ -40,12 +54,33 @@
                 <p class="muted">Brak skonfigurowanych metod dostawy.</p>
                 {% endfor %}
 
-                <h3 class="h-md" style="font-size:18px;margin:18px 0 12px">Adres</h3>
-                <div class="field"><label>{{ form.address_line_1.label }}</label>{{ form.address_line_1 }}{{ form.address_line_1.errors }}</div>
-                <div class="field"><label>{{ form.address_line_2.label }} <span class="muted" style="font-weight:500">(opcjonalnie)</span></label>{{ form.address_line_2 }}</div>
-                <div class="form-grid2">
-                    <div class="field"><label>{{ form.postal_code.label }}</label>{{ form.postal_code }}{{ form.postal_code.errors }}</div>
-                    <div class="field"><label>{{ form.city.label }}</label>{{ form.city }}{{ form.city.errors }}</div>
+                {# --- Adres dostawy (kurier) --- #}
+                <div class="ship-address" id="shipAddress">
+                    <h3 class="h-md" style="font-size:18px;margin:18px 0 12px">Adres dostawy</h3>
+                    <div class="field"><label>{{ form.address_line_1.label }}</label>{{ form.address_line_1 }}{{ form.address_line_1.errors }}</div>
+                    <div class="field"><label>{{ form.address_line_2.label }} <span class="muted" style="font-weight:500">(opcjonalnie)</span></label>{{ form.address_line_2 }}</div>
+                    <div class="form-grid2">
+                        <div class="field"><label>{{ form.postal_code.label }}</label>{{ form.postal_code }}{{ form.postal_code.errors }}</div>
+                        <div class="field"><label>{{ form.city.label }}</label>{{ form.city }}{{ form.city.errors }}</div>
+                    </div>
+                </div>
+
+                {# --- Wybór paczkomatu (mapa) --- #}
+                <div class="ship-paczkomat" id="shipPaczkomat">
+                    <h3 class="h-md" style="font-size:18px;margin:18px 0 8px">Wybierz paczkomat</h3>
+                    {{ form.pickup_point_code }}{{ form.pickup_point_name }}{{ form.pickup_point_address }}
+                    {% if geowidget_token %}
+                        <p class="muted" style="font-size:13px">Kliknij automat na mapie, do którego chcesz odebrać paczkę.</p>
+                        <div class="geowidget-box">
+                            <inpost-geowidget token="{{ geowidget_token }}" language="pl" config="parcelcollect" onpoint="ssPickPoint"></inpost-geowidget>
+                        </div>
+                    {% else %}
+                        <p class="ship-note" style="background:#fff4f9">Wybór paczkomatu będzie dostępny po skonfigurowaniu integracji InPost.</p>
+                    {% endif %}
+                    <div class="pk-chosen" id="pkChosen">
+                        <b id="pkChosenName"></b>
+                        <span id="pkChosenAddr"></span>
+                    </div>
                 </div>
             </div>
             <div>
@@ -62,4 +97,56 @@
         </div>
     </form>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var addressBox = document.getElementById("shipAddress");
+    var paczkomatBox = document.getElementById("shipPaczkomat");
+    var codeInput = document.getElementById("id_pickup_point_code");
+    var nameInput = document.getElementById("id_pickup_point_name");
+    var addrInput = document.getElementById("id_pickup_point_address");
+    var chosen = document.getElementById("pkChosen");
+    var chosenName = document.getElementById("pkChosenName");
+    var chosenAddr = document.getElementById("pkChosenAddr");
+
+    function currentMethod() {
+        return document.querySelector('input[name="shipping_method"]:checked');
+    }
+
+    function syncMode() {
+        var m = currentMethod();
+        var isPickup = m && m.getAttribute("data-pickup") === "1";
+        paczkomatBox.style.display = isPickup ? "block" : "none";
+        addressBox.style.display = isPickup ? "none" : "block";
+    }
+
+    document.querySelectorAll('input[name="shipping_method"]').forEach(function (r) {
+        r.addEventListener("change", syncMode);
+    });
+    syncMode();
+
+    // Wybór paczkomatu z Geowidgetu
+    window.ssPickPoint = function (event) {
+        var p = event && event.detail;
+        if (!p) return;
+        var addr = "";
+        if (p.address) { addr = [p.address.line1, p.address.line2].filter(Boolean).join(", "); }
+        codeInput.value = p.name || "";
+        nameInput.value = p.name || "";
+        addrInput.value = addr || (p.location_description || "");
+        chosenName.textContent = "Paczkomat " + (p.name || "");
+        chosenAddr.textContent = addrInput.value;
+        chosen.style.display = "block";
+    };
+
+    // Pokaż wcześniej wybrany punkt (powrót na krok dostawy)
+    if (codeInput && codeInput.value) {
+        chosenName.textContent = "Paczkomat " + codeInput.value;
+        chosenAddr.textContent = addrInput.value || "";
+        chosen.style.display = "block";
+    }
+})();
+</script>
 {% endblock %}

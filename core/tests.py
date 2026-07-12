@@ -122,3 +122,23 @@ class MailBackendTests(TestCase):
         apply_subject_prefix([message])
 
         self.assertEqual(message.subject, "Test")
+
+
+@override_settings(
+    CANONICAL_HOST="spookystrawberry.pl",
+    ALLOWED_HOSTS=["spookystrawberry.pl", "www.spookystrawberry.pl", "testserver"],
+)
+class CanonicalHostMiddlewareTests(TestCase):
+    def test_www_redirects_to_canonical(self):
+        resp = self.client.get("/", HTTP_HOST="www.spookystrawberry.pl")
+        self.assertEqual(resp.status_code, 301)
+        self.assertEqual(resp["Location"], "http://spookystrawberry.pl/")
+
+    def test_canonical_host_not_redirected(self):
+        resp = self.client.get("/", HTTP_HOST="spookystrawberry.pl")
+        self.assertNotEqual(resp.status_code, 301)
+
+    @override_settings(CANONICAL_HOST="")
+    def test_disabled_when_unset(self):
+        resp = self.client.get("/", HTTP_HOST="www.spookystrawberry.pl")
+        self.assertNotEqual(resp.status_code, 301)

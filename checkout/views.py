@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -57,6 +58,9 @@ def shipping(request):
             "address_line_2": data["address_line_2"],
             "postal_code": data["postal_code"],
             "city": data["city"],
+            "pickup_point_code": data["pickup_point_code"],
+            "pickup_point_name": data["pickup_point_name"],
+            "pickup_point_address": data["pickup_point_address"],
         }
         request.session.modified = True
         return redirect("checkout:payment")
@@ -78,6 +82,10 @@ def shipping(request):
             "selected_method_id": selected_method_id,
             "shipping_cost": shipping_cost,
             "grand_total": summary["subtotal"] + shipping_cost,
+            "geowidget_token": settings.INPOST_GEOWIDGET_TOKEN,
+            "geowidget_js": settings.INPOST_GEOWIDGET_JS,
+            "geowidget_css": settings.INPOST_GEOWIDGET_CSS,
+            "saved_pickup": saved,
         },
     )
 
@@ -163,10 +171,13 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
         phone=data.get("phone", ""),
         first_name=data["first_name"],
         last_name=data["last_name"],
-        shipping_address_line_1=data["address_line_1"],
+        shipping_address_line_1=data.get("address_line_1", ""),
         shipping_address_line_2=data.get("address_line_2", ""),
-        shipping_postal_code=data["postal_code"],
-        shipping_city=data["city"],
+        shipping_postal_code=data.get("postal_code", ""),
+        shipping_city=data.get("city", ""),
+        pickup_point_code=data.get("pickup_point_code", ""),
+        pickup_point_name=data.get("pickup_point_name", ""),
+        pickup_point_address=data.get("pickup_point_address", ""),
         shipping_method=method,
         status=Order.STATUS_AWAITING_PAYMENT,
         subtotal=subtotal,
