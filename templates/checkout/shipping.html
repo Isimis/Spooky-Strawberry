@@ -10,10 +10,12 @@
     {% endif %}
     <style>
         .ship-paczkomat{display:none}
-        .geowidget-box{height:460px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:8px}
+        .geowidget-box{height:70vh;min-height:460px;max-height:640px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:8px}
         .geowidget-box inpost-geowidget{display:block;width:100%;height:100%}
-        .pk-chosen{display:none;margin-top:10px;padding:12px 14px;border:1.5px solid var(--rose-deep);border-radius:12px;background:var(--blush);font-size:14px}
-        .pk-chosen b{display:block}
+        .pk-chosen{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:8px;padding:14px 16px;border:1.5px solid var(--rose-deep);border-radius:14px;background:var(--blush)}
+        .pk-chosen__name{font-weight:700}
+        .pk-chosen__addr{display:block;font-size:13px;color:var(--muted)}
+        .btn-sm{padding:8px 14px;font-size:13px}
     </style>
 {% endblock %}
 
@@ -69,18 +71,25 @@
                 <div class="ship-paczkomat" id="shipPaczkomat">
                     <h3 class="h-md" style="font-size:18px;margin:18px 0 8px">Wybierz paczkomat</h3>
                     {{ form.pickup_point_code }}{{ form.pickup_point_name }}{{ form.pickup_point_address }}
+
+                    <div class="pk-chosen" id="pkChosen" hidden>
+                        <div>
+                            <span class="pk-chosen__name" id="pkChosenName"></span>
+                            <span class="pk-chosen__addr" id="pkChosenAddr"></span>
+                        </div>
+                        <button type="button" class="btn btn-ghost btn-sm" id="pkChange">Zmień paczkomat</button>
+                    </div>
+
                     {% if geowidget_token %}
-                        <p class="muted" style="font-size:13px">Kliknij automat na mapie, do którego chcesz odebrać paczkę.</p>
-                        <div class="geowidget-box">
-                            <inpost-geowidget token="{{ geowidget_token }}" language="pl" config="parcelCollect" onpoint="ssPickPoint"></inpost-geowidget>
+                        <div id="pkMapWrap">
+                            <p class="muted" style="font-size:13px">Kliknij automat na mapie, a potem „Wybierz".</p>
+                            <div class="geowidget-box">
+                                <inpost-geowidget id="pkWidget" token="{{ geowidget_token }}" language="pl" config="parcelCollect"></inpost-geowidget>
+                            </div>
                         </div>
                     {% else %}
                         <p class="ship-note" style="background:#fff4f9">Wybór paczkomatu będzie dostępny po skonfigurowaniu integracji InPost.</p>
                     {% endif %}
-                    <div class="pk-chosen" id="pkChosen">
-                        <b id="pkChosenName"></b>
-                        <span id="pkChosenAddr"></span>
-                    </div>
                 </div>
             </div>
             <div>
@@ -110,42 +119,56 @@
     var chosen = document.getElementById("pkChosen");
     var chosenName = document.getElementById("pkChosenName");
     var chosenAddr = document.getElementById("pkChosenAddr");
+    var mapWrap = document.getElementById("pkMapWrap");
+    var widget = document.getElementById("pkWidget");
+    var changeBtn = document.getElementById("pkChange");
 
     function currentMethod() {
         return document.querySelector('input[name="shipping_method"]:checked');
     }
-
     function syncMode() {
         var m = currentMethod();
         var isPickup = m && m.getAttribute("data-pickup") === "1";
         paczkomatBox.style.display = isPickup ? "block" : "none";
         addressBox.style.display = isPickup ? "none" : "block";
     }
-
     document.querySelectorAll('input[name="shipping_method"]').forEach(function (r) {
         r.addEventListener("change", syncMode);
     });
     syncMode();
 
-    // Wybór paczkomatu z Geowidgetu
-    window.ssPickPoint = function (event) {
-        var p = event && event.detail;
+    function showChosen(name, addr) {
+        if (codeInput) codeInput.value = name || "";
+        if (nameInput) nameInput.value = name || "";
+        if (addrInput) addrInput.value = addr || "";
+        chosenName.textContent = "Paczkomat " + (name || "");
+        chosenAddr.textContent = addr || "";
+        chosen.hidden = false;
+        if (mapWrap) mapWrap.hidden = true;
+    }
+
+    function onPoint(e) {
+        var p = e && e.detail;
         if (!p) return;
         var addr = "";
         if (p.address) { addr = [p.address.line1, p.address.line2].filter(Boolean).join(", "); }
-        codeInput.value = p.name || "";
-        nameInput.value = p.name || "";
-        addrInput.value = addr || (p.location_description || "");
-        chosenName.textContent = "Paczkomat " + (p.name || "");
-        chosenAddr.textContent = addrInput.value;
-        chosen.style.display = "block";
-    };
+        if (!addr) { addr = p.location_description || ""; }
+        showChosen(p.name || "", addr);
+    }
 
-    // Pokaż wcześniej wybrany punkt (powrót na krok dostawy)
+    // v5: zdarzenie 'onpoint' na komponencie (atrybut onpoint nie zawsze się podpina).
+    if (widget) {
+        widget.addEventListener("onpoint", onPoint);
+    }
+    if (changeBtn) {
+        changeBtn.addEventListener("click", function () {
+            chosen.hidden = true;
+            if (mapWrap) mapWrap.hidden = false;
+        });
+    }
+    // Przywróć wcześniej wybrany punkt (powrót na krok dostawy).
     if (codeInput && codeInput.value) {
-        chosenName.textContent = "Paczkomat " + codeInput.value;
-        chosenAddr.textContent = addrInput.value || "";
-        chosen.style.display = "block";
+        showChosen(codeInput.value, addrInput ? addrInput.value : "");
     }
 })();
 </script>
