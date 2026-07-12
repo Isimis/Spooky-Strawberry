@@ -72,7 +72,7 @@
                     {% if geowidget_token %}
                         <p class="muted" style="font-size:13px">Kliknij automat na mapie, do którego chcesz odebrać paczkę.</p>
                         <div class="geowidget-box">
-                            <inpost-geowidget token="{{ geowidget_token }}" language="pl" config="parcelcollect" onpoint="ssPickPoint"></inpost-geowidget>
+                            <inpost-geowidget token="{{ geowidget_token }}" language="pl" config="parcelCollect" onpoint="ssPickPoint"></inpost-geowidget>
                         </div>
                     {% else %}
                         <p class="ship-note" style="background:#fff4f9">Wybór paczkomatu będzie dostępny po skonfigurowaniu integracji InPost.</p>
@@ -99,7 +99,7 @@
 </section>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_scripts %}
 <script>
 (function () {
     var addressBox = document.getElementById("shipAddress");
