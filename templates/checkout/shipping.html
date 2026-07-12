@@ -10,9 +10,9 @@
     {% endif %}
     <style>
         .ship-paczkomat{display:none}
-        .geowidget-box{height:70vh;min-height:460px;max-height:640px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:8px}
-        .geowidget-box inpost-geowidget{display:block;width:100%;height:100%}
-        .pk-chosen{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:8px;padding:14px 16px;border:1.5px solid var(--rose-deep);border-radius:14px;background:var(--blush)}
+        .geowidget-box{height:64vh;min-height:440px;max-height:600px;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;margin-top:8px}
+        .geowidget-box inpost-geowidget{display:block;width:100%;height:100%;font-size:12px}
+        .pk-chosen{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:8px;padding:13px 16px;border:1.5px solid var(--rose-deep);border-radius:14px;background:var(--blush)}
         .pk-chosen__name{font-weight:700}
         .pk-chosen__addr{display:block;font-size:13px;color:var(--muted)}
         .btn-sm{padding:8px 14px;font-size:13px}
@@ -72,19 +72,18 @@
                     <h3 class="h-md" style="font-size:18px;margin:18px 0 8px">Wybierz paczkomat</h3>
                     {{ form.pickup_point_code }}{{ form.pickup_point_name }}{{ form.pickup_point_address }}
 
-                    <div class="pk-chosen" id="pkChosen" hidden>
+                    <div class="pk-chosen" id="pkChosen">
                         <div>
-                            <span class="pk-chosen__name" id="pkChosenName"></span>
-                            <span class="pk-chosen__addr" id="pkChosenAddr"></span>
+                            <span class="pk-chosen__name" id="pkChosenName">Wybierz paczkomat</span>
+                            <span class="pk-chosen__addr" id="pkChosenAddr">📍 Kliknij automat na mapie, a potem „Wybierz".</span>
                         </div>
-                        <button type="button" class="btn btn-ghost btn-sm" id="pkChange">Zmień paczkomat</button>
+                        <button type="button" class="btn btn-ghost btn-sm" id="pkChange" hidden>Zmień paczkomat</button>
                     </div>
 
                     {% if geowidget_token %}
                         <div id="pkMapWrap">
-                            <p class="muted" style="font-size:13px">Kliknij automat na mapie, a potem „Wybierz".</p>
                             <div class="geowidget-box">
-                                <inpost-geowidget id="pkWidget" token="{{ geowidget_token }}" language="pl" config="parcelCollect"></inpost-geowidget>
+                                <inpost-geowidget id="pkWidget" token="{{ geowidget_token }}" language="pl" config="parcelCollect" onpoint="ssPickPoint"></inpost-geowidget>
                             </div>
                         </div>
                     {% else %}
@@ -116,12 +115,14 @@
     var codeInput = document.getElementById("id_pickup_point_code");
     var nameInput = document.getElementById("id_pickup_point_name");
     var addrInput = document.getElementById("id_pickup_point_address");
-    var chosen = document.getElementById("pkChosen");
     var chosenName = document.getElementById("pkChosenName");
     var chosenAddr = document.getElementById("pkChosenAddr");
     var mapWrap = document.getElementById("pkMapWrap");
     var widget = document.getElementById("pkWidget");
     var changeBtn = document.getElementById("pkChange");
+
+    var PROMPT_NAME = "Wybierz paczkomat";
+    var PROMPT_ADDR = "📍 Kliknij automat na mapie, a potem „Wybierz".";
 
     function currentMethod() {
         return document.querySelector('input[name="shipping_method"]:checked');
@@ -143,28 +144,35 @@
         if (addrInput) addrInput.value = addr || "";
         chosenName.textContent = "Paczkomat " + (name || "");
         chosenAddr.textContent = addr || "";
-        chosen.hidden = false;
+        if (changeBtn) changeBtn.hidden = false;
         if (mapWrap) mapWrap.hidden = true;
     }
+    function resetPrompt() {
+        if (codeInput) codeInput.value = "";
+        if (nameInput) nameInput.value = "";
+        if (addrInput) addrInput.value = "";
+        chosenName.textContent = PROMPT_NAME;
+        chosenAddr.textContent = PROMPT_ADDR;
+        if (changeBtn) changeBtn.hidden = true;
+        if (mapWrap) mapWrap.hidden = false;
+    }
 
-    function onPoint(e) {
-        var p = e && e.detail;
-        if (!p) return;
+    function handlePoint(e) {
+        var p = e && (e.detail || e);
+        if (!p || !p.name) return;
         var addr = "";
         if (p.address) { addr = [p.address.line1, p.address.line2].filter(Boolean).join(", "); }
         if (!addr) { addr = p.location_description || ""; }
-        showChosen(p.name || "", addr);
+        showChosen(p.name, addr);
     }
 
-    // v5: zdarzenie 'onpoint' na komponencie (atrybut onpoint nie zawsze się podpina).
+    // v5 woła globalną funkcję wskazaną w atrybucie onpoint. Dla pewności też addEventListener.
+    window.ssPickPoint = handlePoint;
     if (widget) {
-        widget.addEventListener("onpoint", onPoint);
+        widget.addEventListener("onpoint", handlePoint);
     }
     if (changeBtn) {
-        changeBtn.addEventListener("click", function () {
-            chosen.hidden = true;
-            if (mapWrap) mapWrap.hidden = false;
-        });
+        changeBtn.addEventListener("click", resetPrompt);
     }
     // Przywróć wcześniej wybrany punkt (powrót na krok dostawy).
     if (codeInput && codeInput.value) {
