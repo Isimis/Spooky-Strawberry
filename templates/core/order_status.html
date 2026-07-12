@@ -23,7 +23,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px">
                 <h2 style="margin:0">Zamówienie #{{ order.order_number }}</h2>
                 <span class="badge badge-best" style="background:var(--blush)">
-                    {% if order.status == 'shipped' %}W drodze{% elif order.status == 'packed' %}Spakowane{% elif order.status == 'confirmed' %}Potwierdzone{% elif order.status == 'cancelled' %}Anulowane{% else %}Przyjęte{% endif %}
+                    {% if order.status == 'shipped' %}W drodze{% elif order.status == 'packed' %}Spakowane{% elif order.status == 'confirmed' %}Potwierdzone{% elif order.status == 'cancelled' %}Anulowane{% elif order.status == 'awaiting_payment' %}Oczekuje na płatność{% else %}Opłacone{% endif %}
                 </span>
             </div>
             <p class="muted" style="font-size:13px;margin-bottom:16px">
@@ -31,6 +31,9 @@
                 {% if order.shipping_method %} · {{ order.shipping_method.name }}{% endif %}
             </p>
 
+            {% if order.status == 'cancelled' %}
+                <div class="ship-note" style="background:#fff4f9">To zamówienie zostało <b>anulowane</b>{% if order.pickup_point_code or order.shipping_address_line_1 %}{% endif %}. Jeśli to pomyłka albo płatność jednak przeszła — <a href="{% url 'core:contact' %}">napisz do nas</a>.</div>
+            {% else %}
             <div class="timeline">
                 {% for step in timeline %}
                 <div class="tl-step {{ step.state }}">
@@ -39,6 +42,7 @@
                 </div>
                 {% endfor %}
             </div>
+            {% endif %}
 
             <h2>Produkty w zamówieniu</h2>
             <div class="summary" style="max-width:480px">

@@ -142,3 +142,32 @@ class CanonicalHostMiddlewareTests(TestCase):
     def test_disabled_when_unset(self):
         resp = self.client.get("/", HTTP_HOST="www.spookystrawberry.pl")
         self.assertNotEqual(resp.status_code, 301)
+
+
+class OrderStatusTimelineTests(TestCase):
+    def _order(self, status):
+        from decimal import Decimal
+        from orders.models import Order
+        return Order.objects.create(email="a@b.pl", first_name="A", last_name="B", status=status, grand_total=Decimal("10"))
+
+    def test_placed_marks_placed_and_payment_done(self):
+        from core.views import build_status_timeline
+        from orders.models import Order
+        s = build_status_timeline(self._order(Order.STATUS_PLACED))
+        self.assertEqual(s[0]["state"], "done")   # Zamówienie złożone
+        self.assertEqual(s[1]["state"], "done")   # Płatność potwierdzona
+        self.assertEqual(s[2]["state"], "active")  # Spakowane
+
+    def test_awaiting_payment_marks_payment_active(self):
+        from core.views import build_status_timeline
+        from orders.models import Order
+        s = build_status_timeline(self._order(Order.STATUS_AWAITING_PAYMENT))
+        self.assertEqual(s[0]["state"], "done")
+        self.assertEqual(s[1]["state"], "active")
+
+    def test_shipped_progresses_further(self):
+        from core.views import build_status_timeline
+        from orders.models import Order
+        s = build_status_timeline(self._order(Order.STATUS_SHIPPED))
+        self.assertEqual([x["state"] for x in s[:4]], ["done", "done", "done", "done"])
+        self.assertEqual(s[4]["state"], "active")

@@ -325,7 +325,7 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
         }
         help_texts = {
             "order_number": "Możesz zostawić puste przy roboczym zamówieniu.",
-            "status": "Status realizacji po stronie sklepu. Płatności zostają poza zakresem do czasu działalności.",
+            "status": "Status realizacji zamówienia (złożone → spakowane → wysłane). Status płatności jest osobny — widać go w kafelku Płatność u góry.",
             "placed_at": "Data złożenia zamówienia. Przy szkicu może zostać pusta.",
             "shipping_address_line_2": "Opcjonalnie mieszkanie, paczkomat albo dopisek adresowy.",
             "discount_code": "Kod użyty w zamówieniu, jeśli był przypisany.",

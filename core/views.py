@@ -200,12 +200,15 @@ def build_status_timeline(order):
         "W drodze",
         "Gotowe do odbioru",
     ]
+    # Liczba ukończonych kroków. W naszym przepływie status PLACED oznacza już OPŁACONE
+    # (płatność potwierdzona), więc „Złożone" i „Płatność potwierdzona" są wtedy zrobione.
     progress = {
-        Order.STATUS_PLACED: 1,
+        Order.STATUS_AWAITING_PAYMENT: 1,  # złożone; czeka na potwierdzenie płatności
+        Order.STATUS_PLACED: 2,            # opłacone; czeka na spakowanie
         Order.STATUS_CONFIRMED: 2,
         Order.STATUS_PACKED: 3,
         Order.STATUS_SHIPPED: 4,
-    }.get(order.status, 1)
+    }.get(order.status, 2)
 
     steps = []
     for index, label in enumerate(labels):
