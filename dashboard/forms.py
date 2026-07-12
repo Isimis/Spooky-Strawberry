@@ -1042,14 +1042,11 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
         self.fields["drop_products"].queryset = Product.objects.filter(
             status=Product.STATUS_ACTIVE
         ).order_by("sort_order", "name")
-        # Tryb "Prawdziwe płatności" jest na razie zablokowany — brak podłączonego
-        # produkcyjnego API Przelewy24. Pole trzymamy włączone (sandbox) i nieedytowalne.
-        self.initial["payments_sandbox"] = True
-        self.fields["payments_sandbox"].disabled = True
         self.fields["payments_sandbox"].help_text = (
-            "Sklep działa w trybie testowym (Sandbox): płatności testowe, bez zmian stanów "
-            "magazynowych, a w koszyku/checkoutcie widnieje informacja „wersja testowa”. "
-            "Przełączenie na prawdziwe płatności będzie możliwe po podłączeniu produkcyjnego API Przelewy24."
+            "WŁĄCZONE = Sandbox (testy): płatności na kluczach testowych P24, zakupy NIE "
+            "zmieniają stanów magazynowych, a w koszyku/checkoutcie widnieje „wersja testowa”. "
+            "WYŁĄCZONE = Prawdziwe płatności: klucze produkcyjne P24, realne transakcje i "
+            "aktualizacja magazynu, bez informacji testowej. Zmieniaj świadomie."
         )
         self.apply_dashboard_widgets()
 

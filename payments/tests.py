@@ -16,7 +16,11 @@ P24_SETTINGS = dict(
     P24_POS_ID="123456",
     P24_CRC="crc-secret",
     P24_API_KEY="api-secret",
-    P24_SANDBOX=True,
+    # Ten sam komplet dla sandboxa, by konfiguracja była spójna niezależnie od trybu w teście.
+    P24_SANDBOX_MERCHANT_ID="123456",
+    P24_SANDBOX_POS_ID="123456",
+    P24_SANDBOX_CRC="crc-secret",
+    P24_SANDBOX_API_KEY="api-secret",
 )
 
 
@@ -129,3 +133,35 @@ class HandleNotificationTests(TestCase):
         self.assertFalse(handle_notification(self._notification(amount=4000)))
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, Payment.STATUS_PENDING)
+
+
+@override_settings(
+    P24_MERCHANT_ID="111111", P24_POS_ID="111111", P24_CRC="crc-prod", P24_API_KEY="api-prod",
+    P24_SANDBOX_MERCHANT_ID="999999", P24_SANDBOX_POS_ID="999999", P24_SANDBOX_CRC="crc-sbx", P24_SANDBOX_API_KEY="api-sbx",
+)
+class ConfigModeTests(TestCase):
+    def test_config_follows_site_settings_toggle(self):
+        s = SiteSettings.load()
+        s.payments_sandbox = True
+        s.save(update_fields=["payments_sandbox"])
+        self.assertTrue(przelewy24._config()["sandbox"])
+        self.assertEqual(przelewy24._config()["merchant_id"], 999999)
+        self.assertIn("sandbox.przelewy24.pl", przelewy24.base_url())
+
+        s.payments_sandbox = False
+        s.save(update_fields=["payments_sandbox"])
+        self.assertFalse(przelewy24._config()["sandbox"])
+        self.assertEqual(przelewy24._config()["merchant_id"], 111111)
+        self.assertIn("secure.przelewy24.pl", przelewy24.base_url())
+
+    def test_register_without_keys_raises(self):
+        # Produkcja bez kluczy → czytelny błąd zamiast wadliwego żądania.
+        s = SiteSettings.load()
+        s.payments_sandbox = False
+        s.save(update_fields=["payments_sandbox"])
+        with override_settings(P24_MERCHANT_ID="", P24_CRC="", P24_API_KEY=""):
+            with self.assertRaises(przelewy24.Przelewy24Error):
+                przelewy24.register(
+                    session_id="x", amount_grosze=1000, email="a@b.pl", description="d",
+                    url_return="https://x/", url_status="https://x/",
+                )

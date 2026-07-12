@@ -166,14 +166,19 @@ MAILBOX_IMAP_FOLDER = os.environ.get("MAILBOX_IMAP_FOLDER", "INBOX")
 MAILBOX_SYNC_LIMIT = int(os.environ.get("MAILBOX_SYNC_LIMIT", "50"))
 
 
-# Płatności — Przelewy24. Wartości z panelu P24 (sandbox lub produkcja) przez .env.
-# Bez tych wartości integracja nie zadziała (rejestracja transakcji zwróci błąd).
+# Płatności — Przelewy24. Trzymamy DWA komplety kluczy: produkcyjny i sandbox.
+# To, który jest używany, decyduje przełącznik w panelu (SiteSettings.payments_sandbox),
+# a nie zmienna środowiskowa — patrz payments/przelewy24.py.
+# Produkcja (z panelu secure.przelewy24.pl):
 P24_MERCHANT_ID = os.environ.get("P24_MERCHANT_ID", "")
 P24_POS_ID = os.environ.get("P24_POS_ID", "") or P24_MERCHANT_ID
 P24_CRC = os.environ.get("P24_CRC", "")
 P24_API_KEY = os.environ.get("P24_API_KEY", "")
-# Domyślnie sandbox — na produkcji ustaw P24_SANDBOX=False.
-P24_SANDBOX = env_bool("P24_SANDBOX", True)
+# Sandbox (z panelu sandbox.przelewy24.pl) — do testów:
+P24_SANDBOX_MERCHANT_ID = os.environ.get("P24_SANDBOX_MERCHANT_ID", "")
+P24_SANDBOX_POS_ID = os.environ.get("P24_SANDBOX_POS_ID", "") or P24_SANDBOX_MERCHANT_ID
+P24_SANDBOX_CRC = os.environ.get("P24_SANDBOX_CRC", "")
+P24_SANDBOX_API_KEY = os.environ.get("P24_SANDBOX_API_KEY", "")
 
 
 # Database

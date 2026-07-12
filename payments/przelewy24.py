@@ -27,13 +27,28 @@ class Przelewy24Error(Exception):
     """Błąd komunikacji lub odpowiedź negatywna z P24."""
 
 
+def sandbox_active():
+    """O trybie decyduje przełącznik w panelu (Ustawienia strony), nie zmienna środowiskowa."""
+    from core.models import SiteSettings
+
+    return SiteSettings.load().payments_sandbox
+
+
 def _config():
+    if sandbox_active():
+        return {
+            "merchant_id": int(settings.P24_SANDBOX_MERCHANT_ID or 0),
+            "pos_id": int(settings.P24_SANDBOX_POS_ID or settings.P24_SANDBOX_MERCHANT_ID or 0),
+            "crc": settings.P24_SANDBOX_CRC or "",
+            "api_key": settings.P24_SANDBOX_API_KEY or "",
+            "sandbox": True,
+        }
     return {
         "merchant_id": int(settings.P24_MERCHANT_ID or 0),
         "pos_id": int(settings.P24_POS_ID or settings.P24_MERCHANT_ID or 0),
         "crc": settings.P24_CRC or "",
         "api_key": settings.P24_API_KEY or "",
-        "sandbox": bool(settings.P24_SANDBOX),
+        "sandbox": False,
     }
 
 
@@ -108,6 +123,9 @@ def by_session_id(session_id):
 def register(*, session_id, amount_grosze, email, description, url_return, url_status, currency="PLN"):
     """Rejestruje transakcję. Zwraca token do przekierowania klienta."""
     cfg = _config()
+    if not (cfg["merchant_id"] and cfg["crc"] and cfg["api_key"]):
+        tryb = "sandbox" if cfg["sandbox"] else "produkcyjne"
+        raise Przelewy24Error(f"Brak kompletu kluczy P24 ({tryb}) — uzupełnij konfigurację w .env.")
     sign = _sign(
         {
             "sessionId": session_id,
