@@ -1,0 +1,11 @@
+[Unit]
+Description=Email encrypted Spooky Strawberry database backup
+After=network-online.target spooky-db-backup.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=www-data
+WorkingDirectory=/var/www/spooky-strawberry
+ExecStart=/var/www/spooky-strawberry/scripts/email_database_backup.sh

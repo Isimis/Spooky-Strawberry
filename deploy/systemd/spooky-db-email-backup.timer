@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily email delivery of encrypted Spooky Strawberry database backup
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+Persistent=true
+Unit=spooky-db-email-backup.service
+
+[Install]
+WantedBy=timers.target
