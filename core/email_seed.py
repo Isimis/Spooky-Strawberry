@@ -147,13 +147,7 @@ SYSTEM_TEMPLATES = [
             h1("Twoja paczka jest w drodze! 🦇")
             + p("Cześć{% if first_name %} {{ first_name }}{% endif %}, dobre wieści: "
                 "zamówienie <strong>{{ order_number }}</strong> jedzie już do Ciebie.")
-            + "{% if tracking_number %}"
-            + INFO_BOX_OPEN
-            + '<span style="color:#6c6470;">Numer przesyłki:</span> <strong>{{ tracking_number }}</strong>'
-            + INFO_BOX_CLOSE
-            + "{% if tracking_url %}"
-            + button("{{ tracking_url }}", "Śledź przesyłkę")
-            + "{% endif %}{% endif %}"
+            + "{{ tracking }}"
             + button("{{ status_url }}", "Zobacz status zamówienia")
             + pm("Dziękujemy, że jesteś z nami. 🖤")
         ),
@@ -165,15 +159,13 @@ SYSTEM_TEMPLATES = [
         "description": "Wysyłany automatycznie do obsługi (adres z ORDER_NOTIFICATION_EMAIL) po opłaceniu zamówienia.",
         "is_system": True,
         "body_html": (
-            h1("Nowe zamówienie {{ order_number }}")
+            h1("Nowe zamówienie {{ order_number }} 🛎️")
             + p("Wpłynęło nowe, opłacone zamówienie na kwotę <strong>{{ total }}</strong>.")
             + INFO_BOX_OPEN
             + '<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6c6470;margin-bottom:8px;">Dane klienta</div>'
             + '<div style="margin:3px 0;"><span style="color:#6c6470;">Klient:</span> {{ customer_name }}</div>'
             + '<div style="margin:3px 0;"><span style="color:#6c6470;">E-mail:</span> {{ customer_email }}</div>'
-            + "{% if customer_phone %}"
             + '<div style="margin:3px 0;"><span style="color:#6c6470;">Telefon:</span> {{ customer_phone }}</div>'
-            + "{% endif %}"
             + INFO_BOX_CLOSE
             + "{{ items }}"
             + p("<strong>Dostawa:</strong> {{ delivery }}")

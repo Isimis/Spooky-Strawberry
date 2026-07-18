@@ -2,8 +2,38 @@
 (function () {
     "use strict";
 
+    // Podświetla pola {{ ... }} TYLKO w tekście (nie w atrybutach, np. href="{{ url }}"),
+    // żeby nie rozbić tagów, oraz usuwa logikę {% ... %} z podglądu (to nie treść).
     function highlightMergeTags(html) {
-        return html.replace(/{{\s*([\w.]+)\s*}}/g, '<span class="mailcomposer__merge">{{ $1 }}</span>');
+        var tmp = document.createElement("div");
+        tmp.innerHTML = html;
+        var nodes = [];
+        var walker = document.createTreeWalker(tmp, NodeFilter.SHOW_TEXT, null);
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(function (node) {
+            var text = node.nodeValue;
+            if (text.indexOf("{{") === -1 && text.indexOf("{%") === -1) return;
+            var cleaned = text.replace(/{%[^%]*%}/g, "");
+            var container = document.createElement("span");
+            var re = /{{\s*[\w.]+\s*}}/g;
+            var lastIndex = 0;
+            var match;
+            while ((match = re.exec(cleaned)) !== null) {
+                if (match.index > lastIndex) {
+                    container.appendChild(document.createTextNode(cleaned.slice(lastIndex, match.index)));
+                }
+                var tag = document.createElement("span");
+                tag.className = "mailcomposer__merge";
+                tag.textContent = match[0];
+                container.appendChild(tag);
+                lastIndex = re.lastIndex;
+            }
+            if (lastIndex < cleaned.length) {
+                container.appendChild(document.createTextNode(cleaned.slice(lastIndex)));
+            }
+            node.parentNode.replaceChild(container, node);
+        });
+        return tmp.innerHTML;
     }
 
     function initComposer(root) {

@@ -169,6 +169,25 @@ def send_order_confirmation(order):
     )
 
 
+def _tracking_block(order):
+    """Ramka z numerem przesyłki (+ opcjonalny przycisk śledzenia). Pusta, gdy brak numeru.
+    To treść warunkowa/dynamiczna, więc budujemy ją w kodzie zamiast {% if %} w szablonie."""
+    from .email_seed import INFO_BOX_CLOSE, INFO_BOX_OPEN, button
+
+    number = (order.tracking_number or "").strip()
+    if not number:
+        return ""
+    html = (
+        INFO_BOX_OPEN
+        + '<span style="color:#6c6470;">Numer przesyłki:</span> <strong>' + number + "</strong>"
+        + INFO_BOX_CLOSE
+    )
+    url = (order.tracking_url or "").strip()
+    if url:
+        html += button(url, "Śledź przesyłkę")
+    return mark_safe(html)
+
+
 def send_order_shipped(order):
     return send_system_email(
         "order-shipped",
@@ -176,8 +195,7 @@ def send_order_shipped(order):
         context={
             "first_name": order.first_name,
             "order_number": order.order_number,
-            "tracking_number": (order.tracking_number or "").strip(),
-            "tracking_url": (order.tracking_url or "").strip(),
+            "tracking": _tracking_block(order),
             "status_url": order_status_url(order),
             "preheader": f"Zamówienie {order.order_number} jest w drodze.",
         },
@@ -196,7 +214,7 @@ def send_admin_order_notification(order):
             "total": money(order.grand_total),
             "customer_name": f"{order.first_name} {order.last_name}".strip(),
             "customer_email": order.email,
-            "customer_phone": order.phone,
+            "customer_phone": order.phone or "—",
             "items": order_lines(order),
             "delivery": delivery_text(order),
             "panel_url": _abs_url(reverse("dashboard:order_workspace", args=[order.pk])),

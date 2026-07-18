@@ -573,9 +573,8 @@ EMAIL_PLACEHOLDERS = {
     "order-shipped": [
         ("{{ first_name }}", "imię", "Imię z zamówienia."),
         ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
-        ("{{ tracking_number }}", "nr przesyłki", "Numer przesyłki z panelu zamówienia. Ramka pokazuje się tylko, gdy jest wypełniony ({% if tracking_number %})."),
-        ("{{ tracking_url }}", "link śledzenia", "Link do śledzenia u przewoźnika (jeśli podany w zamówieniu)."),
-        ("{{ status_url }}", "link do statusu", "Adres strony statusu tego zamówienia (z tokenem)."),
+        ("{{ tracking }}", "śledzenie", "Gotowa ramka z numerem przesyłki i przyciskiem śledzenia. Pojawia się tylko, gdy w zamówieniu jest numer przesyłki - inaczej znika."),
+        ("{{ status_url }}", "link do statusu", "Adres strony statusu tego zamówienia (z tokenem). Użyty w przycisku „Zobacz status zamówienia”."),
     ],
     "order-admin-notification": [
         ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
