@@ -45,3 +45,33 @@ class ExpirePendingOrdersTests(TestCase):
         self.assertEqual(count, 0)
         order.refresh_from_db()
         self.assertEqual(order.status, Order.STATUS_AWAITING_PAYMENT)
+
+
+class DiscountOncePerUserTests(TestCase):
+    def _code(self):
+        from orders.models import DiscountCode
+        return DiscountCode.objects.create(code="SPOOKY10", value=Decimal("10"), once_per_user=True)
+
+    def _paid_order(self, code, email):
+        return Order.objects.create(
+            email=email, first_name="A", last_name="B", discount_code=code,
+            status=Order.STATUS_PLACED, subtotal=Decimal("50"), grand_total=Decimal("45"),
+        )
+
+    def test_not_used_yet(self):
+        code = self._code()
+        self.assertFalse(code.already_used_by(email="nowa@example.pl"))
+
+    def test_used_by_email_blocks_reuse(self):
+        code = self._code()
+        self._paid_order(code, "ala@example.pl")
+        self.assertTrue(code.already_used_by(email="ala@example.pl"))
+        self.assertTrue(code.already_used_by(email="ALA@example.pl"))  # case-insensitive
+        self.assertFalse(code.already_used_by(email="inna@example.pl"))
+
+    def test_cancelled_order_does_not_count(self):
+        code = self._code()
+        o = self._paid_order(code, "ala@example.pl")
+        o.status = Order.STATUS_CANCELLED
+        o.save(update_fields=["status"])
+        self.assertFalse(code.already_used_by(email="ala@example.pl"))

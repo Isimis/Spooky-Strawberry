@@ -103,6 +103,13 @@
                     {{ form.max_uses.errors }}
                 </label>
 
+                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox" data-field-name="{{ form.once_per_user.name }}">
+                    <span>{{ form.once_per_user.label }}</span>
+                    {{ form.once_per_user }}
+                    {% if form.once_per_user.help_text %}<small>{{ form.once_per_user.help_text }}</small>{% endif %}
+                    {{ form.once_per_user.errors }}
+                </label>
+
                 <label class="dashboard-field" data-field-name="{{ form.used_count.name }}">
                     <span>{{ form.used_count.label }}</span>
                     {{ form.used_count }}

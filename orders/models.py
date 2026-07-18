@@ -51,6 +51,8 @@ class DiscountCode(models.Model):
     ends_at = models.DateTimeField(null=True, blank=True)
     max_uses = models.PositiveIntegerField(null=True, blank=True)
     used_count = models.PositiveIntegerField(default=0)
+    # Gdy True, każdy klient może wykorzystać ten kod tylko raz (sprawdzane po koncie i e-mailu).
+    once_per_user = models.BooleanField(default=False)
     minimum_order_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -65,6 +67,28 @@ class DiscountCode(models.Model):
 
     def __str__(self):
         return self.code
+
+    def already_used_by(self, *, user=None, email=""):
+        """Czy dany klient już wykorzystał ten kod (na złożonym, nieanulowanym zamówieniu).
+
+        Sprawdzamy po zalogowanym koncie i po adresie e-mail, żeby limit „raz na
+        użytkownika" działał także dla zakupów bez logowania.
+        """
+        from django.db.models import Q
+
+        conditions = Q()
+        if user is not None and getattr(user, "is_authenticated", False):
+            conditions |= Q(user=user)
+        email = (email or "").strip()
+        if email:
+            conditions |= Q(email__iexact=email)
+        if not conditions:
+            return False
+        return (
+            self.orders.filter(conditions)
+            .exclude(status__in=[Order.STATUS_DRAFT, Order.STATUS_CANCELLED])
+            .exists()
+        )
 
 
 class Order(models.Model):
