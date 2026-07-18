@@ -549,52 +549,50 @@ def message_detail(request, pk):
     )
 
 
-# Pola (placeholdery) dostępne w edycji poszczególnych maili systemowych - pokazujemy
-# je w edytorze jako legendę, żeby było wiadomo, co dokłada się automatycznie.
+# Pola (placeholdery) dostępne w poszczególnych mailach. Zasada: pole istnieje tylko
+# wtedy, gdy wartość naprawdę zmienia się przy każdej wysyłce (imię, numery, linki
+# z tokenami, lista produktów). Cała reszta treści jest wpisana wprost w szablonie.
 EMAIL_PLACEHOLDERS = {
     "account-verification": [
-        ("{{ first_name }}", "imię", "Imię odbiorcy (może być puste)."),
-        ("{{ cta }}", "przycisk", "Przycisk „Potwierdź adres e-mail”."),
-        ("{{ fallback }}", "link zapasowy", "Adres linku pod przyciskiem (gdyby przycisk nie zadziałał)."),
-        ("{{ link }}", "adres linku", "Sam adres URL potwierdzenia."),
+        ("{{ first_name }}", "imię", "Imię odbiorcy. Może być puste, dlatego w treści jest w warunku {% if first_name %}."),
+        ("{{ link }}", "link aktywacyjny", "Jednorazowy adres potwierdzenia konta - inny dla każdej osoby. Użyty w przycisku i w linku zapasowym."),
     ],
     "password-reset": [
-        ("{{ first_name }}", "imię", "Imię odbiorcy (może być puste)."),
-        ("{{ cta }}", "przycisk", "Przycisk „Ustaw nowe hasło”."),
-        ("{{ fallback }}", "link zapasowy", "Adres linku pod przyciskiem."),
-        ("{{ link }}", "adres linku", "Sam adres URL resetu hasła."),
+        ("{{ first_name }}", "imię", "Imię odbiorcy. Może być puste."),
+        ("{{ link }}", "link resetu", "Jednorazowy adres ustawienia nowego hasła - inny dla każdej prośby. Użyty w przycisku i w linku zapasowym."),
     ],
-    "newsletter-welcome": [
-        ("{{ discount_code }}", "kod rabatowy", "Kod na pierwsze zakupy (SPOOKY10)."),
-        ("{{ cta }}", "przycisk", "Przycisk „Zacznij zakupy”."),
-    ],
+    # Newsletter nie ma pól - kod rabatowy i przycisk są stałe, edytujesz je wprost w treści.
+    "newsletter-welcome": [],
     "order-confirmation": [
-        ("{{ first_name }}", "imię", "Imię klienta."),
-        ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
-        ("{{ items }}", "lista produktów", "Tabela produktów z ilościami i podsumowaniem kwot."),
-        ("{{ delivery }}", "dostawa", "Adres dostawy albo wybrany paczkomat."),
-        ("{{ cta }}", "przycisk", "Przycisk „Śledź zamówienie”."),
+        ("{{ first_name }}", "imię", "Imię z zamówienia."),
+        ("{{ order_number }}", "nr zamówienia", "Numer zamówienia, np. SS-10042."),
+        ("{{ items }}", "lista produktów", "Automatyczna tabela: produkty, ilości, ceny i suma. Nie da się jej wpisać ręcznie, bo zależy od zamówienia."),
+        ("{{ delivery }}", "dostawa", "Adres dostawy albo wybrany paczkomat - tekst z zamówienia."),
+        ("{{ status_url }}", "link do statusu", "Adres strony statusu tego zamówienia (z tokenem). Użyty w przycisku „Śledź zamówienie”."),
     ],
     "order-shipped": [
-        ("{{ first_name }}", "imię", "Imię klienta."),
+        ("{{ first_name }}", "imię", "Imię z zamówienia."),
         ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
-        ("{{ tracking }}", "śledzenie", "Ramka z numerem przesyłki i przyciskiem (jeśli podano numer)."),
-        ("{{ cta }}", "przycisk", "Przycisk „Zobacz status zamówienia”."),
+        ("{{ tracking_number }}", "nr przesyłki", "Numer przesyłki z panelu zamówienia. Ramka pokazuje się tylko, gdy jest wypełniony ({% if tracking_number %})."),
+        ("{{ tracking_url }}", "link śledzenia", "Link do śledzenia u przewoźnika (jeśli podany w zamówieniu)."),
+        ("{{ status_url }}", "link do statusu", "Adres strony statusu tego zamówienia (z tokenem)."),
     ],
     "order-admin-notification": [
         ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
-        ("{{ total }}", "kwota", "Kwota zamówienia."),
-        ("{{ customer }}", "dane klienta", "Ramka z imieniem, e-mailem i telefonem."),
-        ("{{ items }}", "lista produktów", "Tabela produktów i kwoty."),
+        ("{{ total }}", "kwota", "Łączna kwota zamówienia, np. 149,00 zł."),
+        ("{{ customer_name }}", "klient", "Imię i nazwisko z zamówienia."),
+        ("{{ customer_email }}", "e-mail klienta", "Adres e-mail z zamówienia."),
+        ("{{ customer_phone }}", "telefon", "Telefon z zamówienia (może być pusty)."),
+        ("{{ items }}", "lista produktów", "Automatyczna tabela produktów i kwot."),
         ("{{ delivery }}", "dostawa", "Adres dostawy albo paczkomat."),
-        ("{{ cta }}", "przycisk", "Przycisk „Otwórz w panelu”."),
+        ("{{ panel_url }}", "link do panelu", "Adres tego zamówienia w panelu administracyjnym."),
     ],
     "contact-reply": [
-        ("{{ first_name }}", "imię", "Imię osoby (może być puste)."),
+        ("{{ first_name }}", "imię", "Imię odbiorcy, jeśli je znamy (podstawiane przy ręcznej wysyłce ze Skrzynki)."),
     ],
     "base-layout": [
-        ("{{ content }}", "treść maila", "Miejsce, w które wstawiana jest treść każdego maila."),
-        ("{{ preheader }}", "tekst podglądu", "Krótki tekst podglądu widoczny na liście wiadomości w poczcie."),
+        ("{{ content }}", "treść maila", "Miejsce, w które wstawiana jest treść każdego maila. Musi zostać w szablonie."),
+        ("{{ preheader }}", "tekst podglądu", "Krótki tekst widoczny na liście wiadomości w poczcie (niewidoczny w treści)."),
     ],
 }
 
@@ -602,16 +600,19 @@ EMAIL_PLACEHOLDERS = {
 GENERIC_EMAIL_PLACEHOLDERS = [
     ("{{ first_name }}", "imię", "Imię odbiorcy (jeśli znane)."),
     ("{{ email }}", "e-mail", "Adres e-mail odbiorcy."),
-    ("{{ order_number }}", "nr zamówienia", "Numer zamówienia (wpisz ręcznie w treści)."),
-    ("{{ tracking_number }}", "nr przesyłki", "Numer przesyłki (wpisz ręcznie w treści)."),
-    ("{{ link }}", "link", "Dowolny adres linku."),
 ]
 
 
 def editor_fields_for(system_key):
-    """Lista pól (tag, etykieta, opis) do legendy edytora danego maila."""
+    """Lista pól (tag, etykieta, opis) do legendy edytora danego maila.
+
+    Pusta lista oznacza świadome „ten mail nie ma pól” (np. newsletter) - wtedy
+    nie pokazujemy nic. Ogólny zestaw dostajemy tylko przy ręcznym pisaniu wiadomości.
+    """
     fields = EMAIL_PLACEHOLDERS.get(system_key)
-    return [{"tag": tag, "label": label, "help": help_} for tag, label, help_ in (fields or GENERIC_EMAIL_PLACEHOLDERS)]
+    if fields is None:
+        fields = GENERIC_EMAIL_PLACEHOLDERS
+    return [{"tag": tag, "label": label, "help": help_} for tag, label, help_ in fields]
 
 
 def build_email_template_row(template):

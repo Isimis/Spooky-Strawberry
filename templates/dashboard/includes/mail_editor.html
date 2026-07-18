@@ -13,6 +13,7 @@ Kontekst:
                    value="{{ editor_subject|default:'' }}" placeholder="np. Twoje zamówienie jest w drodze 🦇" autocomplete="off">
         </label>
 
+        {% if editor_fields %}
         <div class="mailcomposer__tags">
             <span class="mailcomposer__tags-label">Wstaw pole</span>
             <div class="mailcomposer__tags-list">
@@ -22,7 +23,6 @@ Kontekst:
             </div>
         </div>
 
-        {% if editor_fields %}
         <details class="mailcomposer__legend" style="margin:4px 0 10px;border:1px solid #ece6ee;border-radius:12px;padding:10px 14px;background:#faf8fb;">
             <summary style="cursor:pointer;font-weight:600;font-size:13px;color:#4a4353;">Pola dostępne w tym mailu ({{ editor_fields|length }}) - kliknij, aby zobaczyć opis</summary>
             <ul style="margin:10px 0 2px;padding-left:0;list-style:none;font-size:13px;line-height:1.6;color:#4a4353;">
@@ -30,7 +30,10 @@ Kontekst:
                 <li style="margin:4px 0;"><code style="background:#efe7f2;border-radius:6px;padding:1px 6px;color:#7a2450;">{{ f.tag }}</code> &nbsp;{{ f.help }}</li>
                 {% endfor %}
             </ul>
+            <p style="margin:8px 0 2px;font-size:12px;color:#8a8290;">Pola to jedyne elementy podstawiane automatycznie - cała reszta treści (teksty, przyciski) jest widoczna poniżej i możesz ją swobodnie edytować.</p>
         </details>
+        {% else %}
+        <p class="mailcomposer__hint" style="margin:4px 0 10px;">Ten mail nie używa pól automatycznych - cała treść (w tym kod rabatowy i przycisk) jest stała i edytujesz ją wprost poniżej.</p>
         {% endif %}
 
         <div class="mailcomposer__editor">
