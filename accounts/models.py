@@ -9,6 +9,9 @@ class CustomerProfile(models.Model):
         related_name="customer_profile",
     )
     phone = models.CharField(max_length=40, blank=True)
+    # Adres do wysyłki maili o zamówieniach (zmienialny). Adres logowania/konta
+    # (`user.email`) jest stały i służy do maili o koncie oraz newslettera.
+    order_email = models.EmailField(blank=True)
     birth_date = models.DateField(null=True, blank=True)
     preferred_aesthetics = models.ManyToManyField(
         "catalog.Aesthetic",
@@ -34,6 +37,11 @@ class CustomerProfile(models.Model):
             .order_by("-is_default", "id")
             .first()
         )
+
+    @property
+    def order_email_or_login(self):
+        """Adres do zamówień, a jak nie ustawiono — adres logowania konta."""
+        return self.order_email or self.user.email
 
 
 class SocialIdentity(models.Model):

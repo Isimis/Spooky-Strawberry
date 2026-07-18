@@ -288,6 +288,8 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
             "pickup_point_code",
             "pickup_point_name",
             "pickup_point_address",
+            "tracking_number",
+            "tracking_url",
             "discount_code",
             "subtotal",
             "discount_total",
@@ -314,6 +316,8 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
             "pickup_point_code": "Paczkomat — kod",
             "pickup_point_name": "Paczkomat — nazwa",
             "pickup_point_address": "Paczkomat — adres",
+            "tracking_number": "Numer przesyłki",
+            "tracking_url": "Link do śledzenia",
             "discount_code": "Kod rabatowy",
             "subtotal": "Wartość produktów",
             "discount_total": "Rabat",
@@ -332,6 +336,8 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
             "customer_note": "Wiadomość od klientki albo notatka robocza dla obsługi.",
             "admin_note": "Widoczny tylko w panelu (w szczegółach i na liście). Klient go nie widzi.",
             "pickup_point_address": "Wypełnione automatycznie, gdy klient wybierze paczkomat na mapie.",
+            "tracking_number": "Trafia do maila „wysłane”. Uzupełnij przed zmianą statusu na „Wysłane”.",
+            "tracking_url": "Opcjonalny link do śledzenia u przewoźnika (przycisk w mailu).",
             "source_session_key": "Techniczne powiązanie z sesją analityczną. Przyda się później do ścieżek zakupowych.",
         }
         widgets = {

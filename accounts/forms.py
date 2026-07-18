@@ -23,7 +23,7 @@ class SpookyPasswordResetForm(PasswordResetForm):
         html_email_template_name=None,
         extra_email_context=None,
     ):
-        from core.mailer import send_message
+        from core.emails import send_password_reset
 
         reset_url = "{protocol}://{domain}{path}".format(
             protocol=context.get("protocol", "https"),
@@ -34,25 +34,8 @@ class SpookyPasswordResetForm(PasswordResetForm):
             ),
         )
         user = context.get("user")
-        greeting = f" {user.first_name}" if user and user.first_name else ""
-        body_html = (
-            f"<p>Cześć{greeting}!</p>"
-            "<p>Otrzymujesz tę wiadomość, bo poproszono o reset hasła do konta w "
-            "Spooky Strawberry. Ustaw nowe hasło, klikając w przycisk:</p>"
-            f'<p style="margin:24px 0"><a href="{reset_url}" '
-            'style="display:inline-block;background:#c2185b;color:#fff;text-decoration:none;'
-            'padding:12px 22px;border-radius:999px;font-weight:600">Ustaw nowe hasło →</a></p>'
-            f'<p style="font-size:12px;color:#777">Gdyby przycisk nie działał, skopiuj ten link '
-            f'do przeglądarki:<br><a href="{reset_url}" style="color:#c2185b">{reset_url}</a></p>'
-            "<p>Jeśli to nie Ty prosiłaś o zmianę hasła, zignoruj tę wiadomość — "
-            "Twoje obecne hasło pozostanie bez zmian.</p>"
-        )
-        send_message(
-            subject="Reset hasła — Spooky Strawberry 🍓",
-            body_html=body_html,
-            to_email=to_email,
-            fail_silently=False,
-        )
+        first_name = user.first_name if user else ""
+        send_password_reset(to_email, first_name, reset_url)
 
 
 class RegistrationForm(forms.Form):
@@ -112,7 +95,8 @@ class EmailLoginForm(forms.Form):
 class PersonalDataForm(forms.Form):
     first_name = forms.CharField(max_length=80, required=False)
     last_name = forms.CharField(max_length=80, required=False)
-    email = forms.EmailField()
+    # Adres do wysyłki maili o zamówieniach — może być inny niż adres logowania konta.
+    email = forms.EmailField(required=False)
     phone = forms.CharField(max_length=40, required=False)
 
     def __init__(self, *args, user=None, **kwargs):
@@ -120,13 +104,7 @@ class PersonalDataForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     def clean_email(self):
-        email = self.cleaned_data["email"].strip().lower()
-        qs = User.objects.filter(email__iexact=email)
-        if self.user is not None:
-            qs = qs.exclude(pk=self.user.pk)
-        if qs.exists():
-            raise forms.ValidationError("Ten adres e-mail jest już używany przez inne konto.")
-        return email
+        return (self.cleaned_data.get("email") or "").strip().lower()
 
 
 class ConsentsForm(forms.Form):

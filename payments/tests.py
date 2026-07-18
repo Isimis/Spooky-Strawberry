@@ -135,7 +135,7 @@ class HandleNotificationTests(TestCase):
         self.assertTrue(handle_notification(self._notification()))
         self.assertTrue(mail.outbox)
         html = mail.outbox[-1].alternatives[0][0]
-        self.assertIn("Sprawdź status zamówienia", html)
+        self.assertIn("Śledź zamówienie", html)
         self.assertIn(f"token={self.order.confirmation_token}", html)
 
     @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)

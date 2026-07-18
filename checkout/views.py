@@ -47,8 +47,11 @@ def _account_checkout_initial(user):
         "email": user.email,
     }
     profile = getattr(user, "customer_profile", None)
-    if profile and profile.phone:
-        initial["phone"] = profile.phone
+    if profile:
+        # Do zamówień podstawiamy adres zamówień z konta (a jak nie ma — adres logowania).
+        initial["email"] = profile.order_email_or_login
+        if profile.phone:
+            initial["phone"] = profile.phone
     address = profile.default_shipping_address() if profile else None
     if address:
         initial.update(
@@ -63,6 +66,41 @@ def _account_checkout_initial(user):
             }
         )
     return initial
+
+
+def _sync_account_personal_data(user, data):
+    """Zapisuje dane osobowe z checkoutu na koncie zalogowanego klienta.
+
+    Aktualizujemy imię, nazwisko i telefon. E-maila konta (adresu logowania) NIE ruszamy —
+    adres z zamówienia służy tylko do wysyłki maili o zamówieniu i newsletterze.
+    """
+    from accounts.models import CustomerProfile
+
+    user_fields = []
+    first_name = (data.get("first_name") or "").strip()
+    last_name = (data.get("last_name") or "").strip()
+    if first_name and first_name != user.first_name:
+        user.first_name = first_name
+        user_fields.append("first_name")
+    if last_name and last_name != user.last_name:
+        user.last_name = last_name
+        user_fields.append("last_name")
+    if user_fields:
+        user.save(update_fields=user_fields)
+
+    # Telefon i e-mail do zamówień zapisujemy na profilu (adres logowania zostaje bez zmian).
+    profile_fields = []
+    profile, _ = CustomerProfile.objects.get_or_create(user=user)
+    phone = (data.get("phone") or "").strip()
+    if phone and profile.phone != phone:
+        profile.phone = phone
+        profile_fields.append("phone")
+    email = (data.get("email") or "").strip().lower()
+    if email and email != (profile.order_email or "").strip().lower():
+        profile.order_email = email
+        profile_fields.append("order_email")
+    if profile_fields:
+        profile.save(update_fields=profile_fields)
 
 
 def _save_default_shipping_address(user, data):
@@ -118,13 +156,12 @@ def shipping(request):
             "pickup_point_address": data["pickup_point_address"],
         }
         request.session.modified = True
-        # Zapis adresu jako domyślnego w koncie — tylko zalogowany, dostawa kurierem, zaznaczony checkbox.
-        if (
-            request.user.is_authenticated
-            and data.get("save_address")
-            and not data["shipping_method"].is_pickup_point
-        ):
-            _save_default_shipping_address(request.user, data)
+        if request.user.is_authenticated:
+            # Dane osobowe (imię, nazwisko, e-mail, telefon) zapisują się na koncie od razu.
+            _sync_account_personal_data(request.user, data)
+            # Adres zapisujemy jako domyślny tylko przy zaznaczonym checkboxie (dostawa kurierem).
+            if data.get("save_address") and not data["shipping_method"].is_pickup_point:
+                _save_default_shipping_address(request.user, data)
         return redirect("checkout:payment")
 
     methods = list(ShippingMethod.objects.filter(is_active=True).order_by("sort_order", "price"))

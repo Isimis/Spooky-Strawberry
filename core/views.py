@@ -248,6 +248,10 @@ def order_status_view(request):
         else:
             not_found = True
 
+    # Zalogowanemu klientowi podstawiamy jego adres e-mail w formularzu (sam wpisuje
+    # tylko numer). Prefill jest wyłącznie do wyświetlenia — nie uruchamia wyszukiwania.
+    q_email = email or (request.user.email if request.user.is_authenticated else "")
+
     return render(
         request,
         "core/order_status.html",
@@ -256,7 +260,7 @@ def order_status_view(request):
             "timeline": timeline,
             "not_found": not_found,
             "q_number": number,
-            "q_email": email,
+            "q_email": q_email,
         },
     )
 
@@ -359,6 +363,12 @@ def newsletter_subscribe(request):
     if not created and not subscriber.is_active:
         subscriber.is_active = True
         subscriber.save(update_fields=["is_active"])
+
+    if created:
+        # Powitalny mail z kodem rabatowym (systemowy szablon `newsletter-welcome`).
+        from .emails import send_newsletter_welcome
+
+        send_newsletter_welcome(email)
 
     # Zapamiętaj zapis na całą sesję — kafelek newslettera pokazuje wtedy
     # potwierdzenie zamiast formularza na każdej podstronie.

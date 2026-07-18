@@ -116,6 +116,9 @@ class Order(models.Model):
     customer_note = models.TextField(blank=True)
     # Wewnętrzny komentarz obsługi — widoczny tylko w panelu, nigdy dla klienta.
     admin_note = models.TextField(blank=True)
+    # Śledzenie przesyłki — trafia do maila „wysłane", gdy uzupełnione.
+    tracking_number = models.CharField(max_length=80, blank=True)
+    tracking_url = models.URLField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     shipping_method = models.ForeignKey(
         ShippingMethod,

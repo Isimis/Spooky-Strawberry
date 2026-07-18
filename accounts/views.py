@@ -22,40 +22,15 @@ User = get_user_model()
 
 
 def send_verification_email(request, user):
-    """Wysyła link weryfikacyjny e-mail przez panelowy mailer.
-
-    Dzięki mailerowi wiadomość jest zapisywana w skrzynce panelu i (na produkcji)
-    dokładana do folderu „Sent" na IMAP — jest więc widoczna i w panelu, i w webmailu.
-    """
+    """Wysyła link weryfikacyjny e-mail (systemowy szablon `account-verification`)."""
     if not user.email:
         return
-    from core.mailer import send_message
+    from core.emails import send_account_verification
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     link = request.build_absolute_uri(reverse("accounts:verify_email", args=[uid, token]))
-    greeting = f" {user.first_name}" if user.first_name else ""
-    body_html = (
-        f"<p>Cześć{greeting}!</p>"
-        "<p>Dzięki za założenie konta w Spooky Strawberry. Potwierdź swój adres e-mail, "
-        "klikając w przycisk poniżej:</p>"
-        f'<p style="margin:24px 0"><a href="{link}" '
-        'style="display:inline-block;background:#c2185b;color:#fff;text-decoration:none;'
-        'padding:12px 22px;border-radius:999px;font-weight:600">Potwierdź adres e-mail →</a></p>'
-        f'<p style="font-size:12px;color:#777">Gdyby przycisk nie działał, skopiuj ten link '
-        f'do przeglądarki:<br><a href="{link}" style="color:#c2185b">{link}</a></p>'
-        "<p>Jeśli to nie Ty zakładałaś konto, zignoruj tę wiadomość.</p>"
-    )
-    try:
-        send_message(
-            subject="Potwierdź swój adres e-mail — Spooky Strawberry 🍓",
-            body_html=body_html,
-            to_email=user.email,
-            fail_silently=True,
-        )
-    except Exception:
-        # Wysyłka maila nie może wywrócić rejestracji/logowania.
-        pass
+    send_account_verification(user.email, user.first_name, link)
 
 
 def verify_email(request, uidb64, token):
@@ -77,18 +52,21 @@ def verify_email(request, uidb64, token):
 
 
 def _subscribe_newsletter(email):
+    from core.emails import send_newsletter_welcome
     from core.models import NewsletterSubscriber
 
     email = (email or "").strip().lower()
     if not email:
         return
-    NewsletterSubscriber.objects.get_or_create(
+    _, created = NewsletterSubscriber.objects.get_or_create(
         email=email,
         defaults={
             "source": NewsletterSubscriber.SOURCE_FOOTER,
             "consent_text": "Zgoda marketingowa przy koncie Spooky Strawberry.",
         },
     )
+    if created:
+        send_newsletter_welcome(email)
 
 
 def _safe_next(request, fallback="accounts:account"):
@@ -283,7 +261,7 @@ def account_view(request):
         initial={
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "email": user.email,
+            "email": profile.order_email_or_login,
             "phone": profile.phone,
         },
     )
@@ -322,10 +300,11 @@ def account_view(request):
             if form.is_valid():
                 user.first_name = form.cleaned_data["first_name"]
                 user.last_name = form.cleaned_data["last_name"]
-                user.email = form.cleaned_data["email"]
-                user.save(update_fields=["first_name", "last_name", "email"])
+                user.save(update_fields=["first_name", "last_name"])
+                # E-mail z tego formularza to adres do zamówień — adres logowania (user.email) zostaje.
+                profile.order_email = form.cleaned_data["email"]
                 profile.phone = form.cleaned_data["phone"]
-                profile.save(update_fields=["phone"])
+                profile.save(update_fields=["order_email", "phone"])
                 messages.success(request, "Zapisano zmiany.")
                 return redirect("accounts:account")
 

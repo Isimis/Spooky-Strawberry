@@ -1305,6 +1305,7 @@ def order_workspace(request, pk):
         ),
         pk=pk,
     )
+    previous_status = order.status
     order_form = OrderDashboardForm(request.POST or None, instance=order, prefix="order")
     item_formset = OrderItemFormSet(
         request.POST or None,
@@ -1320,7 +1321,17 @@ def order_workspace(request, pk):
                 item_formset.instance = order
                 item_formset.save()
                 sync_order_totals_from_items(order)
-            messages.success(request, "Zamówienie zapisane razem z pozycjami.")
+            # Wejście w status „Wysłane" wysyła klientowi maila „w drodze" (raz, przy przejściu).
+            if order.status == Order.STATUS_SHIPPED and previous_status != Order.STATUS_SHIPPED:
+                from core.emails import send_order_shipped
+
+                try:
+                    send_order_shipped(order)
+                    messages.success(request, "Zamówienie zapisane. Wysłaliśmy klientowi maila „w drodze”.")
+                except Exception:
+                    messages.warning(request, "Zamówienie zapisane, ale nie udało się wysłać maila „w drodze”.")
+            else:
+                messages.success(request, "Zamówienie zapisane razem z pozycjami.")
             return redirect("dashboard:order_workspace", pk=order.pk)
         messages.error(request, "Nie udało się zapisać zamówienia. Sprawdź błędy w formularzu.")
 

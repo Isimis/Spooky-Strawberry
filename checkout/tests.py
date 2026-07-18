@@ -74,6 +74,32 @@ class CheckoutSaveAddressTests(TestCase):
         profile = CustomerProfile.objects.filter(user=self.user).first()
         self.assertTrue(profile is None or profile.default_shipping_address() is None)
 
+    def test_personal_data_syncs_to_account(self):
+        self.client.force_login(self.user)
+        self._cart()
+        response = self.client.post(
+            reverse("checkout:shipping"), self._post_data(phone="501502503")
+        )
+        self.assertRedirects(response, reverse("checkout:payment"))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Maja")
+        self.assertEqual(self.user.last_name, "Nowak")
+        self.assertEqual(CustomerProfile.objects.get(user=self.user).phone, "501502503")
+
+    def test_checkout_email_updates_order_email_not_login(self):
+        self.client.force_login(self.user)
+        self._cart()
+        response = self.client.post(
+            reverse("checkout:shipping"), self._post_data(email="inny@example.pl")
+        )
+        self.assertRedirects(response, reverse("checkout:payment"))
+        self.user.refresh_from_db()
+        # Adres logowania konta zostaje bez zmian...
+        self.assertEqual(self.user.email, "klientka@example.pl")
+        self.assertEqual(self.user.username, "klientka@example.pl")
+        # ...ale e-mail do zamówień zapisuje się na profilu.
+        self.assertEqual(CustomerProfile.objects.get(user=self.user).order_email, "inny@example.pl")
+
     def test_checkout_prefills_saved_address(self):
         profile, _ = CustomerProfile.objects.get_or_create(user=self.user)
         CustomerAddress.objects.create(

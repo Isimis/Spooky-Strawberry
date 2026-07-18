@@ -53,7 +53,9 @@
                         <div class="field"><label>Imię</label><input class="input" name="first_name" value="{{ form.first_name.value|default:'' }}"></div>
                         <div class="field"><label>Nazwisko</label><input class="input" name="last_name" value="{{ form.last_name.value|default:'' }}"></div>
                     </div>
-                    <div class="field"><label>E-mail</label><input class="input" type="email" name="email" value="{{ form.email.value|default:'' }}" required></div>
+                    <div class="field"><label>E-mail do zamówień</label><input class="input" type="email" name="email" value="{{ form.email.value|default:'' }}" placeholder="{{ request.user.email }}">
+                        <p class="muted" style="font-size:11.5px;margin:6px 0 0;line-height:1.45">Na ten adres wysyłamy potwierdzenia zamówień. Maile o koncie (reset hasła, aktywacja) oraz newsletter zawsze idą na Twój stały adres logowania: <b>{{ request.user.email }}</b>.</p>
+                    </div>
                     <div class="field" style="margin-bottom:14px"><label>Telefon</label><input class="input" type="tel" name="phone" value="{{ form.phone.value|default:'' }}"></div>
                     <button class="btn btn-primary" type="submit">Zapisz zmiany</button>
                 </form>

@@ -191,6 +191,21 @@ class AuthFlowTests(TestCase):
         profile = CustomerProfile.objects.get(user__email="tel@example.pl")
         self.assertEqual(profile.phone, "500600700")
 
+    def test_personal_data_email_sets_order_email_not_login(self):
+        from .models import CustomerProfile
+
+        user = User.objects.create_user(username="log@example.pl", email="log@example.pl", password="spookypass123")
+        self.client.login(username="log@example.pl", password="spookypass123")
+        response = self.client.post(
+            reverse("accounts:account"),
+            {"form_kind": "personal", "first_name": "Ada", "last_name": "Nowak", "email": "zamowienia@example.pl", "phone": ""},
+        )
+        self.assertRedirects(response, reverse("accounts:account"))
+        user.refresh_from_db()
+        # Adres logowania niezmienny; e-mail do zamówień zapisany osobno.
+        self.assertEqual(user.email, "log@example.pl")
+        self.assertEqual(CustomerProfile.objects.get(user=user).order_email, "zamowienia@example.pl")
+
     def test_account_saves_default_shipping_address(self):
         from .models import CustomerAddress, CustomerProfile
 

@@ -168,6 +168,10 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 )
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", EMAIL_HOST_USER or DEFAULT_FROM_EMAIL)
 
+# Adres, na który leci powiadomienie o KAŻDYM nowym opłaconym zamówieniu (zabezpieczenie,
+# by nie przeoczyć zamówienia na starcie). Puste = powiadomienia wyłączone.
+ORDER_NOTIFICATION_EMAIL = os.environ.get("ORDER_NOTIFICATION_EMAIL", "").strip()
+
 # IMAP - synchronizacja wiadomości przychodzących do panelowej skrzynki.
 MAILBOX_IMAP_HOST = os.environ.get("MAILBOX_IMAP_HOST", EMAIL_HOST)
 MAILBOX_IMAP_PORT = int(os.environ.get("MAILBOX_IMAP_PORT", "993"))

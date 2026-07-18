@@ -142,7 +142,7 @@ def _finalize_paid(payment_pk, *, p24_order_id="", notification=None, verify_raw
 
     if not SiteSettings.load().payments_sandbox:
         _create_sale_stock_entries(order)
-    _send_confirmation_email(order, payment)
+    _send_order_emails(order)
     return payment
 
 
@@ -167,59 +167,16 @@ def _create_sale_stock_entries(order):
         recalculate_variant_stock(item.variant)
 
 
-def _order_status_url(order):
-    """Bezwzględny link do statusu zamówienia (otwiera je od razu, po sekretnym tokenie)."""
-    from urllib.parse import urlencode
+def _send_order_emails(order):
+    """Po opłaceniu: potwierdzenie dla klienta + powiadomienie dla obsługi.
+    Best-effort — żaden mail nie może wywrócić finalizacji płatności."""
+    from core.emails import send_admin_order_notification, send_order_confirmation
 
-    from django.conf import settings
-    from django.urls import reverse
-
-    query = urlencode({"number": order.order_number or "", "token": order.confirmation_token})
-    path = f"{reverse('core:order_status')}?{query}"
-    base = (getattr(settings, "SITE_BASE_URL", "") or "").rstrip("/")
-    return f"{base}{path}" if base else path
-
-
-def _send_confirmation_email(order, payment):
-    from core.mailer import send_message
-
-    lines = "".join(
-        f"<li>{item.product_name}"
-        + (f" ({item.variant_name})" if item.variant_name else "")
-        + f" × {item.quantity} — {item.line_total} zł</li>"
-        for item in order.items.all()
-    )
-    if order.pickup_point_code:
-        delivery = f"Odbiór w paczkomacie {order.pickup_point_name or order.pickup_point_code}"
-        if order.pickup_point_address:
-            delivery += f" ({order.pickup_point_address})"
-    else:
-        delivery = (
-            f"{order.shipping_address_line_1}, {order.shipping_postal_code} {order.shipping_city}"
-        )
-    status_url = _order_status_url(order)
-    body_html = (
-        f"<p>Cześć {order.first_name},</p>"
-        f"<p>dziękujemy! Twoja płatność za zamówienie <strong>{order.order_number}</strong> "
-        f"została zaksięgowana.</p>"
-        f"<ul>{lines}</ul>"
-        f"<p>Do zapłaty: <strong>{order.grand_total} zł</strong> (opłacone).</p>"
-        f"<p>Dostawa: {delivery}</p>"
-        f'<p style="margin:24px 0">'
-        f'<a href="{status_url}" '
-        f'style="display:inline-block;background:#c2185b;color:#fff;text-decoration:none;'
-        f'padding:12px 22px;border-radius:999px;font-weight:600">Sprawdź status zamówienia →</a>'
-        f"</p>"
-        f'<p style="font-size:12px;color:#777">Gdyby przycisk nie działał, skopiuj ten link do przeglądarki:<br>'
-        f'<a href="{status_url}" style="color:#c2185b">{status_url}</a></p>'
-    )
     try:
-        send_message(
-            subject=f"Potwierdzenie płatności – {order.order_number}",
-            body_html=body_html,
-            to_email=order.email,
-            fail_silently=True,
-        )
+        send_order_confirmation(order)
     except Exception:
-        # Mail nie może wywrócić finalizacji płatności.
+        pass
+    try:
+        send_admin_order_notification(order)
+    except Exception:
         pass
