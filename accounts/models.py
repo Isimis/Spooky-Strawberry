@@ -27,6 +27,50 @@ class CustomerProfile(models.Model):
     def __str__(self):
         return self.user.get_username()
 
+    def default_shipping_address(self):
+        """Domyślny adres dostawy klienta (jeden na konto) lub None."""
+        return (
+            self.addresses.filter(address_type=CustomerAddress.TYPE_SHIPPING)
+            .order_by("-is_default", "id")
+            .first()
+        )
+
+
+class SocialIdentity(models.Model):
+    """Powiązanie konta z logowaniem Google/Apple.
+
+    `subject` to stały identyfikator użytkownika u dostawcy (claim `sub`
+    z id_tokenu) — nie zmienia się nawet, gdy użytkownik zmieni e-mail.
+    """
+
+    PROVIDER_GOOGLE = "google"
+    PROVIDER_APPLE = "apple"
+
+    PROVIDER_CHOICES = [
+        (PROVIDER_GOOGLE, "Google"),
+        (PROVIDER_APPLE, "Apple"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="social_identities",
+    )
+    provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
+    subject = models.CharField(max_length=191)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["provider", "subject"],
+                name="unique_social_identity",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user.get_username()} ({self.provider})"
+
 
 class CustomerAddress(models.Model):
     TYPE_SHIPPING = "shipping"

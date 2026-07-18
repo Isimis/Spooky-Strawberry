@@ -127,6 +127,17 @@ class HandleNotificationTests(TestCase):
         self.payment.refresh_from_db()
         self.assertEqual(self.payment.status, Payment.STATUS_PENDING)
 
+    @patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}}))
+    @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
+    def test_confirmation_email_contains_order_status_link(self, mock_sign, mock_verify):
+        from django.core import mail
+
+        self.assertTrue(handle_notification(self._notification()))
+        self.assertTrue(mail.outbox)
+        html = mail.outbox[-1].alternatives[0][0]
+        self.assertIn("Sprawdź status zamówienia", html)
+        self.assertIn(f"token={self.order.confirmation_token}", html)
+
     @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
     def test_amount_mismatch_rejected(self, mock_sign):
         # webhook twierdzi 40 zł, a płatność jest na 50 zł

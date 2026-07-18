@@ -222,18 +222,27 @@ def order_status_view(request):
 
     number = request.GET.get("number", "").strip()
     email = request.GET.get("email", "").strip().lower()
+    token = request.GET.get("token", "").strip()
     order = None
     not_found = False
     timeline = None
 
-    if number or email:
-        order = (
-            Order.objects.select_related("shipping_method")
-            .prefetch_related("items__product__images")
-            .filter(order_number__iexact=number, email__iexact=email)
-            .exclude(status=Order.STATUS_DRAFT)
-            .first()
-        )
+    base_qs = (
+        Order.objects.select_related("shipping_method")
+        .prefetch_related("items__product__images")
+        .exclude(status=Order.STATUS_DRAFT)
+    )
+
+    if token:
+        # Odczyt po sekretnym tokenie potwierdzenia — pozwala otworzyć zamówienie
+        # jednym kliknięciem (z e-maila / strony podziękowania) bez podawania danych.
+        order = base_qs.filter(confirmation_token=token).first()
+        if order:
+            timeline = build_status_timeline(order)
+        else:
+            not_found = True
+    elif number or email:
+        order = base_qs.filter(order_number__iexact=number, email__iexact=email).first()
         if order:
             timeline = build_status_timeline(order)
         else:

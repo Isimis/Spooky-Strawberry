@@ -6,6 +6,10 @@ sqlparse==0.5.5
 tzdata==2026.2
 dj-database-url==3.1.2
 
+# Logowanie przez Apple — podpisywanie client_secret (JWT ES256):
+PyJWT==2.13.0
+cryptography==49.0.0
+
 # Server / production only (local SQLite dev does not need these):
 psycopg[binary]==3.3.4
 gunicorn==23.0.0

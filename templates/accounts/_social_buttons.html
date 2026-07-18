@@ -1,0 +1,14 @@
+{# Przycisk Google. Parametry: label ("Kontynuuj"/"Zarejestruj"), next. #}
+{# Bez skonfigurowanych kluczy (patrz settings: GOOGLE_OAUTH_*) #}
+{# przycisk zostaje nieaktywny z podpisem "Wkrótce". #}
+<div class="soc-btns">
+    {% if social_google %}
+    <a class="soc-btn" href="{% url 'accounts:social_start' 'google' %}{% if next %}?next={{ next|urlencode }}{% endif %}">
+        {% include "accounts/_google_icon.svg" %} {{ label }} z Google
+    </a>
+    {% else %}
+    <button class="soc-btn" type="button" disabled title="Wkrótce">
+        {% include "accounts/_google_icon.svg" %} {{ label }} z Google
+    </button>
+    {% endif %}
+</div>

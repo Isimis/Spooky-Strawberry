@@ -51,6 +51,13 @@ ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
 # przekierowywany tutaj. Puste = wyłączone (dev/testy). Na prod: spookystrawberry.pl
 CANONICAL_HOST = os.environ.get("CANONICAL_HOST", "").strip()
 
+# Pełny adres bazowy sklepu (schemat + host) do budowania bezwzględnych linków w miejscach
+# bez dostępu do `request` — np. w mailach wysyłanych z webhooka płatności. Domyślnie
+# wyprowadzany z CANONICAL_HOST; lokalnie (bez konfiguracji) pozostaje pusty i linki są względne.
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "").strip() or (
+    f"https://{CANONICAL_HOST}" if CANONICAL_HOST else ""
+)
+
 # Domeny/adresy, którym ufamy przy sprawdzaniu CSRF (wymagane za HTTPS/nginx),
 # np. CSRF_TRUSTED_ORIGINS=https://spookystrawberry.pl,https://www.spookystrawberry.pl
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
@@ -170,6 +177,15 @@ MAILBOX_IMAP_PASSWORD = os.environ.get("MAILBOX_IMAP_PASSWORD", EMAIL_HOST_PASSW
 MAILBOX_IMAP_FOLDER = os.environ.get("MAILBOX_IMAP_FOLDER", "INBOX")
 MAILBOX_SYNC_LIMIT = int(os.environ.get("MAILBOX_SYNC_LIMIT", "50"))
 
+# Skrzynka panelowa (IMAP). Na produkcji włączona, gdy skonfigurowano IMAP; lokalnie
+# (DEBUG=True) wyłączona — dev nie próbuje łączyć się z pocztą ani zapisywać kopii wysłanych.
+_mailbox_configured = bool(MAILBOX_IMAP_HOST and MAILBOX_IMAP_USER and MAILBOX_IMAP_PASSWORD)
+MAILBOX_ENABLED = env_bool("MAILBOX_ENABLED", _mailbox_configured and not DEBUG)
+# Zapis kopii każdego wychodzącego maila do folderu „Sent" na IMAP — dzięki temu wysłane
+# wiadomości są widoczne również w webmailu (poczta.cyberfolks.pl), nie tylko w panelu.
+MAILBOX_SAVE_SENT = env_bool("MAILBOX_SAVE_SENT", MAILBOX_ENABLED)
+MAILBOX_IMAP_SENT_FOLDER = os.environ.get("MAILBOX_IMAP_SENT_FOLDER", "Sent")
+
 
 # Płatności — Przelewy24. Trzymamy DWA komplety kluczy: produkcyjny i sandbox.
 # To, który jest używany, decyduje przełącznik w panelu (SiteSettings.payments_sandbox),
@@ -198,6 +214,24 @@ if INPOST_GEOWIDGET_SANDBOX:
 else:
     INPOST_GEOWIDGET_JS = "https://geowidget.inpost.pl/inpost-geowidget.js"
     INPOST_GEOWIDGET_CSS = "https://geowidget.inpost.pl/inpost-geowidget.css"
+
+
+# Logowanie społecznościowe — Google i Apple (accounts/social.py).
+# Bez skonfigurowanych kluczy przyciski na stronie logowania pozostają nieaktywne.
+# Google (console.cloud.google.com → APIs & Services → Credentials → OAuth client ID,
+# typ "Web application"; redirect URI: https://DOMENA/konto/social/google/callback/):
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "")
+# Apple (developer.apple.com — wymaga płatnego konta deweloperskiego):
+# Identifiers → Services ID (to jest client_id) z włączonym "Sign in with Apple"
+# i return URL https://DOMENA/konto/social/apple/callback/; Keys → klucz .p8.
+APPLE_OAUTH_CLIENT_ID = os.environ.get("APPLE_OAUTH_CLIENT_ID", "")
+APPLE_OAUTH_TEAM_ID = os.environ.get("APPLE_OAUTH_TEAM_ID", "")
+APPLE_OAUTH_KEY_ID = os.environ.get("APPLE_OAUTH_KEY_ID", "")
+# Klucz .p8: albo cała zawartość w env (z \n jako znakami nowej linii)…
+APPLE_OAUTH_PRIVATE_KEY = os.environ.get("APPLE_OAUTH_PRIVATE_KEY", "").replace("\\n", "\n")
+# …albo ścieżka do pliku .p8 na serwerze:
+APPLE_OAUTH_PRIVATE_KEY_FILE = os.environ.get("APPLE_OAUTH_PRIVATE_KEY_FILE", "")
 
 
 # Database

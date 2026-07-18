@@ -329,6 +329,12 @@
       .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
       .then(function (data) {
         if (data.cart_count !== undefined) updateCartCount(data.cart_count);
+        // Na stronie koszyka dodanie polecanej rzeczy odświeża widok, żeby od razu
+        // pojawiła się na liście i przeliczyło się podsumowanie.
+        if (data.ok !== false && form.dataset.cartReload) {
+          window.location.reload();
+          return;
+        }
         showToast(data.message || "Dodano do koszyka 🍓", { link: { href: "/koszyk/", label: "Zobacz koszyk" } });
       })
       .catch(function () { form.submit(); });

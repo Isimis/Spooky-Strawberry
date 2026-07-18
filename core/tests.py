@@ -1,10 +1,52 @@
+from decimal import Decimal
+
 from django.core.mail import EmailMessage
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from orders.models import Order
+
 from .mail_backends import apply_subject_prefix
-from .mailbox import import_email_message
+from .mailbox import MailboxConfigurationError, import_email_message, sync_mailbox
 from .models import Message, NewsletterSubscriber
+
+
+class OrderStatusByTokenTests(TestCase):
+    def _order(self):
+        order = Order.objects.create(
+            email="klientka@example.pl",
+            first_name="Ada",
+            last_name="Nowak",
+            status=Order.STATUS_PLACED,
+            subtotal=Decimal("29.00"),
+            grand_total=Decimal("29.00"),
+        )
+        order.order_number = f"SS-{10000 + order.pk}"
+        order.save(update_fields=["order_number"])
+        return order
+
+    def test_token_opens_order_without_entering_data(self):
+        order = self._order()
+        response = self.client.get(
+            reverse("core:order_status")
+            + f"?number={order.order_number}&token={order.confirmation_token}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, order.order_number)
+
+    def test_wrong_token_shows_not_found(self):
+        self._order()
+        response = self.client.get(reverse("core:order_status") + "?token=zly-token")
+        self.assertEqual(response.status_code, 200)
+        # Nieprawidłowy token nie ujawnia prywatnych danych zamówienia.
+        self.assertNotContains(response, "klientka@example.pl")
+
+
+class MailboxDisabledTests(TestCase):
+    @override_settings(MAILBOX_ENABLED=False)
+    def test_sync_disabled_raises_configuration_error(self):
+        with self.assertRaises(MailboxConfigurationError):
+            sync_mailbox()
 
 
 class NewsletterTests(TestCase):

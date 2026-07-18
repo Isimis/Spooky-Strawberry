@@ -26,7 +26,7 @@
                 {% if product.has_sale_price %}<s>{{ product.regular_price|money }}</s>{% endif %}
                 {{ product.current_price|money }}
             </span>
-            <form method="post" action="{% url 'cart:add' %}" class="js-cart-add">
+            <form method="post" action="{% url 'cart:add' %}" class="js-cart-add"{% if cart_add_reload %} data-cart-reload="1"{% endif %}>
                 {% csrf_token %}
                 <input type="hidden" name="variant_id" value="{% if variant %}{{ variant.id }}{% endif %}">
                 <input type="hidden" name="quantity" value="1">

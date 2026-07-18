@@ -37,6 +37,58 @@ def _shipping_cost_for(method, subtotal):
     return shipping_cost_for_method(method, subtotal)
 
 
+def _account_checkout_initial(user):
+    """Dane początkowe checkoutu z konta zalogowanego klienta (dane + zapisany adres)."""
+    if not user.is_authenticated:
+        return {}
+    initial = {
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+    }
+    profile = getattr(user, "customer_profile", None)
+    if profile and profile.phone:
+        initial["phone"] = profile.phone
+    address = profile.default_shipping_address() if profile else None
+    if address:
+        initial.update(
+            {
+                "first_name": address.first_name or user.first_name,
+                "last_name": address.last_name or user.last_name,
+                "phone": (profile.phone if profile and profile.phone else address.phone),
+                "address_line_1": address.address_line_1,
+                "address_line_2": address.address_line_2,
+                "postal_code": address.postal_code,
+                "city": address.city,
+            }
+        )
+    return initial
+
+
+def _save_default_shipping_address(user, data):
+    """Zapisuje/aktualizuje domyślny adres dostawy klienta z danych checkoutu."""
+    from accounts.models import CustomerAddress, CustomerProfile
+
+    profile, _ = CustomerProfile.objects.get_or_create(user=user)
+    address = profile.default_shipping_address()
+    if address is None:
+        address = CustomerAddress(profile=profile, address_type=CustomerAddress.TYPE_SHIPPING)
+    address.first_name = data["first_name"]
+    address.last_name = data["last_name"]
+    address.phone = data.get("phone", "")
+    address.address_line_1 = data.get("address_line_1", "")
+    address.address_line_2 = data.get("address_line_2", "")
+    address.postal_code = data.get("postal_code", "")
+    address.city = data.get("city", "")
+    address.is_default = True
+    address.save()
+
+    # Telefon należy do danych osobowych konta — zapisz go, jeśli profil go jeszcze nie ma.
+    if data.get("phone") and not profile.phone:
+        profile.phone = data["phone"]
+        profile.save(update_fields=["phone"])
+
+
 def shipping(request):
     summary = get_cart_summary(request)
     if not summary["items"]:
@@ -44,7 +96,10 @@ def shipping(request):
         return redirect("cart:detail")
 
     saved = request.session.get(CHECKOUT_SESSION_KEY, {})
-    form = CheckoutForm(request.POST or None, initial=dict(saved))
+    # Zalogowany klient bez danych w sesji dostaje formularz podstawiony z konta
+    # (dane osobowe + zapisany domyślny adres dostawy).
+    initial = dict(saved) if saved else _account_checkout_initial(request.user)
+    form = CheckoutForm(request.POST or None, initial=initial)
 
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
@@ -63,6 +118,13 @@ def shipping(request):
             "pickup_point_address": data["pickup_point_address"],
         }
         request.session.modified = True
+        # Zapis adresu jako domyślnego w koncie — tylko zalogowany, dostawa kurierem, zaznaczony checkbox.
+        if (
+            request.user.is_authenticated
+            and data.get("save_address")
+            and not data["shipping_method"].is_pickup_point
+        ):
+            _save_default_shipping_address(request.user, data)
         return redirect("checkout:payment")
 
     methods = list(ShippingMethod.objects.filter(is_active=True).order_by("sort_order", "price"))

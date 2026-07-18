@@ -18,8 +18,8 @@
         <nav class="acct-nav">
             <a class="active" href="#zamowienia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg> Moje zamówienia</a>
             <a href="#dane"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg> Dane osobowe</a>
-            <a href="#adresy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> Adresy</a>
-            <a href="#dane"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg> Zgody i newsletter</a>
+            <a href="#adresy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg> Adres dostawy</a>
+            <a href="#zgody"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg> Zgody</a>
             <a href="{% url 'core:cookies' %}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="14" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="14" r="1" fill="currentColor"/><circle cx="10" cy="15" r="1" fill="currentColor"/></svg> Ustawienia cookie</a>
         </nav>
         <div>
@@ -47,32 +47,46 @@
                 <h2 class="h-md" style="font-size:18px;margin-bottom:12px">Dane osobowe</h2>
                 <form method="post" action="{% url 'accounts:account' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="form_kind" value="personal">
                     {% if form.email.errors %}<div class="auth-error">{{ form.email.errors.0 }}</div>{% endif %}
                     <div class="form-grid2">
                         <div class="field"><label>Imię</label><input class="input" name="first_name" value="{{ form.first_name.value|default:'' }}"></div>
                         <div class="field"><label>Nazwisko</label><input class="input" name="last_name" value="{{ form.last_name.value|default:'' }}"></div>
                     </div>
                     <div class="field"><label>E-mail</label><input class="input" type="email" name="email" value="{{ form.email.value|default:'' }}" required></div>
-                    <label style="display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--ink-soft);margin-bottom:14px">
-                        <input type="checkbox" name="accepts_marketing" style="margin-top:3px" {% if form.accepts_marketing.value %}checked{% endif %}>
-                        Chcę dostawać newsletter z dropami i kodami rabatowymi.
-                    </label>
+                    <div class="field" style="margin-bottom:14px"><label>Telefon</label><input class="input" type="tel" name="phone" value="{{ form.phone.value|default:'' }}"></div>
                     <button class="btn btn-primary" type="submit">Zapisz zmiany</button>
                 </form>
             </div>
 
             <div class="acct-card" id="adresy" style="margin-top:16px">
-                <h2 class="h-md" style="font-size:18px;margin-bottom:12px">Adresy</h2>
-                {% for address in addresses %}
-                    <div class="acct-order">
-                        <div class="ao-meta">
-                            <b>{{ address.first_name }} {{ address.last_name }}{% if address.is_default %} · domyślny{% endif %}</b>
-                            <span>{{ address.address_line_1 }}{% if address.address_line_2 %}, {{ address.address_line_2 }}{% endif %} · {{ address.postal_code }} {{ address.city }}</span>
-                        </div>
+                <h2 class="h-md" style="font-size:18px;margin-bottom:6px">Adres dostawy</h2>
+                <p class="muted" style="font-size:12.5px;margin-bottom:12px">Twój domyślny adres — podstawimy go automatycznie przy kolejnych zamówieniach.</p>
+                <form method="post" action="{% url 'accounts:account' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_kind" value="address">
+                    {% if address_form.non_field_errors %}<div class="auth-error">{{ address_form.non_field_errors.0 }}</div>{% endif %}
+                    <div class="field"><label>Ulica i numer</label><input class="input" name="address_line_1" value="{{ address_form.address_line_1.value|default:'' }}">{{ address_form.address_line_1.errors }}</div>
+                    <div class="field"><label>Dodatkowe informacje <span class="muted" style="font-weight:500">(opcjonalnie)</span></label><input class="input" name="address_line_2" value="{{ address_form.address_line_2.value|default:'' }}"></div>
+                    <div class="form-grid2" style="margin-bottom:14px">
+                        <div class="field"><label>Kod pocztowy</label><input class="input" name="postal_code" value="{{ address_form.postal_code.value|default:'' }}">{{ address_form.postal_code.errors }}</div>
+                        <div class="field"><label>Miasto</label><input class="input" name="city" value="{{ address_form.city.value|default:'' }}">{{ address_form.city.errors }}</div>
                     </div>
-                {% empty %}
-                    <p class="muted" style="font-size:13.5px;padding:4px 0">Nie masz zapisanych adresów. Dodasz je przy najbliższym zamówieniu.</p>
-                {% endfor %}
+                    <button class="btn btn-primary" type="submit">Zapisz adres</button>
+                </form>
+            </div>
+
+            <div class="acct-card" id="zgody" style="margin-top:16px">
+                <h2 class="h-md" style="font-size:18px;margin-bottom:12px">Zgody</h2>
+                <form method="post" action="{% url 'accounts:account' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_kind" value="consents">
+                    <label style="display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--ink-soft);margin-bottom:14px">
+                        <input type="checkbox" name="accepts_marketing" style="margin-top:3px" {% if consents_form.accepts_marketing.value %}checked{% endif %}>
+                        Chcę dostawać informacje o nowościach i promocjach drogą elektroniczną.
+                    </label>
+                    <button class="btn btn-primary" type="submit">Zapisz zgody</button>
+                </form>
             </div>
         </div>
     </div>

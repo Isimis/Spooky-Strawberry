@@ -64,6 +64,12 @@
                         <div class="field"><label>{{ form.postal_code.label }}</label>{{ form.postal_code }}{{ form.postal_code.errors }}</div>
                         <div class="field"><label>{{ form.city.label }}</label>{{ form.city }}{{ form.city.errors }}</div>
                     </div>
+                    {% if user.is_authenticated %}
+                    <label class="save-addr" style="display:flex;gap:9px;align-items:center;font-size:13px;color:var(--ink-soft);margin-top:4px">
+                        <input type="checkbox" name="save_address" {% if form.save_address.value %}checked{% endif %}>
+                        Zapisz adres dla przyszłych zamówień
+                    </label>
+                    {% endif %}
                 </div>
 
                 {# --- Wybór paczkomatu (mapa) --- #}

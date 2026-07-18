@@ -78,6 +78,15 @@ def send_message(
     email.attach_alternative(html, "text/html")
     email.send(fail_silently=fail_silently)
 
+    # Kopia do folderu „Sent" na IMAP → mail widoczny także w webmailu (nie tylko w panelu).
+    # Best-effort: nie może wpłynąć na wysyłkę ani ją wywrócić.
+    try:
+        from .mailbox import append_to_sent
+
+        append_to_sent(email.message().as_bytes())
+    except Exception:
+        pass
+
     if not record:
         return None
 

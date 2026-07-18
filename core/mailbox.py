@@ -1,5 +1,7 @@
 import html
 import imaplib
+import logging
+import time
 from email import policy
 from email.parser import BytesParser
 from email.utils import getaddresses, parsedate_to_datetime
@@ -8,6 +10,8 @@ from django.conf import settings
 from django.utils import timezone
 
 from .models import Message
+
+logger = logging.getLogger(__name__)
 
 
 class MailboxConfigurationError(RuntimeError):
@@ -22,6 +26,36 @@ def mailbox_is_configured():
             settings.MAILBOX_IMAP_PASSWORD,
         ]
     )
+
+
+def mailbox_enabled():
+    """Czy skrzynka IMAP jest w ogóle aktywna na tym środowisku (lokalnie wyłączona)."""
+    return bool(getattr(settings, "MAILBOX_ENABLED", False)) and mailbox_is_configured()
+
+
+def append_to_sent(raw_bytes):
+    """Best-effort: dokłada kopię wysłanego maila do folderu „Sent" na serwerze IMAP.
+
+    Dzięki temu wychodzące wiadomości są widoczne także w webmailu, nie tylko w panelu.
+    Nigdy nie rzuca wyjątkiem — wysyłka maila nie może zależeć od dostępności IMAP.
+    """
+    if not (getattr(settings, "MAILBOX_SAVE_SENT", False) and mailbox_enabled()):
+        return False
+    folder = getattr(settings, "MAILBOX_IMAP_SENT_FOLDER", "Sent") or "Sent"
+    client = None
+    try:
+        client = _connect()
+        client.append(folder, r"(\Seen)", imaplib.Time2Internaldate(time.time()), raw_bytes)
+        return True
+    except Exception as exc:  # noqa: BLE001 — zapis do Sent jest opcjonalny
+        logger.warning("Nie udało się zapisać kopii maila w folderze Sent: %s", exc)
+        return False
+    finally:
+        if client is not None:
+            try:
+                client.logout()
+            except Exception:
+                pass
 
 
 def _connect():
@@ -112,6 +146,10 @@ def import_email_message(uid, raw_bytes):
 
 
 def sync_mailbox(limit=None):
+    if not mailbox_enabled():
+        raise MailboxConfigurationError(
+            "Skrzynka pocztowa jest wyłączona na tym środowisku (np. serwer lokalny)."
+        )
     limit = limit or settings.MAILBOX_SYNC_LIMIT
     imported = []
 

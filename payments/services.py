@@ -167,6 +167,19 @@ def _create_sale_stock_entries(order):
         recalculate_variant_stock(item.variant)
 
 
+def _order_status_url(order):
+    """Bezwzględny link do statusu zamówienia (otwiera je od razu, po sekretnym tokenie)."""
+    from urllib.parse import urlencode
+
+    from django.conf import settings
+    from django.urls import reverse
+
+    query = urlencode({"number": order.order_number or "", "token": order.confirmation_token})
+    path = f"{reverse('core:order_status')}?{query}"
+    base = (getattr(settings, "SITE_BASE_URL", "") or "").rstrip("/")
+    return f"{base}{path}" if base else path
+
+
 def _send_confirmation_email(order, payment):
     from core.mailer import send_message
 
@@ -184,6 +197,7 @@ def _send_confirmation_email(order, payment):
         delivery = (
             f"{order.shipping_address_line_1}, {order.shipping_postal_code} {order.shipping_city}"
         )
+    status_url = _order_status_url(order)
     body_html = (
         f"<p>Cześć {order.first_name},</p>"
         f"<p>dziękujemy! Twoja płatność za zamówienie <strong>{order.order_number}</strong> "
@@ -191,6 +205,13 @@ def _send_confirmation_email(order, payment):
         f"<ul>{lines}</ul>"
         f"<p>Do zapłaty: <strong>{order.grand_total} zł</strong> (opłacone).</p>"
         f"<p>Dostawa: {delivery}</p>"
+        f'<p style="margin:24px 0">'
+        f'<a href="{status_url}" '
+        f'style="display:inline-block;background:#c2185b;color:#fff;text-decoration:none;'
+        f'padding:12px 22px;border-radius:999px;font-weight:600">Sprawdź status zamówienia →</a>'
+        f"</p>"
+        f'<p style="font-size:12px;color:#777">Gdyby przycisk nie działał, skopiuj ten link do przeglądarki:<br>'
+        f'<a href="{status_url}" style="color:#c2185b">{status_url}</a></p>'
     )
     try:
         send_message(

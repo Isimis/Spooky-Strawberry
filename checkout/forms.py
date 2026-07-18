@@ -24,10 +24,15 @@ class CheckoutForm(forms.Form):
     pickup_point_name = forms.CharField(max_length=180, required=False, widget=forms.HiddenInput())
     pickup_point_address = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput())
 
+    # Zapis adresu jako domyślnego w koncie (tylko dla zalogowanych, dostawa kurierem).
+    save_address = forms.BooleanField(required=False, label="Zapisz adres dla przyszłych zamówień")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for name, field in self.fields.items():
-            if name == "shipping_method" or isinstance(field.widget, forms.HiddenInput):
+            if name == "shipping_method" or isinstance(
+                field.widget, (forms.HiddenInput, forms.CheckboxInput)
+            ):
                 continue
             field.widget.attrs.setdefault("class", "input")
 

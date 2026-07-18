@@ -42,7 +42,7 @@
         </div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
             <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Kontynuuj zakupy</a>
-            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}">Status zamówienia</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}?number={{ order.order_number|urlencode }}&token={{ order.confirmation_token|urlencode }}">Status zamówienia</a>
         </div>
     </div>
 {% else %}
@@ -60,7 +60,7 @@
         </p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">
             <a class="btn btn-primary btn-lg" href="{% url 'checkout:payment' %}">Dokończ płatność</a>
-            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}">Status zamówienia</a>
+            <a class="btn btn-ghost btn-lg" href="{% url 'core:order_status' %}?number={{ order.order_number|urlencode }}&token={{ order.confirmation_token|urlencode }}">Status zamówienia</a>
         </div>
     </div>
 {% endif %}

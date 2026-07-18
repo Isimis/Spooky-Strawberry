@@ -1,13 +1,95 @@
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from accounts.models import CustomerAddress, CustomerProfile
 from catalog.models import Category, Product, ProductVariant
 from orders.models import Order, ShippingMethod
 from orders.shipping import FREE_SHIPPING_THRESHOLD
 from payments.models import Payment
+
+User = get_user_model()
+
+
+class CheckoutSaveAddressTests(TestCase):
+    def setUp(self):
+        self.kurier = ShippingMethod.objects.create(
+            code="kurier-addr",
+            name="Kurier",
+            price=Decimal("13.99"),
+            is_active=True,
+            sort_order=20,
+        )
+        category = Category.objects.create(name="Chokery", slug="save-addr-chokery")
+        self.product = Product.objects.create(
+            name="Choker",
+            slug="save-addr-choker",
+            category=category,
+            regular_price=Decimal("29.00"),
+            status=Product.STATUS_ACTIVE,
+        )
+        self.variant = ProductVariant.objects.create(product=self.product, stock_quantity=5, is_active=True)
+        self.user = User.objects.create_user(
+            username="klientka@example.pl", email="klientka@example.pl", password="spookypass123"
+        )
+
+    def _cart(self):
+        session = self.client.session
+        session["cart"] = {str(self.variant.id): {"quantity": 1}}
+        session.save()
+
+    def _post_data(self, **extra):
+        data = {
+            "first_name": "Maja",
+            "last_name": "Nowak",
+            "email": "klientka@example.pl",
+            "phone": "500600700",
+            "shipping_method": self.kurier.id,
+            "address_line_1": "Ciemna 13",
+            "address_line_2": "",
+            "postal_code": "00-001",
+            "city": "Warszawa",
+        }
+        data.update(extra)
+        return data
+
+    def test_checkbox_saves_default_address(self):
+        self.client.force_login(self.user)
+        self._cart()
+        response = self.client.post(reverse("checkout:shipping"), self._post_data(save_address="on"))
+        self.assertRedirects(response, reverse("checkout:payment"))
+        address = CustomerProfile.objects.get(user=self.user).default_shipping_address()
+        self.assertIsNotNone(address)
+        self.assertEqual(address.address_line_1, "Ciemna 13")
+        self.assertTrue(address.is_default)
+
+    def test_without_checkbox_address_is_not_saved(self):
+        self.client.force_login(self.user)
+        self._cart()
+        response = self.client.post(reverse("checkout:shipping"), self._post_data())
+        self.assertRedirects(response, reverse("checkout:payment"))
+        profile = CustomerProfile.objects.filter(user=self.user).first()
+        self.assertTrue(profile is None or profile.default_shipping_address() is None)
+
+    def test_checkout_prefills_saved_address(self):
+        profile, _ = CustomerProfile.objects.get_or_create(user=self.user)
+        CustomerAddress.objects.create(
+            profile=profile,
+            address_type=CustomerAddress.TYPE_SHIPPING,
+            first_name="Maja",
+            last_name="Nowak",
+            address_line_1="Ciemna 13",
+            postal_code="00-001",
+            city="Warszawa",
+            is_default=True,
+        )
+        self.client.force_login(self.user)
+        self._cart()
+        response = self.client.get(reverse("checkout:shipping"))
+        self.assertContains(response, "Ciemna 13")
 
 
 class CheckoutConfirmationTests(TestCase):
