@@ -1,0 +1,11 @@
+[Unit]
+Description=Spooky Strawberry database backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=www-data
+WorkingDirectory=/var/www/spooky-strawberry
+ExecStart=/var/www/spooky-strawberry/scripts/backup_database.sh

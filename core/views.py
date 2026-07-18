@@ -17,6 +17,7 @@ from catalog.models import Aesthetic, Product
 from orders.models import ShippingMethod
 from orders.shipping import FREE_SHIPPING_THRESHOLD
 from outfits.models import Outfit
+from .seo import organization_schema, website_schema
 from .models import Message, NewsletterSubscriber, SiteSettings
 
 
@@ -107,6 +108,9 @@ def home_view(request):
             "outfits": outfits,
             "aesthetics": aesthetics,
             "articles": articles,
+            "seo_title": "Spooky Strawberry, akcesoria alternatywne",
+            "seo_description": "Akcesoria alternatywne do stylizacji soft goth, dark coquette, jirai kei, grunge i y2k. Odkryj dodatki Spooky Strawberry.",
+            "seo_structured_data": [organization_schema(request), website_schema(request)],
         },
     )
 

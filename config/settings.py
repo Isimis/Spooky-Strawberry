@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
 
     # Project apps
     "core",
@@ -121,6 +122,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 "cart.context_processors.cart",
                 "core.context_processors.site_settings",
+                "core.context_processors.seo",
                 "dashboard.context_processors.unread_messages",
             ],
         },

@@ -1,8 +1,10 @@
 from decimal import Decimal
 
 from catalog.models import Product, ProductVariant
+from orders.discounts import evaluate_discount, find_discount_code, normalize_code
 
 CART_SESSION_KEY = "cart"
+CART_DISCOUNT_SESSION_KEY = "cart_discount_code"
 
 
 def get_cart_data(request):
@@ -110,6 +112,7 @@ def remove_cart_item(request, variant_id):
 
 def clear_cart(request):
     request.session[CART_SESSION_KEY] = {}
+    request.session.pop(CART_DISCOUNT_SESSION_KEY, None)
     request.session.modified = True
 
 
@@ -166,13 +169,44 @@ def get_cart_items(request):
     return items, adjustments
 
 
-def get_cart_summary(request):
+def get_applied_discount_code(request):
+    return find_discount_code(request.session.get(CART_DISCOUNT_SESSION_KEY, ""))
+
+
+def apply_discount_code(request, code, *, user=None, email=""):
+    """Zapisuje poprawny kod w sesji i zwraca wynik jego sprawdzenia."""
+    items, _ = get_cart_items(request)
+    subtotal = sum((item["line_total"] for item in items), Decimal("0.00"))
+    result = evaluate_discount(code, subtotal=subtotal, user=user, email=email)
+    if result.is_valid:
+        request.session[CART_DISCOUNT_SESSION_KEY] = result.discount_code.code
+        request.session.modified = True
+    return result
+
+
+def remove_discount_code(request):
+    request.session.pop(CART_DISCOUNT_SESSION_KEY, None)
+    request.session.modified = True
+
+
+def get_cart_summary(request, *, user=None, email=""):
     items, adjustments = get_cart_items(request)
     subtotal = sum((item["line_total"] for item in items), Decimal("0.00"))
     quantity = sum(item["quantity"] for item in items)
+    raw_code = normalize_code(request.session.get(CART_DISCOUNT_SESSION_KEY, ""))
+    discount_result = (
+        evaluate_discount(raw_code, subtotal=subtotal, user=user, email=email) if raw_code else None
+    )
+    discount_code = discount_result.discount_code if discount_result and discount_result.is_valid else None
+    discount_total = discount_result.discount_total if discount_code else Decimal("0.00")
     return {
         "items": items,
         "subtotal": subtotal,
+        "discount_code": discount_code,
+        "discount_code_value": raw_code,
+        "discount_total": discount_total,
+        "discount_error": discount_result.error if discount_result and not discount_result.is_valid else "",
+        "discounted_subtotal": subtotal - discount_total,
         "quantity": quantity,
         "adjustments": adjustments,
     }

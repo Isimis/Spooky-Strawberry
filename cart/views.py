@@ -10,9 +10,11 @@ from orders.shipping import get_shipping_estimate as get_default_shipping_estima
 
 from .services import (
     add_to_cart,
+    apply_discount_code,
     clear_cart,
     get_cart_quantity,
     get_cart_summary,
+    remove_discount_code,
     remove_cart_item,
     save_cart_for_user,
     update_cart_item,
@@ -24,7 +26,7 @@ def get_shipping_estimate(subtotal):
 
 
 def cart_detail(request):
-    summary = get_cart_summary(request)
+    summary = get_cart_summary(request, user=request.user, email=getattr(request.user, "email", ""))
     track_event(
         request,
         "cart_view",
@@ -33,7 +35,7 @@ def cart_detail(request):
             "subtotal": str(summary["subtotal"]),
         },
     )
-    shipping_cost, free_from, remaining = get_shipping_estimate(summary["subtotal"])
+    shipping_cost, free_from, remaining = get_shipping_estimate(summary["discounted_subtotal"])
 
     in_cart_ids = [item["product"].id for item in summary["items"] if item.get("product")]
     recommendations = list(
@@ -48,11 +50,33 @@ def cart_detail(request):
             "shipping_cost": shipping_cost,
             "free_from": free_from,
             "free_remaining": remaining,
-            "grand_total": summary["subtotal"] + shipping_cost,
+            "grand_total": summary["discounted_subtotal"] + shipping_cost,
             "recommendations": recommendations,
         }
     )
     return render(request, "cart/detail.html", summary)
+
+
+@require_POST
+def apply_discount(request):
+    result = apply_discount_code(
+        request,
+        request.POST.get("code", ""),
+        user=request.user,
+        email=getattr(request.user, "email", ""),
+    )
+    if result.is_valid:
+        messages.success(request, f"Kod {result.discount_code.code} został dodany do koszyka.")
+    else:
+        messages.error(request, result.error)
+    return redirect("cart:detail")
+
+
+@require_POST
+def remove_discount(request):
+    remove_discount_code(request)
+    messages.info(request, "Kod rabatowy został usunięty.")
+    return redirect("cart:detail")
 
 
 @require_POST

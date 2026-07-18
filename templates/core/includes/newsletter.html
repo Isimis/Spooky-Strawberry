@@ -9,7 +9,7 @@
                 Klub Spooky
             </div>
             <h3>Jesteś w klubie! 🍓</h3>
-            <p>Wysłaliśmy kod rabatowy -10% na {{ request.session.newsletter_email }}. Sprawdź skrzynkę (i folder spam), żeby go odebrać.</p>
+            <p>Wysłaliśmy kod rabatowy -10% na pierwsze opłacone zamówienie na {{ request.session.newsletter_email }}. Sprawdź skrzynkę (i folder spam), żeby go odebrać.</p>
             <div class="fine">Nie widzisz maila? Sprawdź folder spam.</div>
         {% else %}
             <div class="nl-chip">
@@ -25,7 +25,7 @@
                 <input type="email" name="email" placeholder="Twój e-mail" aria-label="Twój e-mail" required>
                 <button type="submit" class="btn btn-primary">Zapisz</button>
             </form>
-            <div class="fine">-10% na pierwsze zamówienie po zapisie.</div>
+            <div class="fine">-10% na pierwsze opłacone zamówienie po zapisie. Zapisując się, zgadzasz się na otrzymywanie informacji drogą elektroniczną; zgodę możesz wycofać w każdej chwili. <a href="{% url 'core:privacy' %}">Polityka prywatności</a></div>
         {% endif %}
     </div>
 </section>

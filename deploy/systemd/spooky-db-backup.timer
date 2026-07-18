@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly Spooky Strawberry database backup
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=5m
+Persistent=true
+Unit=spooky-db-backup.service
+
+[Install]
+WantedBy=timers.target

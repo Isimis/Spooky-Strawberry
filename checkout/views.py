@@ -9,7 +9,8 @@ from django.utils import timezone
 from analytics.services import track_event
 from cart.services import clear_cart, get_cart_summary
 from core.models import SiteSettings
-from orders.models import Order, OrderItem, ShippingMethod
+from orders.discounts import evaluate_discount
+from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from orders.shipping import shipping_cost_for_method
 from payments.models import Payment
 from payments.przelewy24 import Przelewy24Error
@@ -33,8 +34,16 @@ PAYMENT_METHODS = [
 PAYMENT_LABELS = {code: label for code, label, _ in PAYMENT_METHODS}
 
 
+class DiscountCodeUnavailable(Exception):
+    pass
+
+
 def _shipping_cost_for(method, subtotal):
     return shipping_cost_for_method(method, subtotal)
+
+
+def _cart_summary(request, email=""):
+    return get_cart_summary(request, user=request.user, email=email)
 
 
 def _account_checkout_initial(user):
@@ -128,12 +137,11 @@ def _save_default_shipping_address(user, data):
 
 
 def shipping(request):
-    summary = get_cart_summary(request)
+    saved = request.session.get(CHECKOUT_SESSION_KEY, {})
+    summary = _cart_summary(request, request.POST.get("email") or saved.get("email", ""))
     if not summary["items"]:
         messages.info(request, "Twój koszyk jest pusty.")
         return redirect("cart:detail")
-
-    saved = request.session.get(CHECKOUT_SESSION_KEY, {})
     # Zalogowany klient bez danych w sesji dostaje formularz podstawiony z konta
     # (dane osobowe + zapisany domyślny adres dostawy).
     initial = dict(saved) if saved else _account_checkout_initial(request.user)
@@ -141,6 +149,10 @@ def shipping(request):
 
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
+        summary = _cart_summary(request, data["email"])
+        if summary["discount_error"]:
+            messages.error(request, f"Kod rabatowy nie może zostać użyty: {summary['discount_error']}")
+            return redirect("cart:detail")
         request.session[CHECKOUT_SESSION_KEY] = {
             "first_name": data["first_name"],
             "last_name": data["last_name"],
@@ -168,7 +180,7 @@ def shipping(request):
     selected_method_id = saved.get("shipping_method") or (methods[0].id if methods else None)
     selected_method = next((m for m in methods if m.id == selected_method_id), methods[0] if methods else None)
     selected_method_id = selected_method.id if selected_method else None
-    shipping_cost = _shipping_cost_for(selected_method, summary["subtotal"])
+    shipping_cost = _shipping_cost_for(selected_method, summary["discounted_subtotal"])
 
     return render(
         request,
@@ -177,10 +189,12 @@ def shipping(request):
             "form": form,
             "items": summary["items"],
             "subtotal": summary["subtotal"],
+            "discount_code": summary["discount_code"],
+            "discount_total": summary["discount_total"],
             "shipping_methods": methods,
             "selected_method_id": selected_method_id,
             "shipping_cost": shipping_cost,
-            "grand_total": summary["subtotal"] + shipping_cost,
+            "grand_total": summary["discounted_subtotal"] + shipping_cost,
             "geowidget_token": settings.INPOST_GEOWIDGET_TOKEN,
             "geowidget_js": settings.INPOST_GEOWIDGET_JS,
             "geowidget_css": settings.INPOST_GEOWIDGET_CSS,
@@ -190,14 +204,17 @@ def shipping(request):
 
 
 def payment(request):
-    summary = get_cart_summary(request)
-    if not summary["items"]:
-        messages.info(request, "Twój koszyk jest pusty.")
-        return redirect("cart:detail")
-
     checkout_data = request.session.get(CHECKOUT_SESSION_KEY)
     if not checkout_data:
         return redirect("checkout:shipping")
+
+    summary = _cart_summary(request, checkout_data.get("email", ""))
+    if not summary["items"]:
+        messages.info(request, "Twój koszyk jest pusty.")
+        return redirect("cart:detail")
+    if summary["discount_error"]:
+        messages.error(request, f"Kod rabatowy nie może zostać użyty: {summary['discount_error']}")
+        return redirect("cart:detail")
 
     # Koszyk sam koryguje ilości do bieżącego stanu magazynowego. Jeśli coś się zmieniło
     # od dodania do koszyka, informujemy klientkę i wracamy do koszyka do potwierdzenia -
@@ -208,7 +225,7 @@ def payment(request):
         return redirect("cart:detail")
 
     method = ShippingMethod.objects.filter(id=checkout_data.get("shipping_method"), is_active=True).first()
-    shipping_cost = _shipping_cost_for(method, summary["subtotal"])
+    shipping_cost = _shipping_cost_for(method, summary["discounted_subtotal"])
 
     accepted_terms = request.POST.get("accept_terms") == "1"
 
@@ -219,7 +236,11 @@ def payment(request):
         else:
             # Metodę (BLIK/karta/przelew) klient wybiera już na stronie Przelewy24.
             payment_method = request.POST.get("payment_method", "p24")
-            order = _get_or_create_pending_order(request, summary, checkout_data, method, shipping_cost, payment_method)
+            try:
+                order = _get_or_create_pending_order(request, summary, checkout_data, method, shipping_cost, payment_method)
+            except DiscountCodeUnavailable as exc:
+                messages.error(request, f"Kod rabatowy nie może zostać użyty: {exc}")
+                return redirect("cart:detail")
             try:
                 gateway_url = start_payment(request, order, method=PAYMENT_LABELS.get(payment_method, payment_method))
             except Przelewy24Error:
@@ -239,9 +260,11 @@ def payment(request):
         {
             "items": summary["items"],
             "subtotal": summary["subtotal"],
+            "discount_code": summary["discount_code"],
+            "discount_total": summary["discount_total"],
             "shipping_method": method,
             "shipping_cost": shipping_cost,
-            "grand_total": summary["subtotal"] + shipping_cost,
+            "grand_total": summary["discounted_subtotal"] + shipping_cost,
             "payment_methods": PAYMENT_METHODS,
             "accept_terms": accepted_terms,
         },
@@ -266,6 +289,22 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
         else None
     )
 
+    discount_code = None
+    discount_total = Decimal("0.00")
+    if summary["discount_code"]:
+        # Ostateczna kontrola dzieje się w transakcji, bo kod mógł zostać wyłączony
+        # albo osiągnąć limit między wyświetleniem checkoutu a kliknięciem płatności.
+        discount_code = DiscountCode.objects.select_for_update().get(pk=summary["discount_code"].pk)
+        result = evaluate_discount(
+            discount_code,
+            subtotal=subtotal,
+            user=request.user,
+            email=data["email"],
+        )
+        if not result.is_valid:
+            raise DiscountCodeUnavailable(result.error)
+        discount_total = result.discount_total
+
     fields = dict(
         email=data["email"],
         phone=data.get("phone", ""),
@@ -279,11 +318,12 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
         pickup_point_name=data.get("pickup_point_name", ""),
         pickup_point_address=data.get("pickup_point_address", ""),
         shipping_method=method,
+        discount_code=discount_code,
         status=Order.STATUS_AWAITING_PAYMENT,
         subtotal=subtotal,
-        discount_total=Decimal("0.00"),
+        discount_total=discount_total,
         shipping_total=shipping_cost,
-        grand_total=subtotal + shipping_cost,
+        grand_total=subtotal - discount_total + shipping_cost,
         customer_note=f"Płatność: {PAYMENT_LABELS.get(payment_method, payment_method)}",
         source_session_key=request.session.session_key or "",
         is_test=is_test,

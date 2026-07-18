@@ -15,7 +15,7 @@
     <div class="confirm-wrap">
         <div class="confirm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
         <h1 class="h-lg" style="margin-bottom:8px">Dziękujemy za zamówienie! 🍓</h1>
-        <p class="muted" style="max-width:420px;margin:0 auto">Potwierdzenie wysłaliśmy na {{ order.email }}. Pakujemy z sercem i wysyłamy w 24h.</p>
+        <p class="muted" style="max-width:420px;margin:0 auto">Potwierdzenie wysłaliśmy na {{ order.email }}. Zamówienie nadamy w ciągu maksymalnie 48 godzin w dni robocze.</p>
         <div class="order-box">
             <div class="ob-head"><span class="muted">Numer zamówienia</span><b>#{{ order.order_number }}</b></div>
             <div style="margin:4px 0 10px">
@@ -30,6 +30,7 @@
                 {% endfor %}
             </div>
             <div class="sum-row"><span>Produkty</span><span>{{ order.subtotal|money }}</span></div>
+            {% if order.discount_total > 0 %}<div class="sum-row"><span>Rabat{% if order.discount_code %} · {{ order.discount_code.code }}{% endif %}</span><span>-{{ order.discount_total|money }}</span></div>{% endif %}
             <div class="sum-row"><span>Dostawa{% if order.shipping_method %} · {{ order.shipping_method.name }}{% endif %}</span><span>{% if order.shipping_total > 0 %}{{ order.shipping_total|money }}{% else %}gratis{% endif %}</span></div>
             <div class="sum-row tot"><span>Razem</span><span class="big">{{ order.grand_total|money }}</span></div>
             <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px;font-size:12.5px;color:var(--muted)">

@@ -11,4 +11,6 @@ urlpatterns = [
     path("koszyk/aktualizuj/<int:variant_id>/", views.update_item, name="update"),
     path("koszyk/usun/<int:variant_id>/", views.remove_item, name="remove"),
     path("koszyk/wyczysc/", views.clear_items, name="clear"),
+    path("koszyk/kod-rabatowy/", views.apply_discount, name="discount_apply"),
+    path("koszyk/kod-rabatowy/usun/", views.remove_discount, name="discount_remove"),
 ]

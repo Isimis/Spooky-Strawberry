@@ -10,12 +10,21 @@ from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
 from core.models import NewsletterSubscriber
+from dashboard.forms import OrderDashboardForm
 from dashboard.models import DataQualityIssue
 from dashboard.registry import get_model_config, get_sections
 from dashboard.services import get_dashboard_analytics
 from dashboard.views import filter_product_image_files, sync_product_main_image
 from orders.models import DiscountCode, Order, OrderItem, ShippingMethod
 from outfits.models import Outfit, OutfitHotspot, OutfitImage, OutfitItem
+
+
+class OrderTestFlagFormTests(TestCase):
+    def test_order_form_exposes_a_single_manual_test_flag(self):
+        form = OrderDashboardForm()
+
+        self.assertIn("is_test", form.fields)
+        self.assertEqual(form.fields["is_test"].label, "Zamówienie testowe")
 
 
 class DashboardAccessTests(TestCase):

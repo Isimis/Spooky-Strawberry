@@ -63,10 +63,18 @@ def order_lines(order):
             "</tr>"
         )
     shipping = "gratis" if Decimal(order.shipping_total) == 0 else money(order.shipping_total)
+    discount = ""
+    if Decimal(order.discount_total) > 0:
+        code = f" · {order.discount_code.code}" if order.discount_code_id else ""
+        discount = (
+            f'<tr><td style="font-family:{FONT};font-size:13px;color:{MUTED};">Rabat{code}</td>'
+            f'<td align="right" style="font-family:{FONT};font-size:13px;color:{INK};">-{money(order.discount_total)}</td></tr>'
+        )
     totals = (
         f'<tr><td style="padding:10px 0 0;font-family:{FONT};font-size:13px;color:{MUTED};">Produkty</td>'
         f'<td align="right" style="padding:10px 0 0;font-family:{FONT};font-size:13px;color:{INK};">{money(order.subtotal)}</td></tr>'
-        f'<tr><td style="font-family:{FONT};font-size:13px;color:{MUTED};">Dostawa</td>'
+        + discount
+        + f'<tr><td style="font-family:{FONT};font-size:13px;color:{MUTED};">Dostawa</td>'
         f'<td align="right" style="font-family:{FONT};font-size:13px;color:{INK};">{shipping}</td></tr>'
         f'<tr><td style="padding-top:8px;font-family:{FONT};font-size:16px;font-weight:700;color:{INK};">Razem</td>'
         f'<td align="right" style="padding-top:8px;font-family:{FONT};font-size:16px;font-weight:700;color:{ACCENT};">{money(order.grand_total)}</td></tr>'
@@ -214,7 +222,7 @@ def send_admin_order_notification(order):
             "total": money(order.grand_total),
             "customer_name": f"{order.first_name} {order.last_name}".strip(),
             "customer_email": order.email,
-            "customer_phone": order.phone or "—",
+            "customer_phone": order.phone or "-",
             "items": order_lines(order),
             "delivery": delivery_text(order),
             "panel_url": _abs_url(reverse("dashboard:order_workspace", args=[order.pk])),

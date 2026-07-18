@@ -3,8 +3,17 @@ from decimal import Decimal, InvalidOperation
 from django.core.paginator import Paginator
 from django.db.models import Max, Min
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 
 from analytics.services import track_event
+from core.seo import (
+    breadcrumb_schema,
+    collection_page_schema,
+    organization_schema,
+    plain_text,
+    product_schema,
+    title_with_store_name,
+)
 from outfits.models import Outfit
 
 from .models import Aesthetic, Category, Color, Product, Size
@@ -124,6 +133,12 @@ def product_list(request):
             "max_price": request.GET.get("max_price", ""),
             "price_range": price_range,
             "selected_filters": selected_filters,
+            "seo_title": "Akcesoria alternatywne: chokery, rajstopy i więcej | Spooky Strawberry",
+            "seo_description": "Akcesoria alternatywne do stylizacji soft goth, dark coquette, jirai kei i y2k. Odkrywaj chokery, rajstopy, mitenki, podwiązki i więcej.",
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, "Katalog Spooky Strawberry", reverse("catalog:product_list")),
+            ],
         },
     )
 
@@ -199,6 +214,23 @@ def product_detail(request, slug):
             "size_options": size_options,
             "related_products": related_products,
             "related_outfits": related_outfits,
+            "seo_title": title_with_store_name(product.seo_title or product.name),
+            "seo_description": plain_text(product.seo_description or product.description),
+            "seo_image_url": product.main_image and product.main_image.image.url,
+            "seo_og_type": "product",
+            "seo_structured_data": [
+                organization_schema(request),
+                product_schema(request, product, selected_variant),
+                breadcrumb_schema(
+                    request,
+                    [
+                        ("Start", reverse("core:home")),
+                        ("Katalog", reverse("catalog:product_list")),
+                        (product.category.name, product.category.get_absolute_url()),
+                        (product.name, product.get_absolute_url()),
+                    ],
+                ),
+            ],
         },
     )
 
@@ -253,7 +285,19 @@ def aesthetic_list(request):
     # Kolejność wg sort_order, by mozaika układała się jak w projekcie - wyróżnione
     # (is_featured = kafle „tall") rozkładają się w rytmie, a nie zbijają na początku.
     aesthetics = Aesthetic.objects.filter(is_active=True).order_by("sort_order", "name")
-    return render(request, "catalog/aesthetic_list.html", {"aesthetics": aesthetics})
+    return render(
+        request,
+        "catalog/aesthetic_list.html",
+        {
+            "aesthetics": aesthetics,
+            "seo_title": "Estetyki alternatywne: soft goth, dark coquette i więcej",
+            "seo_description": "Poznaj estetyki alternatywne Spooky Strawberry: soft goth, dark coquette, jirai kei, grunge, y2k i więcej inspiracji.",
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, "Estetyki alternatywne", reverse("catalog:aesthetic_list")),
+            ],
+        },
+    )
 
 
 # Klucz odpowiedzi quizu -> (slug estetyki w bazie, nazwa wyniku, opis, gradient)
@@ -337,6 +381,46 @@ def aesthetic_detail(request, slug):
             "outfits": outfits,
             "articles": articles,
             "product_count": Product.objects.filter(status=Product.STATUS_ACTIVE, aesthetics=aesthetic).count(),
+            "seo_title": f"{aesthetic.name}, akcesoria i inspiracje | Spooky Strawberry",
+            "seo_description": plain_text(aesthetic.description or aesthetic.tagline),
+            "seo_image_url": aesthetic.image and aesthetic.image.url,
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, aesthetic.name, aesthetic.get_absolute_url(), aesthetic.description or aesthetic.tagline),
+                breadcrumb_schema(
+                    request,
+                    [("Start", reverse("core:home")), ("Estetyki", reverse("catalog:aesthetic_list")), (aesthetic.name, aesthetic.get_absolute_url())],
+                ),
+            ],
+        },
+    )
+
+
+def category_detail(request, slug):
+    category = get_object_or_404(Category, slug=slug, is_active=True)
+    products = (
+        Product.objects.filter(status=Product.STATUS_ACTIVE, category=category)
+        .prefetch_related("images", "aesthetics", "variants__color", "variants__size")
+        .order_by("sort_order", "-created_at")
+    )
+    description = category.description or f"Akcesoria z kategorii {category.name} do alternatywnych stylizacji."
+    return render(
+        request,
+        "catalog/category_detail.html",
+        {
+            "category": category,
+            "products": products,
+            "product_count": products.count(),
+            "seo_title": f"{category.name}, akcesoria alternatywne | Spooky Strawberry",
+            "seo_description": plain_text(description),
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, category.name, category.get_absolute_url(), description),
+                breadcrumb_schema(
+                    request,
+                    [("Start", reverse("core:home")), ("Katalog", reverse("catalog:product_list")), (category.name, category.get_absolute_url())],
+                ),
+            ],
         },
     )
 

@@ -44,7 +44,7 @@
                 <div class="field"><label>Hasło</label><input class="input" type="password" name="password" placeholder="Min. 8 znaków" required></div>
                 <label style="display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--muted);margin-bottom:14px">
                     <input type="checkbox" name="accepts_marketing" style="margin-top:3px" {% if register_form.accepts_marketing.value %}checked{% endif %}>
-                    Chcę dostawać informacje o nowościach i promocjach drogą elektroniczną.
+                    Chcę dostawać informacje o nowościach i promocjach drogą elektroniczną. Zgodę mogę wycofać w każdej chwili.
                 </label>
                 <button class="btn btn-primary btn-block" type="submit">Załóż konto</button>
                 <p class="muted" style="font-size:11px;margin-top:10px">Zakładając konto, akceptujesz <a class="auth-link" href="{% url 'core:terms' %}">Regulamin</a> i <a class="auth-link" href="{% url 'core:privacy' %}">Politykę prywatności</a>.</p>

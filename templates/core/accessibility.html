@@ -8,7 +8,7 @@
 </section>
 <section class="sec">
     <div class="legal">
-        <div class="legal-meta">Kontakt w sprawie dostępności: kontakt@spookystrawberry.pl.</div>
+        <div class="legal-meta">Kontakt w sprawie dostępności: {{ store_info.contact_email }}.</div>
         <h2>Nasze zobowiązanie</h2>
         <p>Dokładamy starań, aby sklep był możliwie prosty, czytelny i dostępny. Projektujemy go mobile first, z czytelną strukturą nagłówków, opisami alternatywnymi obrazów, widocznym fokusem i obsługą najważniejszych elementów z klawiatury.</p>
 
@@ -25,7 +25,7 @@
         <p>Sklep jest rozwijany etapami. Część treści, zdjęć lub integracji zewnętrznych może wymagać dalszej poprawy dostępności. Jeżeli zauważysz problem, daj nam znać - potraktujemy to jako priorytet do poprawy.</p>
 
         <h2>Zgłoś problem</h2>
-        <p>Jeśli napotkasz barierę w korzystaniu ze sklepu, napisz na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a>, zadzwoń pod <a href="tel:+48668639593">668 639 593</a> albo użyj formularza na stronie <a href="{% url 'core:contact' %}">Kontakt</a>.</p>
+        <p>Jeśli napotkasz barierę w korzystaniu ze sklepu, napisz na <a href="mailto:{{ store_info.contact_email }}">{{ store_info.contact_email }}</a>, zadzwoń pod <a href="tel:{{ store_info.contact_phone_href }}">{{ store_info.contact_phone }}</a> albo użyj formularza na stronie <a href="{% url 'core:contact' %}">Kontakt</a>.</p>
     </div>
 </section>
 {% endblock %}

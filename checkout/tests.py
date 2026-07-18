@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from accounts.models import CustomerAddress, CustomerProfile
 from catalog.models import Category, Product, ProductVariant
-from orders.models import Order, ShippingMethod
+from orders.models import DiscountCode, Order, ShippingMethod
 from orders.shipping import FREE_SHIPPING_THRESHOLD
 from payments.models import Payment
 
@@ -246,6 +246,27 @@ class CheckoutConfirmationTests(TestCase):
         self.assertEqual(response.url, "https://sandbox.przelewy24.pl/trnRequest/tok123")
         self.assertIn("cart", self.client.session)
         mock_start.assert_called_once()
+
+    @patch("checkout.views.start_payment", return_value="https://sandbox.przelewy24.pl/trnRequest/discount")
+    def test_payment_saves_discount_on_order_and_recalculates_shipping_threshold(self, mock_start):
+        self._put_product_in_cart(quantity=2)  # 58,00 zł produktów
+        self._put_checkout_data_in_session()
+        code = DiscountCode.objects.create(
+            code="SPOOKY10",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            value=Decimal("10.00"),
+        )
+        session = self.client.session
+        session["cart_discount_code"] = code.code
+        session.save()
+
+        self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
+        order = Order.objects.get()
+
+        self.assertEqual(order.discount_code, code)
+        self.assertEqual(order.discount_total, Decimal("5.80"))
+        self.assertEqual(order.shipping_total, Decimal("10.99"))
+        self.assertEqual(order.grand_total, Decimal("63.19"))
 
     @patch("checkout.views.start_payment")
     def test_payment_requires_terms_acceptance(self, mock_start):

@@ -4,6 +4,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from core.text import normalize_dashes
+
 
 def generate_order_confirmation_token():
     return secrets.token_urlsafe(32)
@@ -33,6 +35,11 @@ class ShippingMethod(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.description = normalize_dashes(self.description)
+        super().save(*args, **kwargs)
+
 
 class DiscountCode(models.Model):
     TYPE_PERCENT = "percent"
@@ -53,6 +60,8 @@ class DiscountCode(models.Model):
     used_count = models.PositiveIntegerField(default=0)
     # Gdy True, każdy klient może wykorzystać ten kod tylko raz (sprawdzane po koncie i e-mailu).
     once_per_user = models.BooleanField(default=False)
+    # Gdy True, kod działa wyłącznie przed pierwszym opłaconym zamówieniem klienta.
+    first_order_only = models.BooleanField(default=False)
     minimum_order_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -69,10 +78,11 @@ class DiscountCode(models.Model):
         return self.code
 
     def already_used_by(self, *, user=None, email=""):
-        """Czy dany klient już wykorzystał ten kod (na złożonym, nieanulowanym zamówieniu).
+        """Czy dany klient już wykorzystał kod w opłaconym zamówieniu.
 
         Sprawdzamy po zalogowanym koncie i po adresie e-mail, żeby limit „raz na
-        użytkownika" działał także dla zakupów bez logowania.
+        użytkownika" działał także dla zakupów bez logowania. Nie liczymy zamówień
+        oczekujących na płatność, dzięki czemu klient może bez problemu ponowić płatność.
         """
         from django.db.models import Q
 
@@ -86,7 +96,29 @@ class DiscountCode(models.Model):
             return False
         return (
             self.orders.filter(conditions)
-            .exclude(status__in=[Order.STATUS_DRAFT, Order.STATUS_CANCELLED])
+            .exclude(status__in=[Order.STATUS_DRAFT, Order.STATUS_AWAITING_PAYMENT, Order.STATUS_CANCELLED])
+            .exists()
+        )
+
+    def customer_has_paid_order(self, *, user=None, email=""):
+        """Czy klient ma wcześniejsze opłacone/zrealizowane zamówienie.
+
+        Łączymy konto i e-mail, żeby zasada działała również dla zakupów bez konta.
+        Pomijamy szkice, oczekujące płatności i anulowane zamówienia.
+        """
+        from django.db.models import Q
+
+        conditions = Q()
+        if user is not None and getattr(user, "is_authenticated", False):
+            conditions |= Q(user=user)
+        email = (email or "").strip()
+        if email:
+            conditions |= Q(email__iexact=email)
+        if not conditions:
+            return False
+        return (
+            Order.objects.filter(conditions)
+            .exclude(status__in=[Order.STATUS_DRAFT, Order.STATUS_AWAITING_PAYMENT, Order.STATUS_CANCELLED])
             .exists()
         )
 

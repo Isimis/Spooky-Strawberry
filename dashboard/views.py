@@ -3633,8 +3633,8 @@ def build_order_fieldsets(form):
     return [
         {
             "title": "Status i identyfikacja",
-            "description": "Numer, status i data złożenia zamówienia.",
-            "fields": [form[name] for name in ["order_number", "status", "placed_at"]],
+            "description": "Numer, status, data złożenia oraz jednoznaczne oznaczenie testu.",
+            "fields": [form[name] for name in ["order_number", "status", "is_test", "placed_at"]],
         },
         {
             "title": "Klientka",

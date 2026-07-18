@@ -8,6 +8,7 @@ powtórny webhook dla już opłaconej płatności niczego nie zmienia.
 import uuid
 
 from django.db import transaction
+from django.db.models import F
 from django.urls import reverse
 from django.utils import timezone
 
@@ -136,6 +137,13 @@ def _finalize_paid(payment_pk, *, p24_order_id="", notification=None, verify_raw
     if not order.placed_at:
         order.placed_at = now
     order.save(update_fields=["status", "placed_at", "updated_at"])
+
+    # Licznik kodu zwiększamy dopiero po potwierdzonej płatności. Cała funkcja
+    # jest idempotentna, więc powtórzony webhook nie naliczy użycia drugi raz.
+    if order.discount_code_id and order.discount_total > 0:
+        from orders.models import DiscountCode
+
+        DiscountCode.objects.filter(pk=order.discount_code_id).update(used_count=F("used_count") + 1)
 
     # W trybie Sandbox (testowym) nie ruszamy stanów magazynowych.
     from core.models import SiteSettings

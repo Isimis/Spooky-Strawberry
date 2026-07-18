@@ -12,6 +12,29 @@ from .mailbox import MailboxConfigurationError, import_email_message, sync_mailb
 from .models import Message, NewsletterSubscriber
 
 
+class SearchDiscoveryTests(TestCase):
+    def test_robots_points_to_the_xml_sitemap(self):
+        response = self.client.get("/robots.txt")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain; charset=utf-8")
+        self.assertContains(response, "Sitemap:")
+        self.assertContains(response, "/sitemap.xml")
+
+    def test_xml_sitemap_is_public(self):
+        response = self.client.get("/sitemap.xml")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<urlset", status_code=200)
+        self.assertContains(response, "/sklep/", status_code=200)
+
+    def test_human_readable_sitemap_is_public(self):
+        response = self.client.get(reverse("core:sitemap"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mapa strony")
+
+
 class OrderStatusByTokenTests(TestCase):
     def _order(self):
         order = Order.objects.create(

@@ -4,18 +4,18 @@
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#2a1622,#52283C)">
-    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Pliki cookie</h1><p>Zarządzaj preferencjami. Cookie niezbędne są zawsze aktywne, a analityczne działają dopiero po Twojej zgodzie.</p></div>
+    <div class="ph-in"><div class="eyebrow">Informacje</div><h1>Pliki cookie</h1><p>Zarządzaj zgodami. Niezbędne cookie są zawsze aktywne.</p></div>
 </section>
 <section class="sec">
     <div class="legal">
-        <p>Używamy plików cookie i podobnych technologii, aby sklep działał poprawnie, obsługiwał koszyk, sesję, bezpieczeństwo i Twoje preferencje. Cookie analityczne, marketingowe i personalizacyjne są opcjonalne i działają tylko wtedy, gdy wyrazisz na nie zgodę.</p>
+        <p>Używamy cookie i podobnych technologii, aby sklep poprawnie obsługiwał sesję, koszyk, bezpieczeństwo i Twoje ustawienia. Opcjonalne technologie działają wyłącznie po zgodzie.</p>
 
         <h2 style="margin-top:18px">Twoje preferencje</h2>
         <div class="cookie-prefs">
-            <div class="pref-row"><div class="pr-meta"><b>Niezbędne</b><span>Wymagane do działania sklepu: koszyk, sesja, bezpieczeństwo, zapamiętanie wyboru cookie. Zawsze aktywne.</span></div><button type="button" class="switch on lock" aria-label="Niezbędne (zawsze aktywne)"></button></div>
-            <div class="pref-row"><div class="pr-meta"><b>Analityczne</b><span>Pomagają sprawdzić, jak działa sklep i gdzie użytkownicy gubią się w ścieżce zakupowej. Działają tylko po zgodzie.</span></div><button type="button" class="switch" data-pref="analytics" aria-label="Analityczne"></button></div>
-            <div class="pref-row"><div class="pr-meta"><b>Marketingowe</b><span>Pozwolą mierzyć skuteczność kampanii i pokazywać dopasowane komunikaty, jeśli takie narzędzia zostaną włączone.</span></div><button type="button" class="switch" data-pref="marketing" aria-label="Marketingowe"></button></div>
-            <div class="pref-row"><div class="pr-meta"><b>Personalizacja</b><span>Pozwoli zapamiętywać preferencje, np. ulubione estetyki, jeśli taka funkcja zostanie włączona.</span></div><button type="button" class="switch" data-pref="personalization" aria-label="Personalizacja"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Niezbędne</b><span>Sesja, koszyk, ochrona formularzy i zapamiętanie wyboru cookie. Zawsze aktywne.</span></div><button type="button" class="switch on lock" aria-label="Niezbędne (zawsze aktywne)"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Analityczne</b><span>Pomagają analizować działanie sklepu i ścieżkę zakupową. Działają tylko po zgodzie.</span></div><button type="button" class="switch" data-pref="analytics" aria-label="Analityczne"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Marketingowe</b><span>Obecnie nie są używane. Ta zgoda będzie potrzebna wyłącznie po uruchomieniu narzędzi reklamowych lub pomiaru kampanii.</span></div><button type="button" class="switch" data-pref="marketing" aria-label="Marketingowe"></button></div>
+            <div class="pref-row"><div class="pr-meta"><b>Personalizacja</b><span>Obecnie nie jest używana. Ta zgoda będzie potrzebna wyłącznie po uruchomieniu funkcji zapamiętywania preferencji.</span></div><button type="button" class="switch" data-pref="personalization" aria-label="Personalizacja"></button></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
                 <button class="btn btn-primary" type="button" onclick="ssSaveCookiePrefs(false)">Zapisz preferencje</button>
                 <button class="btn btn-ghost" type="button" onclick="ssSaveCookiePrefs(true)">Akceptuję wszystkie</button>
@@ -23,28 +23,20 @@
             <p id="cookieSaved" style="display:none;color:var(--rose-deep);font-weight:700;font-size:13px;margin-top:12px">Zapisano Twoje preferencje</p>
         </div>
 
-        <h2>Czym są pliki cookie?</h2>
-        <p>Cookie to małe pliki zapisywane na Twoim urządzeniu przez przeglądarkę. Mogą być wykorzystywane do działania sklepu, zapamiętania ustawień, analityki albo marketingu.</p>
-
-        <h2>Jakich cookie używamy</h2>
+        <h2>Cookie i zapis ustawień, których używamy</h2>
         <ul>
-            <li>Niezbędne - obsługują sesję, koszyk, ochronę formularzy, komunikaty systemowe i zapis Twoich preferencji cookie. Bez nich sklep nie działałby poprawnie.</li>
-            <li>Analityczne - po zgodzie pozwalają zapisywać anonimowo-techniczne zdarzenia w sklepie, np. odsłony stron, wyszukiwania, dodania do koszyka i zakupy.</li>
-            <li>Marketingowe - obecnie nie są niezbędne do zakupów; mogą zostać użyte po zgodzie, jeśli uruchomimy narzędzia reklamowe lub pomiar kampanii.</li>
-            <li>Personalizacyjne - mogą zostać użyte po zgodzie, jeśli uruchomimy funkcje zapamiętywania preferencji stylistycznych lub podobnych ustawień.</li>
+            <li><code>sessionid</code>: cookie sesyjne sklepu; utrzymuje sesję, koszyk i logowanie. Sesja wygasa po 30 dniach braku aktywności.</li>
+            <li><code>csrftoken</code>: chroni formularze przed nieuprawnionym wysłaniem.</li>
+            <li><code>ss_cookie_consent</code>: zapis preferencji w pamięci przeglądarki (localStorage), aby nie pytać ponownie przy każdej wizycie.</li>
+            <li><code>ss_analytics_consent</code>: cookie z wyborem zgody analitycznej, ważne przez rok.</li>
+            <li><code>spooky_visitor_id</code>: losowy identyfikator własnej analityki, ustawiany tylko po zgodzie analitycznej, ważny przez rok.</li>
         </ul>
 
-        <h2>Cookie analityczne Spooky Strawberry</h2>
-        <p>Cookie <code>ss_analytics_consent</code> zapisuje wybór dotyczący analityki. Cookie <code>spooky_visitor_id</code> jest ustawiane tylko po zgodzie analitycznej i pomaga rozpoznać kolejne wizyty tej samej przeglądarki bez logowania. Po odmowie albo cofnięciu zgody cookie analityczne jest usuwane.</p>
-
-        <h2>Jak zmienić zgody?</h2>
-        <p>Swoje preferencje możesz zmienić w każdej chwili na tej stronie albo klikając „Ustawienia cookie” w stopce. Wycofanie zgody nie wpływa na zgodność z prawem wcześniejszego przetwarzania.</p>
-
-        <h2>Ustawienia przeglądarki</h2>
-        <p>Cookie możesz także usuwać lub blokować w ustawieniach przeglądarki. Zablokowanie cookie niezbędnych może jednak spowodować, że koszyk, logowanie albo formularze nie będą działały poprawnie.</p>
+        <h2>Zmiana zgody</h2>
+        <p>Preferencje możesz zmienić w każdej chwili na tej stronie albo przez link „Preferencje cookie” w stopce. Po cofnięciu zgody analitycznej cookie <code>spooky_visitor_id</code> jest usuwane.</p>
 
         <h2>Administrator</h2>
-        <p>Administratorem danych przetwarzanych z użyciem cookie jest Wizards &amp; Strawberries Patryk Lewandowski. Szczegóły znajdziesz w <a href="{% url 'core:privacy' %}">Polityce prywatności</a>.</p>
+        <p>Administratorem danych przetwarzanych z użyciem cookie jest {{ store_info.seller_name }}. Szczegóły opisuje <a href="{% url 'core:privacy' %}">Polityka prywatności</a>.</p>
     </div>
 </section>
 {% endblock %}

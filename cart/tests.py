@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from catalog.models import Category, Product, ProductVariant
-from orders.models import ShippingMethod
+from orders.models import DiscountCode, ShippingMethod
 from orders.shipping import FREE_SHIPPING_THRESHOLD
 
 from .views import get_shipping_estimate
@@ -73,6 +73,30 @@ class SessionCartTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Twój koszyk jest pusty")
 
+    def test_percent_discount_is_applied_to_cart_total(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 2})
+        DiscountCode.objects.create(
+            code="SPOOKY10",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            value=Decimal("10.00"),
+        )
+
+        response = self.client.post(reverse("cart:discount_apply"), {"code": "spooky10"})
+        self.assertRedirects(response, reverse("cart:detail"))
+        response = self.client.get(reverse("cart:detail"))
+
+        self.assertEqual(response.context["discount_total"], Decimal("5.80"))
+        self.assertEqual(response.context["grand_total"], Decimal("63.19"))
+        self.assertContains(response, "Rabat")
+
+    def test_invalid_discount_is_not_saved_in_cart(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 1})
+        DiscountCode.objects.create(code="MIN100", value=Decimal("10.00"), minimum_order_amount=Decimal("100.00"))
+
+        self.client.post(reverse("cart:discount_apply"), {"code": "min100"})
+
+        self.assertNotIn("cart_discount_code", self.client.session)
+
 
 class CartShippingEstimateTests(TestCase):
     def setUp(self):
@@ -89,17 +113,17 @@ class CartShippingEstimateTests(TestCase):
         )
 
     def test_cart_below_free_shipping_threshold_uses_paczkomat_price(self):
-        shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("59.99"))
+        shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("99.99"))
 
         self.assertEqual(shipping_cost, Decimal("10.99"))
-        self.assertEqual(free_from, Decimal("60.00"))
+        self.assertEqual(free_from, Decimal("100.00"))
         self.assertEqual(remaining, Decimal("0.01"))
 
     def test_cart_at_free_shipping_threshold_is_free(self):
-        shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("60.00"))
+        shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("100.00"))
 
         self.assertEqual(shipping_cost, Decimal("0.00"))
-        self.assertEqual(free_from, Decimal("60.00"))
+        self.assertEqual(free_from, Decimal("100.00"))
         self.assertEqual(remaining, Decimal("0.00"))
 
 

@@ -2,7 +2,7 @@
 {% load static %}
 {% load catalog_extras %}
 
-{% block title %}{{ product.seo_title|default:product.name }} - Spooky Strawberry{% endblock %}
+{% block title %}{{ seo_title }}{% endblock %}
 {% block meta_description %}{{ product.seo_description|default:product.description|truncatechars:160 }}{% endblock %}
 
 {% block content %}
@@ -84,8 +84,8 @@
         </form>
 
         <div class="trust-row">
-            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg></span><b>Wysyłka 24h</b><span>Pakujemy z sercem</span></div>
-            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 0 1 15-5.5L21 8"/><path d="M21 3v5h-5"/><path d="M21 13a9 9 0 0 1-15 5.5L3 16"/><path d="M3 21v-5h5"/></svg></span><b>30 dni zwrotu</b><span>Bez tłumaczenia</span></div>
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h11v11H2z"/><path d="M13 8h4l4 4v4h-8z"/><circle cx="6" cy="18.5" r="2"/><circle cx="17.5" cy="18.5" r="2"/></svg></span><b>Nadanie do 48h roboczych</b><span>Pakujemy z sercem</span></div>
+            <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11a9 9 0 0 1 15-5.5L21 8"/><path d="M21 3v5h-5"/><path d="M21 13a9 9 0 0 1-15 5.5L3 16"/><path d="M3 21v-5h5"/></svg></span><b>14 dni na odstąpienie</b><span>Bez podawania przyczyny</span></div>
             <div class="tr"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span><b>Bezpiecznie</b><span>BLIK, karta, P24</span></div>
         </div>
 
@@ -99,7 +99,7 @@
                 <div class="acc-c acc-c--tip open">{{ product.styling_tips|formatted_text }}</div></div>
             {% endif %}
             <div class="acc-i"><div class="acc-h">Dostawa i zwroty <span class="acc-ic">+</span></div>
-                <div class="acc-c acc-c--ship">Wysyłka w 24h. Paczkomat 10,99 zł, kurier 13,99 zł. Darmowa dostawa od 60 zł. 30 dni na zwrot bez podawania przyczyny.</div></div>
+                <div class="acc-c acc-c--ship">Nadajemy zamówienia w ciągu maksymalnie 48 godzin w dni robocze. Paczkomat 10,99 zł, kurier 13,99 zł. Darmowa dostawa od 100 zł po rabatach. Masz 14 dni na odstąpienie od umowy bez podawania przyczyny.</div></div>
         </div>
     </div>
 </div>

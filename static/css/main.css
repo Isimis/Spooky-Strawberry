@@ -487,8 +487,10 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .cookie-demo{position:relative;border-radius:var(--r-lg);overflow:hidden;background:repeating-linear-gradient(45deg,#f5eff2,#f5eff2 16px,#efe6ec 16px,#efe6ec 32px);min-height:300px;border:1px solid var(--line);margin-bottom:22px}
 .cookie-demo .cd-label{position:absolute;top:12px;left:14px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .cookie-banner{position:absolute;left:14px;right:14px;bottom:14px;background:var(--ink);color:#F3DCE8;border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:13px;box-shadow:0 18px 40px rgba(0,0,0,.32)}
+.cookie-banner[hidden]{display:none}
 .cookie-banner h4{color:#fff;font-size:16px;display:flex;align-items:center;gap:8px}
 .cookie-banner h4 svg{width:18px;height:18px;color:var(--rose)}
+.cookie-banner h4 .cookie-icon{width:19px;height:19px;color:inherit;flex:none}
 .cookie-banner p{font-size:12.5px;color:#D8C2CF;line-height:1.55}
 .cookie-banner a{color:var(--rose);cursor:pointer}
 .cb-btns{display:flex;gap:8px;flex-wrap:wrap}

@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.text import slugify
 
+from .text import normalize_dashes
+
 
 class SiteSettings(models.Model):
     """Pojedynczy rekord z globalnymi ustawieniami treści sterowanymi z panelu."""
@@ -9,7 +11,7 @@ class SiteSettings(models.Model):
     announcement_is_active = models.BooleanField(default=True)
     announcement_text = models.CharField(
         max_length=255,
-        default="🦇 Darmowa dostawa od 60 zł · 30 dni na zwrot",
+        default="Darmowa dostawa od 100 zł 🍓",
         blank=True,
     )
 
@@ -43,6 +45,7 @@ class SiteSettings(models.Model):
         return "Ustawienia strony"
 
     def save(self, *args, **kwargs):
+        self.announcement_text = normalize_dashes(self.announcement_text)
         self.pk = 1
         super().save(*args, **kwargs)
 
@@ -79,6 +82,11 @@ class SitePage(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
+        self.title = normalize_dashes(self.title)
+        self.intro = normalize_dashes(self.intro)
+        self.body = normalize_dashes(self.body)
+        self.seo_title = normalize_dashes(self.seo_title)
+        self.seo_description = normalize_dashes(self.seo_description)
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
@@ -167,6 +175,13 @@ class MessageTemplate(models.Model):
 
     class Meta:
         ordering = ["-is_system", "name"]
+
+    def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.subject = normalize_dashes(self.subject)
+        self.body_html = normalize_dashes(self.body_html)
+        self.description = normalize_dashes(self.description)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

@@ -59,6 +59,21 @@ class CatalogViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Dodaj do koszyka")
 
+    def test_product_detail_has_canonical_and_product_schema_without_changing_body(self):
+        response = self.client.get(self.available_product.get_absolute_url())
+
+        self.assertContains(response, 'rel="canonical"')
+        self.assertContains(response, 'type="application/ld+json"')
+        self.assertContains(response, '"@type":"Product"')
+        self.assertContains(response, '"priceCurrency":"PLN"')
+
+    def test_category_has_its_own_indexable_landing_page(self):
+        response = self.client.get(self.category.get_absolute_url())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.category.name)
+        self.assertContains(response, '"@type":"CollectionPage"')
+
     def test_product_detail_renders_formatted_description(self):
         self.available_product.description = (
             "## Gotowy opis\n\n"

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load catalog_extras %}
+
+{% block title %}{{ category.name }}, akcesoria alternatywne | Spooky Strawberry{% endblock %}
+{% block meta_description %}{{ seo_description }}{% endblock %}
+
+{% block content %}
+<section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
+    <div class="ph-in">
+        <div class="eyebrow">Kategoria</div>
+        <h1>{{ category.name }}</h1>
+        <p>{{ category.description|default:"Akcesoria do alternatywnych stylizacji, wybrane w jednym miejscu." }}</p>
+    </div>
+</section>
+
+<section class="sec">
+    <div class="sec-head">
+        <div><div class="eyebrow">{{ product_count }} {% if product_count == 1 %}produkt{% else %}produktów{% endif %}</div><h2 class="h-lg">{{ category.name }}</h2></div>
+        <a class="link" href="{% url 'catalog:product_list' %}">Wszystkie produkty →</a>
+    </div>
+    <div class="pgrid">
+        {% for product in products %}{% include "catalog/includes/product_card.html" %}
+        {% empty %}<p class="muted">Wkrótce dodamy produkty do tej kategorii.</p>{% endfor %}
+    </div>
+</section>
+{% endblock %}

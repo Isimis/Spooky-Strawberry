@@ -26,7 +26,7 @@
       if (body) {
         var isOpen = body.classList.toggle("open");
         var icon = head.querySelector(".acc-ic");
-        if (icon) icon.textContent = isOpen ? "–" : "+";
+        if (icon) icon.textContent = isOpen ? "-" : "+";
       }
     }
   });

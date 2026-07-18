@@ -3,6 +3,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from core.text import normalize_dashes
+
 
 class BlogCategory(models.Model):
     name = models.CharField(max_length=120)
@@ -20,6 +22,8 @@ class BlogCategory(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.description = normalize_dashes(self.description)
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -72,6 +76,11 @@ class Article(models.Model):
         return reverse("blog:article_detail", kwargs={"slug": self.slug})
 
     def save(self, *args, **kwargs):
+        self.title = normalize_dashes(self.title)
+        self.intro = normalize_dashes(self.intro)
+        self.body = normalize_dashes(self.body)
+        self.seo_title = normalize_dashes(self.seo_title)
+        self.seo_description = normalize_dashes(self.seo_description)
         if not self.slug:
             self.slug = slugify(self.title)
         if self.status == self.STATUS_PUBLISHED and self.published_at is None:

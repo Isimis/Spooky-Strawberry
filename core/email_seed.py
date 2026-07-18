@@ -117,7 +117,7 @@ SYSTEM_TEMPLATES = [
                 "restockach i kodach rabatowych.")
             + p("Oto Twój kod na pierwsze zakupy:")
             + CODE_BOX
-            + p("<strong>-10%</strong> na pierwsze zamówienie.")
+            + p("<strong>-10%</strong> na pierwsze opłacone zamówienie.")
             + button("https://spookystrawberry.pl/sklep/", "Zacznij zakupy")
         ),
     },

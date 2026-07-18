@@ -274,6 +274,7 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
         fields = [
             "order_number",
             "status",
+            "is_test",
             "placed_at",
             "email",
             "phone",
@@ -302,6 +303,7 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
         labels = {
             "order_number": "Numer zamówienia",
             "status": "Status zamówienia",
+            "is_test": "Zamówienie testowe",
             "placed_at": "Data złożenia",
             "email": "E-mail klientki",
             "phone": "Telefon",
@@ -330,6 +332,7 @@ class OrderDashboardForm(DashboardFormMixin, forms.ModelForm):
         help_texts = {
             "order_number": "Możesz zostawić puste przy roboczym zamówieniu.",
             "status": "Status realizacji zamówienia (złożone → spakowane → wysłane). Status płatności jest osobny - widać go w kafelku Płatność u góry.",
+            "is_test": "Zaznacz tylko dla testu. Na liście pojawi się jedna etykieta TEST; odznacz dla prawdziwego zamówienia.",
             "placed_at": "Data złożenia zamówienia. Przy szkicu może zostać pusta.",
             "shipping_address_line_2": "Opcjonalnie mieszkanie, paczkomat albo dopisek adresowy.",
             "discount_code": "Kod użyty w zamówieniu, jeśli był przypisany.",
@@ -456,6 +459,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
             "minimum_order_amount",
             "max_uses",
             "once_per_user",
+            "first_order_only",
             "used_count",
             "starts_at",
             "ends_at",
@@ -468,6 +472,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
             "minimum_order_amount": "Minimalna wartość zamówienia",
             "max_uses": "Limit użyć",
             "once_per_user": "Tylko raz na użytkownika",
+            "first_order_only": "Tylko na pierwsze zamówienie",
             "used_count": "Użycia dotychczas",
             "starts_at": "Aktywny od",
             "ends_at": "Aktywny do",
@@ -480,6 +485,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
             "minimum_order_amount": "Zostaw puste, jeśli kod działa od każdej kwoty koszyka.",
             "max_uses": "Opcjonalny limit całkowitej liczby użyć kodu.",
             "once_per_user": "Zaznacz, aby każdy klient mógł wykorzystać ten kod tylko raz (sprawdzane po koncie i adresie e-mail).",
+            "first_order_only": "Zaznacz, aby kod działał wyłącznie dla osoby bez wcześniejszego opłaconego zamówienia (sprawdzane po koncie i adresie e-mail).",
             "used_count": "Licznik historyczny. Zwykle będzie zwiększany automatycznie po zamówieniu.",
             "starts_at": "Opcjonalna data startu promocji.",
             "ends_at": "Opcjonalna data zakończenia promocji.",

@@ -1,20 +1,19 @@
 from decimal import Decimal
 
-
-FREE_SHIPPING_THRESHOLD = Decimal("60.00")
+from core.store_info import FREE_SHIPPING_THRESHOLD
 
 SHIPPING_METHOD_DEFINITIONS = (
     {
         "code": "paczkomat",
         "name": "Paczkomat",
-        "description": "Dostawa do paczkomatu InPost w 1-2 dni robocze.",
+        "description": "Nadanie do Paczkomatu InPost w ciągu maksymalnie 48 godzin w dni robocze.",
         "price": Decimal("10.99"),
         "sort_order": 10,
     },
     {
         "code": "kurier",
         "name": "Kurier",
-        "description": "Dostawa kurierem pod wskazany adres w 1-2 dni robocze.",
+        "description": "Nadanie przesyłki kurierskiej w ciągu maksymalnie 48 godzin w dni robocze.",
         "price": Decimal("13.99"),
         "sort_order": 20,
     },

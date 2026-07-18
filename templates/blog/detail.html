@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}{{ article.seo_title|default:article.title }} - Spooky Strawberry{% endblock %}
+{% block title %}{{ seo_title }}{% endblock %}
 {% block meta_description %}{{ article.seo_description|default:article.intro|truncatechars:160 }}{% endblock %}
 
 {% block content %}

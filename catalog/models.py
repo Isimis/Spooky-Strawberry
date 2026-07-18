@@ -4,6 +4,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
+from core.text import normalize_dashes
+
 
 def unique_slug_for(instance, value):
     base_slug = slugify(value) or "item"
@@ -46,7 +48,12 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse("catalog:category_detail", kwargs={"slug": self.slug})
+
     def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.description = normalize_dashes(self.description)
         if not self.slug:
             self.slug = unique_slug_for(self, self.name)
         super().save(*args, **kwargs)
@@ -91,6 +98,9 @@ class Aesthetic(models.Model):
         return reverse("catalog:aesthetic_detail", kwargs={"slug": self.slug})
 
     def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.tagline = normalize_dashes(self.tagline)
+        self.description = normalize_dashes(self.description)
         if not self.slug:
             self.slug = unique_slug_for(self, self.name)
         super().save(*args, **kwargs)
@@ -111,6 +121,11 @@ class Color(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.description = normalize_dashes(self.description)
+        self.styling_tips = normalize_dashes(self.styling_tips)
+        self.seo_title = normalize_dashes(self.seo_title)
+        self.seo_description = normalize_dashes(self.seo_description)
         if not self.slug:
             self.slug = unique_slug_for(self, self.name)
         super().save(*args, **kwargs)

@@ -55,6 +55,9 @@
                     </div>
                     {% endfor %}
                 </div>
+                <div class="sum-row"><span>Produkty</span><span>{{ order.subtotal|money }}</span></div>
+                {% if order.discount_total > 0 %}<div class="sum-row"><span>Rabat{% if order.discount_code %} · {{ order.discount_code.code }}{% endif %}</span><span>-{{ order.discount_total|money }}</span></div>{% endif %}
+                <div class="sum-row"><span>Dostawa</span><span>{% if order.shipping_total > 0 %}{{ order.shipping_total|money }}{% else %}gratis{% endif %}</span></div>
                 <div class="sum-row tot"><span>Razem</span><span class="big">{{ order.grand_total|money }}</span></div>
             </div>
             <p style="margin-top:18px">Coś nie gra? <a href="{% url 'core:contact' %}">Napisz do nas →</a></p>

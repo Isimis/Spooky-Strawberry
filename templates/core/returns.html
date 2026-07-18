@@ -4,57 +4,49 @@
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#241a2e,#52283C)">
-    <div class="ph-in"><div class="eyebrow">Pomoc</div><h1>Zwroty i reklamacje</h1><p>Masz 30 dni na zwrot bez podawania przyczyny. W sprawach zwrotów i reklamacji napisz do nas mailowo albo przez formularz.</p></div>
+    <div class="ph-in"><div class="eyebrow">Pomoc</div><h1>Zwroty i reklamacje</h1><p>Proste zasady zwrotu, odstąpienia od umowy i reklamacji.</p></div>
 </section>
 <section class="sec">
     <div class="legal">
-        <h2>Kontakt w sprawie zwrotu lub reklamacji</h2>
-        <p>W sprawach zwrotów i reklamacji skontaktuj się z nami mailowo: <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> albo przez formularz na stronie <a href="{% url 'core:contact' %}">Kontakt</a>. Wybierz temat „Zwrot / reklamacja”, żeby wiadomość od razu trafiła do właściwej sprawy.</p>
-        <p>W wiadomości podaj numer zamówienia, imię i nazwisko, adres e-mail użyty przy zakupie oraz nazwę produktu. Przy reklamacji opisz problem i dołącz zdjęcia, jeżeli mogą pomóc w ocenie sprawy.</p>
+        <h2>Odstąpienie od umowy i zwrot</h2>
+        <p>Konsument oraz przedsiębiorca na prawach konsumenta mogą odstąpić od umowy zawartej przez internet bez podawania przyczyny. Oświadczenie o odstąpieniu trzeba wysłać w ciągu <strong>14 dni kalendarzowych od otrzymania produktu</strong>.</p>
+        <p>Po złożeniu oświadczenia produkt należy odesłać niezwłocznie, najpóźniej w ciągu kolejnych 14 dni. Dla celów dowodowych zachowaj potwierdzenie nadania.</p>
 
         <h2>Jak zwrócić produkt?</h2>
         <div class="steps-num">
-            <div class="sn"><span class="num">1</span><div><b>Napisz do nas</b><span>Wyślij oświadczenie o odstąpieniu mailem albo przez formularz kontaktowy.</span></div></div>
-            <div class="sn"><span class="num">2</span><div><b>Poczekaj na instrukcję</b><span>Potwierdzimy zgłoszenie i podamy najwygodniejszy adres lub sposób odesłania paczki.</span></div></div>
-            <div class="sn"><span class="num">3</span><div><b>Odeślij produkt</b><span>Masz na to 14 dni od zgłoszenia odstąpienia. Zapakuj produkt bezpiecznie, najlepiej z metkami i opakowaniem.</span></div></div>
-            <div class="sn"><span class="num">4</span><div><b>Odbierz zwrot pieniędzy</b><span>Zwrócimy płatność nie później niż 14 dni od otrzymania oświadczenia, z możliwością wstrzymania do czasu otrzymania produktu lub dowodu nadania.</span></div></div>
+            <div class="sn"><span class="num">1</span><div><b>Złóż oświadczenie</b><span>Napisz na {{ store_info.contact_email }} lub skorzystaj z formularza Kontakt. Podaj numer zamówienia i produkt, którego dotyczy zwrot.</span></div></div>
+            <div class="sn"><span class="num">2</span><div><b>Zapakuj produkt</b><span>Zabezpiecz produkt i dołącz numer zamówienia. Możesz obejrzeć i sprawdzić rzecz tak, jak w sklepie stacjonarnym.</span></div></div>
+            <div class="sn"><span class="num">3</span><div><b>Odeślij paczkę</b><span>Wyślij ją w ciągu 14 dni od złożenia oświadczenia na wskazany niżej adres.</span></div></div>
+            <div class="sn"><span class="num">4</span><div><b>Otrzymaj zwrot środków</b><span>Zwrócimy płatność nie później niż w ciągu 14 dni od otrzymania oświadczenia; możemy poczekać do otrzymania produktu lub potwierdzenia jego nadania.</span></div></div>
         </div>
 
-        <h2>Termin na odstąpienie</h2>
-        <p>Ustawowo konsumentka ma 14 dni na odstąpienie od umowy zawartej przez internet. Spooky Strawberry wydłuża ten termin do 30 dni od otrzymania produktu.</p>
-        <p>Nie musisz podawać przyczyny zwrotu. Możesz ją dopisać dobrowolnie, jeśli chcesz pomóc nam ulepszyć produkty albo opisy.</p>
+        <h2>Adres do zwrotów i reklamacji</h2>
+        <p><strong>{{ store_info.returns_recipient }}<br>{{ store_info.returns_address }}</strong></p>
+        <p>Kontakt przed wysyłką nie jest warunkiem skutecznego odstąpienia, ale pozwoli nam sprawniej obsłużyć sprawę.</p>
 
-        <h2>Warunki zwrotu</h2>
+        <h2>Koszt i warunki zwrotu</h2>
         <ul>
-            <li>Produkt powinien być kompletny i zwrócony w stanie pozwalającym ocenić go tak, jak przy oglądaniu w sklepie stacjonarnym.</li>
-            <li>Możemy obniżyć zwracaną kwotę, jeżeli produkt był używany w sposób wykraczający poza konieczny do sprawdzenia jego charakteru, cech i działania.</li>
-            <li>Prawo odstąpienia może nie przysługiwać dla produktów zapieczętowanych, których po otwarciu nie można zwrócić ze względów ochrony zdrowia lub higieny, jeżeli opakowanie zostało otwarte po dostarczeniu.</li>
-            <li>Koszt odesłania produktu przy zwrocie ponosi klientka, chyba że uzgodnimy inaczej albo zwrot wynika z uznanej reklamacji.</li>
+            <li>Bezpośredni koszt odesłania produktu przy odstąpieniu ponosi klient, chyba że uzgodnimy inaczej.</li>
+            <li>Zwracamy cenę produktu oraz koszt najtańszej zwykłej dostawy dostępnej w sklepie. Przy wyborze droższej opcji nie zwracamy różnicy ponad najtańszą metodę.</li>
+            <li>Zwrot płatności następuje tą samą metodą, której użyto przy zakupie, chyba że klient wyraźnie zgodzi się na inną metodę bez dodatkowych kosztów.</li>
+            <li>Możemy zmniejszyć zwracaną kwotę wyłącznie o zmniejszenie wartości produktu wynikające z korzystania wykraczającego poza zwykłe sprawdzenie jego charakteru, cech i działania.</li>
+            <li>Prawo odstąpienia nie przysługuje w przypadkach wskazanych w ustawie, m.in. przy zapieczętowanych produktach, których po otwarciu nie można zwrócić ze względów higienicznych lub zdrowotnych.</li>
         </ul>
 
-        <h2>Zwrot pieniędzy</h2>
-        <p>Zwrot płatności wykonujemy tą samą metodą, której użyto przy zakupie, chyba że wspólnie ustalimy inną metodę. Zwracamy cenę produktu oraz koszt najtańszej zwykłej dostawy dostępnej w sklepie. Jeżeli wybrano droższą dostawę, różnica między nią a najtańszą opcją nie podlega zwrotowi przy odstąpieniu.</p>
-
         <h2>Reklamacje</h2>
-        <p>Jeżeli produkt jest wadliwy albo niezgodny z umową, złóż reklamację mailowo na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> albo przez formularz na stronie <a href="{% url 'core:contact' %}">Kontakt</a>. Reklamację rozpatrujemy w terminie 14 dni od jej otrzymania.</p>
-        <p>W zgłoszeniu możesz wskazać, czego oczekujesz: naprawy, wymiany, obniżenia ceny albo zwrotu pieniędzy, zgodnie z zasadami odpowiedzialności za niezgodność towaru z umową. Przy uznanej reklamacji koszty niezbędnego odesłania produktu pokrywa Sprzedawca.</p>
-
-        <h2>Adres do zwrotów</h2>
-        <p>Zwracany produkt odeślij na adres Sprzedawcy:</p>
-        <p><strong>Wizards &amp; Strawberries Patryk Lewandowski, ul. ppłk. pil. Romualda Sulińskiego 8B, 96-100 Skierniewice, Polska.</strong></p>
-        <p>Przed odesłaniem produktu prosimy o kontakt na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a>, żeby potwierdzić szczegóły zwrotu lub reklamacji.</p>
+        <p>Jeżeli produkt jest niezgodny z umową, złóż reklamację na {{ store_info.contact_email }} lub przez formularz Kontakt. Opisz problem, podaj numer zamówienia i wskaż oczekiwany sposób rozwiązania. Zdjęcia mogą przyspieszyć ocenę, ale nie są obowiązkowe.</p>
+        <p>Odpowiemy na reklamację w ciągu <strong>14 dni</strong> od jej otrzymania. Przy uznanej reklamacji koszty niezbędnego odesłania produktu ponosi Sprzedawca.</p>
 
         <h2>Wzór oświadczenia o odstąpieniu od umowy</h2>
-        <p>Możesz skorzystać z poniższego wzoru, ale nie jest to obowiązkowe. Wypełnij formularz i wyślij go na <a href="mailto:kontakt@spookystrawberry.pl">kontakt@spookystrawberry.pl</a> lub pocztą na adres Sprzedawcy.</p>
+        <p>Możesz skorzystać z poniższego wzoru, ale nie jest on obowiązkowy.</p>
         <div class="withdrawal-form">
-            <p>Adresat: Wizards &amp; Strawberries Patryk Lewandowski, ul. ppłk. pil. Romualda Sulińskiego 8B, 96-100 Skierniewice, e-mail: kontakt@spookystrawberry.pl</p>
+            <p>Adresat: {{ store_info.returns_recipient }}, {{ store_info.returns_address }}, e-mail: {{ store_info.contact_email }}</p>
             <p>Ja/My(*) niniejszym informuję/informujemy(*) o moim/naszym(*) odstąpieniu od umowy sprzedaży następujących rzeczy:</p>
             <p>………………………………………………………………………………………………</p>
             <p>Data zawarcia umowy(*)/odbioru(*): ………………………………………………</p>
             <p>Numer zamówienia: ………………………………………………</p>
             <p>Imię i nazwisko konsumenta(-ów): ………………………………………………</p>
             <p>Adres konsumenta(-ów): ………………………………………………</p>
-            <p>Numer rachunku do zwrotu: ………………………………………………</p>
             <p>Data: ………………………………………………</p>
             <p><small>(*) Niepotrzebne skreślić.</small></p>
         </div>

@@ -3,6 +3,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
+from core.text import normalize_dashes
+
 
 class Outfit(models.Model):
     STATUS_DRAFT = "draft"
@@ -55,6 +57,12 @@ class Outfit(models.Model):
         return reverse("outfits:detail", kwargs={"slug": self.slug})
 
     def save(self, *args, **kwargs):
+        self.name = normalize_dashes(self.name)
+        self.short_description = normalize_dashes(self.short_description)
+        self.mood_description = normalize_dashes(self.mood_description)
+        self.styling_tips = normalize_dashes(self.styling_tips)
+        self.seo_title = normalize_dashes(self.seo_title)
+        self.seo_description = normalize_dashes(self.seo_description)
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)

@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 
 from catalog.models import Aesthetic, Product
+from core.seo import breadcrumb_schema, collection_page_schema, organization_schema, plain_text, title_with_store_name
 from .models import Outfit
 
 
@@ -26,6 +28,12 @@ def outfit_list(request):
             "outfits": outfits,
             "aesthetics": aesthetics,
             "selected_aesthetic": selected_aesthetic,
+            "seo_title": "Stylizacje alternatywne, gotowe looki | Spooky Strawberry",
+            "seo_description": "Zobacz gotowe stylizacje alternatywne i odkryj produkty, z których możesz zbudować swój własny look.",
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, "Stylizacje Spooky Strawberry", reverse("outfits:list")),
+            ],
         },
     )
 
@@ -66,5 +74,16 @@ def outfit_detail(request, slug):
             "outfit": outfit,
             "related_outfits": related_outfits,
             "similar_products": similar_products,
+            "seo_title": title_with_store_name(outfit.seo_title or outfit.name),
+            "seo_description": plain_text(outfit.seo_description or outfit.short_description or outfit.mood_description),
+            "seo_image_url": outfit.main_image and outfit.main_image.image.url,
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, outfit.name, outfit.get_absolute_url(), outfit.short_description or outfit.mood_description),
+                breadcrumb_schema(
+                    request,
+                    [("Start", reverse("core:home")), ("Stylizacje", reverse("outfits:list")), (outfit.name, outfit.get_absolute_url())],
+                ),
+            ],
         },
     )

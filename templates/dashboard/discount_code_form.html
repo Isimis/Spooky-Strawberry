@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Zamówienia · Kody rabatowe</p>
         <h1>{% if object %}{{ object.code }}{% else %}Nowy kod rabatowy{% endif %}</h1>
-        <p>Ustaw typ rabatu, wartość, limity i daty działania. Sam checkout i płatności zostają na później.</p>
+        <p>Ustaw typ rabatu, wartość, limity i daty działania. Zapisany aktywny kod będzie dostępny w koszyku i checkoutcie.</p>
     </div>
     <div class="dashboard-heading__actions">
         <a href="{% url 'dashboard:model_list' config.slug %}" class="button button--secondary">Wróć do listy</a>
@@ -108,6 +108,13 @@
                     {{ form.once_per_user }}
                     {% if form.once_per_user.help_text %}<small>{{ form.once_per_user.help_text }}</small>{% endif %}
                     {{ form.once_per_user.errors }}
+                </label>
+
+                <label class="dashboard-field dashboard-field--checkbox dashboard-field--compact-checkbox" data-field-name="{{ form.first_order_only.name }}">
+                    <span>{{ form.first_order_only.label }}</span>
+                    {{ form.first_order_only }}
+                    {% if form.first_order_only.help_text %}<small>{{ form.first_order_only.help_text }}</small>{% endif %}
+                    {{ form.first_order_only.errors }}
                 </label>
 
                 <label class="dashboard-field" data-field-name="{{ form.used_count.name }}">

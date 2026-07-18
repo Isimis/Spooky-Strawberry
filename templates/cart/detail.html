@@ -52,7 +52,21 @@
         <div>
             <div class="summary">
                 <h3>Podsumowanie</h3>
+                <form method="post" action="{% url 'cart:discount_apply' %}" style="margin:0 0 14px">
+                    {% csrf_token %}
+                    <label for="discount-code" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px">Kod rabatowy</label>
+                    <div style="display:flex;gap:8px">
+                        <input class="input" id="discount-code" name="code" value="{{ discount_code_value }}" style="min-width:0;text-transform:uppercase">
+                        <button class="btn btn-ghost" type="submit">Dodaj</button>
+                    </div>
+                </form>
                 <div class="sum-row"><span>Wartość produktów</span><span>{{ subtotal|money }}</span></div>
+                {% if discount_code %}
+                <div class="sum-row"><span>Rabat · {{ discount_code.code }}</span><span>-{{ discount_total|money }}</span></div>
+                <form method="post" action="{% url 'cart:discount_remove' %}" style="margin:-4px 0 8px;text-align:right">{% csrf_token %}<button type="submit" class="link" style="border:0;background:none;cursor:pointer;font-size:12px">Usuń kod</button></form>
+                {% elif discount_error %}
+                <div class="ship-note" style="margin:8px 0;background:#fff4f9;font-size:12px">{{ discount_error }}</div>
+                {% endif %}
                 <div class="sum-row"><span>Dostawa</span><span>{% if shipping_cost > 0 %}{{ shipping_cost|money }}{% else %}gratis{% endif %}</span></div>
                 <div class="sum-row tot"><span>Razem</span><span class="big">{{ grand_total|money }}</span></div>
                 <a class="btn btn-primary btn-block btn-lg" style="margin-top:14px" href="{% url 'checkout:shipping' %}">Przejdź do dostawy</a>

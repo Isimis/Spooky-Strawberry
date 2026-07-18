@@ -1,4 +1,7 @@
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+
+from core.seo import article_schema, breadcrumb_schema, collection_page_schema, organization_schema, plain_text, title_with_store_name
 
 from .models import Article, BlogCategory
 
@@ -21,6 +24,12 @@ def article_list(request):
             "articles": articles,
             "categories": BlogCategory.objects.filter(is_active=True).order_by("sort_order", "name"),
             "selected_category": selected_category,
+            "seo_title": "Lifestyle alternatywny: poradniki i inspiracje | Spooky Strawberry",
+            "seo_description": "Poradniki o stylu alternatywnym: dark coquette, jirai kei, rajstopy, kabaretki i dodatki do Twoich stylizacji.",
+            "seo_structured_data": [
+                organization_schema(request),
+                collection_page_schema(request, "Poradniki Spooky Strawberry", reverse("blog:list")),
+            ],
         },
     )
 
@@ -52,5 +61,17 @@ def article_detail(request, slug):
             "article": article,
             "related_articles": related_articles,
             "reading_minutes": reading_minutes,
+            "seo_title": title_with_store_name(article.seo_title or article.title),
+            "seo_description": plain_text(article.seo_description or article.intro),
+            "seo_image_url": article.cover_image and article.cover_image.url,
+            "seo_og_type": "article",
+            "seo_structured_data": [
+                organization_schema(request),
+                article_schema(request, article),
+                breadcrumb_schema(
+                    request,
+                    [("Start", reverse("core:home")), ("Lifestyle", reverse("blog:list")), (article.title, article.get_absolute_url())],
+                ),
+            ],
         },
     )

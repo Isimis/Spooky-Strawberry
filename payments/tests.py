@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from catalog.models import Category, Product, ProductVariant
 from core.models import SiteSettings
 from inventory.models import StockEntry
-from orders.models import Order, OrderItem
+from orders.models import DiscountCode, Order, OrderItem
 from payments import przelewy24
 from payments.models import Payment
 from payments.services import handle_notification
@@ -105,6 +105,28 @@ class HandleNotificationTests(TestCase):
         self.variant.refresh_from_db()
         self.assertEqual(self.variant.stock_quantity, 7)  # nie zeszło drugi raz
         self.assertEqual(StockEntry.objects.filter(order_item=self.item, source=StockEntry.SOURCE_SALE).count(), 1)
+
+    @patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}}))
+    @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
+    def test_paid_discount_counts_once_and_is_visible_in_email(self, mock_sign, mock_verify):
+        code = DiscountCode.objects.create(code="SPOOKY10", value="10.00")
+        self.order.discount_code = code
+        self.order.discount_total = "5.00"
+        self.order.grand_total = "45.00"
+        self.order.save(update_fields=["discount_code", "discount_total", "grand_total"])
+        self.payment.amount = "45.00"
+        self.payment.save(update_fields=["amount"])
+
+        self.assertTrue(handle_notification(self._notification(amount=4500)))
+        self.assertTrue(handle_notification(self._notification(amount=4500)))
+
+        code.refresh_from_db()
+        self.assertEqual(code.used_count, 1)
+        from django.core import mail
+
+        html = mail.outbox[-1].alternatives[0][0]
+        self.assertIn("SPOOKY10", html)
+        self.assertIn("Rabat", html)
 
     @patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}}))
     @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
