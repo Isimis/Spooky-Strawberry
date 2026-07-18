@@ -21,7 +21,7 @@ CHECKOUT_SESSION_KEY = "checkout"
 PAYMENT_SESSION_KEY = "payment_session_id"
 PENDING_ORDER_SESSION_KEY = "pending_order_id"
 # Ile razy strona powrotu odświeży się w oczekiwaniu na potwierdzenie, zanim pokaże
-# komunikat o niepowodzeniu (5 prób × 5 s ≈ 25 s — realna płatność potwierdza się szybciej).
+# komunikat o niepowodzeniu (5 prób × 5 s ≈ 25 s - realna płatność potwierdza się szybciej).
 MAX_RETURN_ATTEMPTS = 5
 
 PAYMENT_METHODS = [
@@ -48,7 +48,7 @@ def _account_checkout_initial(user):
     }
     profile = getattr(user, "customer_profile", None)
     if profile:
-        # Do zamówień podstawiamy adres zamówień z konta (a jak nie ma — adres logowania).
+        # Do zamówień podstawiamy adres zamówień z konta (a jak nie ma - adres logowania).
         initial["email"] = profile.order_email_or_login
         if profile.phone:
             initial["phone"] = profile.phone
@@ -71,7 +71,7 @@ def _account_checkout_initial(user):
 def _sync_account_personal_data(user, data):
     """Zapisuje dane osobowe z checkoutu na koncie zalogowanego klienta.
 
-    Aktualizujemy imię, nazwisko i telefon. E-maila konta (adresu logowania) NIE ruszamy —
+    Aktualizujemy imię, nazwisko i telefon. E-maila konta (adresu logowania) NIE ruszamy -
     adres z zamówienia służy tylko do wysyłki maili o zamówieniu i newsletterze.
     """
     from accounts.models import CustomerProfile
@@ -121,7 +121,7 @@ def _save_default_shipping_address(user, data):
     address.is_default = True
     address.save()
 
-    # Telefon należy do danych osobowych konta — zapisz go, jeśli profil go jeszcze nie ma.
+    # Telefon należy do danych osobowych konta - zapisz go, jeśli profil go jeszcze nie ma.
     if data.get("phone") and not profile.phone:
         profile.phone = data["phone"]
         profile.save(update_fields=["phone"])
@@ -200,7 +200,7 @@ def payment(request):
         return redirect("checkout:shipping")
 
     # Koszyk sam koryguje ilości do bieżącego stanu magazynowego. Jeśli coś się zmieniło
-    # od dodania do koszyka, informujemy klientkę i wracamy do koszyka do potwierdzenia —
+    # od dodania do koszyka, informujemy klientkę i wracamy do koszyka do potwierdzenia -
     # zabezpiecza przed sprzedażą produktu, którego już nie ma.
     if summary["adjustments"]:
         for note in summary["adjustments"]:
@@ -224,7 +224,7 @@ def payment(request):
                 gateway_url = start_payment(request, order, method=PAYMENT_LABELS.get(payment_method, payment_method))
             except Przelewy24Error:
                 # Nie udało się zarejestrować transakcji (np. brak/niepoprawne klucze P24).
-                # Zostawiamy zamówienie jako „oczekujące" — kolejna próba je ponowi (bez duplikatu).
+                # Zostawiamy zamówienie jako „oczekujące" - kolejna próba je ponowi (bez duplikatu).
                 messages.error(request, "Nie udało się rozpocząć płatności. Spróbuj ponownie za chwilę.")
                 return redirect("checkout:payment")
 
@@ -254,7 +254,7 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
 
     Jeśli w sesji jest już zamówienie „oczekujące na płatność" (poprzednia, nieudana próba),
     ponawiamy je zamiast tworzyć duplikat. Zamówienie w trybie Sandbox jest oznaczane jako
-    testowe (``is_test``) — nie wpływa na magazyn i jest odróżnialne w panelu.
+    testowe (``is_test``) - nie wpływa na magazyn i jest odróżnialne w panelu.
     """
     subtotal = summary["subtotal"]
     is_test = SiteSettings.load().payments_sandbox
@@ -325,7 +325,7 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
 def payment_return(request):
     """Adres powrotu z bramki P24 (urlReturn).
 
-    Webhook jest źródłem prawdy; tu tylko sprawdzamy stan i — gdy webhook się spóźnia —
+    Webhook jest źródłem prawdy; tu tylko sprawdzamy stan i - gdy webhook się spóźnia -
     próbujemy dokończyć weryfikację (``reconcile_payment``).
     """
     session_id = request.session.get(PAYMENT_SESSION_KEY)

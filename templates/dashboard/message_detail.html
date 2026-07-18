@@ -26,9 +26,9 @@
                 </div>
                 <div class="dashboard-inbound-mail">
                     <div class="dashboard-inbound-mail__meta" aria-label="Nagłówki wiadomości">
-                        <div><span>Od</span><strong>{{ message.from_email|default:"—" }}</strong></div>
-                        <div><span>Do</span><strong>{{ message.to_email|default:"—" }}</strong></div>
-                        <div><span>Odebrano</span><strong>{% if message.received_at %}{{ message.received_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</strong></div>
+                        <div><span>Od</span><strong>{{ message.from_email|default:"-" }}</strong></div>
+                        <div><span>Do</span><strong>{{ message.to_email|default:"-" }}</strong></div>
+                        <div><span>Odebrano</span><strong>{% if message.received_at %}{{ message.received_at|date:"d.m.Y H:i" }}{% else %}-{% endif %}</strong></div>
                     </div>
                     <div class="dashboard-inbound-mail__body">
                         {{ message.body_html|safe }}
@@ -48,13 +48,13 @@
             <dl class="dashboard-newsletter-detail-list">
                 <div><dt>Kierunek</dt><dd>{{ message.get_direction_display }}</dd></div>
                 <div><dt>Status</dt><dd>{{ message.get_status_display }}</dd></div>
-                <div><dt>Od</dt><dd>{{ message.from_email|default:"—" }}</dd></div>
-                <div><dt>Do</dt><dd>{{ message.to_email|default:"—" }}</dd></div>
-                <div><dt>Szablon</dt><dd>{% if message.template %}{{ message.template.name }}{% else %}—{% endif %}</dd></div>
+                <div><dt>Od</dt><dd>{{ message.from_email|default:"-" }}</dd></div>
+                <div><dt>Do</dt><dd>{{ message.to_email|default:"-" }}</dd></div>
+                <div><dt>Szablon</dt><dd>{% if message.template %}{{ message.template.name }}{% else %}-{% endif %}</dd></div>
                 <div><dt>Utworzono</dt><dd>{{ message.created_at|date:"d.m.Y H:i" }}</dd></div>
-                <div><dt>Odebrano</dt><dd>{% if message.received_at %}{{ message.received_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
-                <div><dt>Przeczytano</dt><dd>{% if message.read_at %}{{ message.read_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
-                <div><dt>Wysłano</dt><dd>{% if message.sent_at %}{{ message.sent_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</dd></div>
+                <div><dt>Odebrano</dt><dd>{% if message.received_at %}{{ message.received_at|date:"d.m.Y H:i" }}{% else %}-{% endif %}</dd></div>
+                <div><dt>Przeczytano</dt><dd>{% if message.read_at %}{{ message.read_at|date:"d.m.Y H:i" }}{% else %}-{% endif %}</dd></div>
+                <div><dt>Wysłano</dt><dd>{% if message.sent_at %}{{ message.sent_at|date:"d.m.Y H:i" }}{% else %}-{% endif %}</dd></div>
             </dl>
         </article>
         <article class="dashboard-card">

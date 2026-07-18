@@ -1,6 +1,6 @@
-"""Logowanie społecznościowe — Google i Apple (OAuth 2.0 / OpenID Connect).
+"""Logowanie społecznościowe - Google i Apple (OAuth 2.0 / OpenID Connect).
 
-Ręczna integracja w stylu reszty projektu (jak payments/przelewy24.py) — bez
+Ręczna integracja w stylu reszty projektu (jak payments/przelewy24.py) - bez
 django-allauth. Standardowy flow "authorization code":
 
 1. /konto/social/<provider>/start/ przekierowuje do ekranu logowania dostawcy,
@@ -9,13 +9,13 @@ django-allauth. Standardowy flow "authorization code":
 4. z id_tokenu bierzemy e-mail i stały identyfikator (sub) → logujemy/zakładamy konto.
 
 Nie weryfikujemy podpisu id_tokenu, bo dostajemy go bezpośrednio z serwera
-Google/Apple po TLS — zaufanie wynika z połączenia, nie z podpisu.
+Google/Apple po TLS - zaufanie wynika z połączenia, nie z podpisu.
 
 Parametr `state` jest podpisany (django.core.signing) i dodatkowo związany
 z przeglądarką przez nonce w sesji ORAZ w osobnym ciasteczku. Samo związanie
 z sesją nie wystarcza, bo Apple odsyła użytkownika POST-em z innej domeny
 (response_mode=form_post), a przeglądarka nie wysyła wtedy ciasteczka sesji
-(SameSite=Lax) — dlatego ciasteczko stanu ma SameSite=None na HTTPS.
+(SameSite=Lax) - dlatego ciasteczko stanu ma SameSite=None na HTTPS.
 """
 
 import base64
@@ -48,11 +48,11 @@ STATE_MAX_AGE = 600  # 10 minut na przejście przez ekran logowania dostawcy
 STATE_SESSION_KEY = "social_login_nonce"
 STATE_COOKIE = "spooky_social_state"
 
-GENERIC_ERROR = "Logowanie się nie powiodło — spróbuj ponownie lub użyj e-maila i hasła."
+GENERIC_ERROR = "Logowanie się nie powiodło - spróbuj ponownie lub użyj e-maila i hasła."
 
 
 class SocialAuthError(Exception):
-    """Błąd logowania społecznościowego — komunikat nadaje się do pokazania użytkownikowi."""
+    """Błąd logowania społecznościowego - komunikat nadaje się do pokazania użytkownikowi."""
 
 
 def google_enabled():
@@ -81,18 +81,18 @@ def make_state(next_url):
 def read_state(state, expected_nonces):
     """Waliduje state z callbacku; zwraca payload ({"next": ...}).
 
-    `expected_nonces` to wartości z sesji i ciasteczka — wystarczy zgodność
+    `expected_nonces` to wartości z sesji i ciasteczka - wystarczy zgodność
     z jedną z nich (Google wraca GET-em z sesją, Apple POST-em z ciasteczkiem).
     """
     try:
         payload = signing.loads(state or "", salt=STATE_SALT, max_age=STATE_MAX_AGE)
     except signing.SignatureExpired:
-        raise SocialAuthError("Logowanie trwało zbyt długo — spróbuj ponownie.")
+        raise SocialAuthError("Logowanie trwało zbyt długo - spróbuj ponownie.")
     except signing.BadSignature:
         raise SocialAuthError(GENERIC_ERROR)
     nonce = payload.get("nonce", "")
     if not nonce or nonce not in [n for n in expected_nonces if n]:
-        raise SocialAuthError("Sesja logowania wygasła — spróbuj ponownie.")
+        raise SocialAuthError("Sesja logowania wygasła - spróbuj ponownie.")
     return payload
 
 
@@ -116,7 +116,7 @@ def apple_authorize_url(request, state):
         "redirect_uri": request.build_absolute_uri(reverse("accounts:social_apple_callback")),
         "response_type": "code",
         "scope": "name email",
-        # Przy scope Apple wymaga form_post — callback przychodzi POST-em.
+        # Przy scope Apple wymaga form_post - callback przychodzi POST-em.
         "response_mode": "form_post",
         "state": state,
     }
@@ -184,7 +184,7 @@ def _id_token_claims(id_token):
 
 
 def _apple_private_key():
-    """Klucz .p8 z env — wprost (APPLE_OAUTH_PRIVATE_KEY) albo ze ścieżki do pliku."""
+    """Klucz .p8 z env - wprost (APPLE_OAUTH_PRIVATE_KEY) albo ze ścieżki do pliku."""
     key = settings.APPLE_OAUTH_PRIVATE_KEY
     if key:
         return key
@@ -199,8 +199,8 @@ def _apple_private_key():
 
 
 def _apple_client_secret():
-    """Apple nie ma stałego client_secret — jest nim krótkotrwały JWT podpisany kluczem .p8."""
-    import jwt  # PyJWT — import lokalnie, by Google działał nawet bez tej paczki
+    """Apple nie ma stałego client_secret - jest nim krótkotrwały JWT podpisany kluczem .p8."""
+    import jwt  # PyJWT - import lokalnie, by Google działał nawet bez tej paczki
 
     now = int(time.time())
     return jwt.encode(
@@ -224,7 +224,7 @@ def get_or_create_user(provider, claims, first_name="", last_name=""):
     """Zwraca (user, created) dla zalogowanego u dostawcy użytkownika.
 
     Kolejność: znana tożsamość (provider+sub) → istniejące konto po e-mailu
-    (tylko gdy dostawca potwierdził e-mail — inaczej dałoby się przejąć cudze
+    (tylko gdy dostawca potwierdził e-mail - inaczej dałoby się przejąć cudze
     konto) → nowe konto bez hasła (logowanie tylko przez dostawcę, dopóki
     użytkownik nie ustawi hasła).
     """
@@ -267,7 +267,7 @@ def get_or_create_user(provider, claims, first_name="", last_name=""):
         user = User.objects.create_user(
             username=email,
             email=email,
-            password=None,  # brak hasła — logowanie przez dostawcę
+            password=None,  # brak hasła - logowanie przez dostawcę
             first_name=(first_name or claims.get("given_name") or "")[:80],
             last_name=(last_name or claims.get("family_name") or "")[:80],
         )

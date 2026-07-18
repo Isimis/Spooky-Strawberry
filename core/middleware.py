@@ -6,7 +6,7 @@ class CanonicalHostMiddleware:
     """Przekierowuje ruch na jedną kanoniczną domenę (np. www → goła domena).
 
     Włączane przez ``CANONICAL_HOST`` (np. ``spookystrawberry.pl``). Puste = wyłączone,
-    więc lokalnie i w testach nic nie robi. Porządkuje rozjazd www/apex — istotne m.in.
+    więc lokalnie i w testach nic nie robi. Porządkuje rozjazd www/apex - istotne m.in.
     dla spójności sesji płatności i tokenu Geowidget przypiętego do jednej domeny.
     """
 

@@ -1,10 +1,10 @@
-"""Klient REST API Przelewy24 (bez zewnętrznych zależności — stdlib urllib).
+"""Klient REST API Przelewy24 (bez zewnętrznych zależności - stdlib urllib).
 
 Przepływ:
-1. ``register`` — rejestrujemy transakcję, dostajemy ``token``.
-2. Klient płaci na hostowanej stronie P24 (``gateway_url``) — tam jest BLIK, karta, przelew.
+1. ``register`` - rejestrujemy transakcję, dostajemy ``token``.
+2. Klient płaci na hostowanej stronie P24 (``gateway_url``) - tam jest BLIK, karta, przelew.
 3. P24 woła nasz webhook (urlStatus). Podpis webhooka weryfikujemy ``verify_notification_sign``.
-4. ``verify`` — potwierdzamy transakcję u P24 (dopiero to oznacza realne opłacenie).
+4. ``verify`` - potwierdzamy transakcję u P24 (dopiero to oznacza realne opłacenie).
 
 Podpisy: SHA-384 z JSON-a o ustalonej kolejności kluczy + klucz CRC.
 Dokumentacja: https://developers.przelewy24.pl/
@@ -100,7 +100,7 @@ def _get(path):
         with urllib.request.urlopen(request, timeout=20) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        # 404 = brak takiej transakcji (np. jeszcze nieopłacona) — traktujemy jako brak danych.
+        # 404 = brak takiej transakcji (np. jeszcze nieopłacona) - traktujemy jako brak danych.
         if exc.code == 404:
             return None
         detail = exc.read().decode("utf-8", "replace")
@@ -125,7 +125,7 @@ def register(*, session_id, amount_grosze, email, description, url_return, url_s
     cfg = _config()
     if not (cfg["merchant_id"] and cfg["crc"] and cfg["api_key"]):
         tryb = "sandbox" if cfg["sandbox"] else "produkcyjne"
-        raise Przelewy24Error(f"Brak kompletu kluczy P24 ({tryb}) — uzupełnij konfigurację w .env.")
+        raise Przelewy24Error(f"Brak kompletu kluczy P24 ({tryb}) - uzupełnij konfigurację w .env.")
     sign = _sign(
         {
             "sessionId": session_id,
@@ -180,7 +180,7 @@ def verify_notification_sign(data):
         }
     )
     provided = str(data.get("sign", ""))
-    # porównanie odporne na timing; na bajtach — nie wywróci się na nie-ASCII w podpisie
+    # porównanie odporne na timing; na bajtach - nie wywróci się na nie-ASCII w podpisie
     return hmac.compare_digest(expected.encode("utf-8"), provided.encode("utf-8"))
 
 

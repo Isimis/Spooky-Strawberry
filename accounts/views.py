@@ -45,7 +45,7 @@ def verify_email(request, uidb64, token):
         profile, _ = CustomerProfile.objects.get_or_create(user=user)
         profile.email_verified = True
         profile.save(update_fields=["email_verified"])
-        messages.success(request, "E-mail potwierdzony — dziękujemy! Możesz się teraz zalogować. 🍓")
+        messages.success(request, "E-mail potwierdzony - dziękujemy! Możesz się teraz zalogować. 🍓")
     else:
         messages.error(request, "Link weryfikacyjny jest nieprawidłowy lub wygasł.")
     return redirect("accounts:account" if request.user.is_authenticated else "accounts:login")
@@ -114,7 +114,7 @@ def login_view(request):
             messages.warning(
                 request,
                 "Twój adres e-mail nie został jeszcze potwierdzony. Wysłaliśmy nowy link "
-                "aktywacyjny — sprawdź skrzynkę (także folder spam).",
+                "aktywacyjny - sprawdź skrzynkę (także folder spam).",
             )
             return redirect("accounts:login")
         login(request, user)
@@ -145,7 +145,7 @@ def register_view(request):
         send_verification_email(request, user)
         messages.success(
             request,
-            "Konto założone! 🍓 Wysłaliśmy na Twój e-mail link aktywacyjny — "
+            "Konto założone! 🍓 Wysłaliśmy na Twój e-mail link aktywacyjny - "
             "kliknij go, aby potwierdzić adres, a potem zaloguj się.",
         )
         return redirect("accounts:login")
@@ -177,7 +177,7 @@ def social_start(request, provider):
     request.session[social.STATE_SESSION_KEY] = nonce
     response = redirect(authorize_url(request, state))
     # Ciasteczko-kopia nonce'a: callback Apple przychodzi POST-em z innej domeny,
-    # więc ciasteczko sesji (SameSite=Lax) nie zostanie wysłane — to musi mieć None.
+    # więc ciasteczko sesji (SameSite=Lax) nie zostanie wysłane - to musi mieć None.
     response.set_cookie(
         social.STATE_COOKIE,
         nonce,
@@ -233,7 +233,7 @@ def social_google_callback(request):
 @require_POST
 def social_apple_callback(request):
     # Apple przy pierwszym logowaniu dosyła imię/nazwisko osobnym polem `user`
-    # (JSON) — tylko ten jeden raz, więc od razu je zapisujemy.
+    # (JSON) - tylko ten jeden raz, więc od razu je zapisujemy.
     first_name = last_name = ""
     try:
         name = json.loads(request.POST.get("user", "") or "{}").get("name") or {}
@@ -301,7 +301,7 @@ def account_view(request):
                 user.first_name = form.cleaned_data["first_name"]
                 user.last_name = form.cleaned_data["last_name"]
                 user.save(update_fields=["first_name", "last_name"])
-                # E-mail z tego formularza to adres do zamówień — adres logowania (user.email) zostaje.
+                # E-mail z tego formularza to adres do zamówień - adres logowania (user.email) zostaje.
                 profile.order_email = form.cleaned_data["email"]
                 profile.phone = form.cleaned_data["phone"]
                 profile.save(update_fields=["order_email", "phone"])

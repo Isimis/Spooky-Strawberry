@@ -234,7 +234,7 @@ def order_status_view(request):
     )
 
     if token:
-        # Odczyt po sekretnym tokenie potwierdzenia — pozwala otworzyć zamówienie
+        # Odczyt po sekretnym tokenie potwierdzenia - pozwala otworzyć zamówienie
         # jednym kliknięciem (z e-maila / strony podziękowania) bez podawania danych.
         order = base_qs.filter(confirmation_token=token).first()
         if order:
@@ -249,7 +249,7 @@ def order_status_view(request):
             not_found = True
 
     # Zalogowanemu klientowi podstawiamy jego adres e-mail w formularzu (sam wpisuje
-    # tylko numer). Prefill jest wyłącznie do wyświetlenia — nie uruchamia wyszukiwania.
+    # tylko numer). Prefill jest wyłącznie do wyświetlenia - nie uruchamia wyszukiwania.
     q_email = email or (request.user.email if request.user.is_authenticated else "")
 
     return render(
@@ -370,7 +370,7 @@ def newsletter_subscribe(request):
 
         send_newsletter_welcome(email)
 
-    # Zapamiętaj zapis na całą sesję — kafelek newslettera pokazuje wtedy
+    # Zapamiętaj zapis na całą sesję - kafelek newslettera pokazuje wtedy
     # potwierdzenie zamiast formularza na każdej podstronie.
     request.session["newsletter_email"] = email
 
@@ -380,7 +380,7 @@ def newsletter_subscribe(request):
             message = f"Wysłaliśmy kod rabatowy -10% na {email}. Sprawdź skrzynkę (i folder spam), żeby go odebrać."
         else:
             heading = "Już jesteś z nami 🖤"
-            message = f"Adres {email} jest już zapisany — kod rabatowy znajdziesz w mailu powitalnym."
+            message = f"Adres {email} jest już zapisany - kod rabatowy znajdziesz w mailu powitalnym."
         return JsonResponse({"ok": True, "created": created, "heading": heading, "message": message})
 
     if created:

@@ -227,7 +227,7 @@ def build_funnel(events, orders):
             "detail": detail,
             "rate": percent(value, previous_value),
             # Pasek pokazuje to samo, co etykieta: konwersję względem poprzedniego
-            # kroku — dzięki temu słupek i procent się zgadzają.
+            # kroku - dzięki temu słupek i procent się zgadzają.
             "width": funnel_bar_width(value, previous_value),
         }
         for label, value, previous_value, detail in steps

@@ -23,7 +23,7 @@ class ShippingMethod(models.Model):
     )
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
-    # Dostawa do punktu odbioru (np. Paczkomat) — wtedy w checkoutcie klient wybiera punkt
+    # Dostawa do punktu odbioru (np. Paczkomat) - wtedy w checkoutcie klient wybiera punkt
     # na mapie zamiast podawać adres.
     is_pickup_point = models.BooleanField(default=False)
 
@@ -109,14 +109,14 @@ class Order(models.Model):
     shipping_postal_code = models.CharField(max_length=20, blank=True)
     shipping_city = models.CharField(max_length=100, blank=True)
     shipping_country = models.CharField(max_length=80, default="Polska")
-    # Wybrany punkt odbioru (Paczkomat) — wypełnione zamiast adresu przy dostawie do punktu.
+    # Wybrany punkt odbioru (Paczkomat) - wypełnione zamiast adresu przy dostawie do punktu.
     pickup_point_code = models.CharField(max_length=40, blank=True)
     pickup_point_name = models.CharField(max_length=180, blank=True)
     pickup_point_address = models.CharField(max_length=255, blank=True)
     customer_note = models.TextField(blank=True)
-    # Wewnętrzny komentarz obsługi — widoczny tylko w panelu, nigdy dla klienta.
+    # Wewnętrzny komentarz obsługi - widoczny tylko w panelu, nigdy dla klienta.
     admin_note = models.TextField(blank=True)
-    # Śledzenie przesyłki — trafia do maila „wysłane", gdy uzupełnione.
+    # Śledzenie przesyłki - trafia do maila „wysłane", gdy uzupełnione.
     tracking_number = models.CharField(max_length=80, blank=True)
     tracking_url = models.URLField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
@@ -139,7 +139,7 @@ class Order(models.Model):
     shipping_total = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0)
     grand_total = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0)
     source_session_key = models.CharField(max_length=80, blank=True)
-    # Zamówienie złożone w trybie testowym (Sandbox) — nie wpływa na magazyn i jest
+    # Zamówienie złożone w trybie testowym (Sandbox) - nie wpływa na magazyn i jest
     # oznaczone w panelu, żeby nie mylić go z realną sprzedażą.
     is_test = models.BooleanField(default=False)
     placed_at = models.DateTimeField(null=True, blank=True)

@@ -40,7 +40,7 @@ class CustomerProfile(models.Model):
 
     @property
     def order_email_or_login(self):
-        """Adres do zamówień, a jak nie ustawiono — adres logowania konta."""
+        """Adres do zamówień, a jak nie ustawiono - adres logowania konta."""
         return self.order_email or self.user.email
 
 
@@ -48,7 +48,7 @@ class SocialIdentity(models.Model):
     """Powiązanie konta z logowaniem Google/Apple.
 
     `subject` to stały identyfikator użytkownika u dostawcy (claim `sub`
-    z id_tokenu) — nie zmienia się nawet, gdy użytkownik zmieni e-mail.
+    z id_tokenu) - nie zmienia się nawet, gdy użytkownik zmieni e-mail.
     """
 
     PROVIDER_GOOGLE = "google"

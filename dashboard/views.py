@@ -174,7 +174,7 @@ def build_user_account_row(user):
     return {
         "object": user,
         "email": user.email or user.get_username(),
-        "name": user.get_full_name() or "—",
+        "name": user.get_full_name() or "-",
         "type_label": type_label,
         "type_class": type_class,
         "is_active": user.is_active,
@@ -230,7 +230,7 @@ def apply_user_admin_filters(request, queryset, active_filters):
 
 
 def build_user_consents(user_obj, profile):
-    """Wszystkie zgody dostępne w serwisie — z ich statusem dla danego konta."""
+    """Wszystkie zgody dostępne w serwisie - z ich statusem dla danego konta."""
     newsletter_active = bool(
         user_obj.email
         and NewsletterSubscriber.objects.filter(email__iexact=user_obj.email, is_active=True).exists()
@@ -338,7 +338,7 @@ def build_message_row(message):
     return {
         "object": message,
         "subject": message.subject or "(bez tematu)",
-        "counterpart": counterpart or "—",
+        "counterpart": counterpart or "-",
         "direction": message.direction,
         "direction_label": message.get_direction_display(),
         "status": message.status,
@@ -434,6 +434,7 @@ def message_compose(request):
             "templates": templates,
             "templates_json": templates_json,
             "recipients": recipients,
+            "editor_fields": editor_fields_for(None),
             "sections": get_sections(),
         },
     )
@@ -470,7 +471,7 @@ def bulk_compose(request):
             cleaned.append(email)
 
     back = request.POST.get("back", "")
-    # Tylko ścieżki względne — nie pozwalamy przekierować poza panel.
+    # Tylko ścieżki względne - nie pozwalamy przekierować poza panel.
     fallback = back if back.startswith("/") and not back.startswith("//") else reverse("dashboard:home")
     if not cleaned:
         messages.error(request, "Zaznacz przynajmniej jednego odbiorcę.")
@@ -525,6 +526,7 @@ def base_layout_edit(request):
         "dashboard/base_layout_form.html",
         {
             "template": template,
+            "editor_fields": editor_fields_for("base-layout"),
             "sections": get_sections(),
         },
     )
@@ -547,11 +549,76 @@ def message_detail(request, pk):
     )
 
 
+# Pola (placeholdery) dostępne w edycji poszczególnych maili systemowych - pokazujemy
+# je w edytorze jako legendę, żeby było wiadomo, co dokłada się automatycznie.
+EMAIL_PLACEHOLDERS = {
+    "account-verification": [
+        ("{{ first_name }}", "imię", "Imię odbiorcy (może być puste)."),
+        ("{{ cta }}", "przycisk", "Przycisk „Potwierdź adres e-mail”."),
+        ("{{ fallback }}", "link zapasowy", "Adres linku pod przyciskiem (gdyby przycisk nie zadziałał)."),
+        ("{{ link }}", "adres linku", "Sam adres URL potwierdzenia."),
+    ],
+    "password-reset": [
+        ("{{ first_name }}", "imię", "Imię odbiorcy (może być puste)."),
+        ("{{ cta }}", "przycisk", "Przycisk „Ustaw nowe hasło”."),
+        ("{{ fallback }}", "link zapasowy", "Adres linku pod przyciskiem."),
+        ("{{ link }}", "adres linku", "Sam adres URL resetu hasła."),
+    ],
+    "newsletter-welcome": [
+        ("{{ discount_code }}", "kod rabatowy", "Kod na pierwsze zakupy (SPOOKY10)."),
+        ("{{ cta }}", "przycisk", "Przycisk „Zacznij zakupy”."),
+    ],
+    "order-confirmation": [
+        ("{{ first_name }}", "imię", "Imię klienta."),
+        ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
+        ("{{ items }}", "lista produktów", "Tabela produktów z ilościami i podsumowaniem kwot."),
+        ("{{ delivery }}", "dostawa", "Adres dostawy albo wybrany paczkomat."),
+        ("{{ cta }}", "przycisk", "Przycisk „Śledź zamówienie”."),
+    ],
+    "order-shipped": [
+        ("{{ first_name }}", "imię", "Imię klienta."),
+        ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
+        ("{{ tracking }}", "śledzenie", "Ramka z numerem przesyłki i przyciskiem (jeśli podano numer)."),
+        ("{{ cta }}", "przycisk", "Przycisk „Zobacz status zamówienia”."),
+    ],
+    "order-admin-notification": [
+        ("{{ order_number }}", "nr zamówienia", "Numer zamówienia."),
+        ("{{ total }}", "kwota", "Kwota zamówienia."),
+        ("{{ customer }}", "dane klienta", "Ramka z imieniem, e-mailem i telefonem."),
+        ("{{ items }}", "lista produktów", "Tabela produktów i kwoty."),
+        ("{{ delivery }}", "dostawa", "Adres dostawy albo paczkomat."),
+        ("{{ cta }}", "przycisk", "Przycisk „Otwórz w panelu”."),
+    ],
+    "contact-reply": [
+        ("{{ first_name }}", "imię", "Imię osoby (może być puste)."),
+    ],
+    "base-layout": [
+        ("{{ content }}", "treść maila", "Miejsce, w które wstawiana jest treść każdego maila."),
+        ("{{ preheader }}", "tekst podglądu", "Krótki tekst podglądu widoczny na liście wiadomości w poczcie."),
+    ],
+}
+
+# Zestaw ogólny dla ręcznego pisania wiadomości (Napisz wiadomość / odpowiedź).
+GENERIC_EMAIL_PLACEHOLDERS = [
+    ("{{ first_name }}", "imię", "Imię odbiorcy (jeśli znane)."),
+    ("{{ email }}", "e-mail", "Adres e-mail odbiorcy."),
+    ("{{ order_number }}", "nr zamówienia", "Numer zamówienia (wpisz ręcznie w treści)."),
+    ("{{ tracking_number }}", "nr przesyłki", "Numer przesyłki (wpisz ręcznie w treści)."),
+    ("{{ link }}", "link", "Dowolny adres linku."),
+]
+
+
+def editor_fields_for(system_key):
+    """Lista pól (tag, etykieta, opis) do legendy edytora danego maila."""
+    fields = EMAIL_PLACEHOLDERS.get(system_key)
+    return [{"tag": tag, "label": label, "help": help_} for tag, label, help_ in (fields or GENERIC_EMAIL_PLACEHOLDERS)]
+
+
 def build_email_template_row(template):
     return {
         "object": template,
         "name": template.name,
-        "subject": template.subject or "—",
+        "subject": template.subject or "-",
         "description": template.description,
         "is_active": template.is_active,
         "is_system": template.is_system,
@@ -581,6 +648,7 @@ def email_template_edit(request, pk):
         {
             "config": get_required_config("email-templates"),
             "template": template,
+            "editor_fields": editor_fields_for(template.system_key),
             "sections": get_sections(),
         },
     )
@@ -625,7 +693,7 @@ def model_list(request, model_slug):
         queryset = apply_newsletter_admin_filters(request, queryset, active_filters)
     elif config.model is Order:
         # Samoczyszczenie: przy każdym wejściu na listę wygaszamy porzucone, nieopłacone
-        # zamówienia (nie blokują stanu — to tylko higiena panelu).
+        # zamówienia (nie blokują stanu - to tylko higiena panelu).
         expire_stale_pending_orders()
         queryset = queryset.select_related("user", "shipping_method", "discount_code").prefetch_related("items")
         queryset = apply_order_admin_filters(request, queryset, active_filters)
@@ -3493,7 +3561,7 @@ def build_product_fieldsets(form):
         },
         {
             "title": "Oznaczenia i etykiety",
-            "description": "Etykiety na karcie produktu. „Promocja” pojawia się automatycznie, gdy ustawisz cenę promocyjną. „Ostatnie sztuki” pojawia się automatycznie, gdy stan spadnie do progu poniżej — chyba że je wyłączysz.",
+            "description": "Etykiety na karcie produktu. „Promocja” pojawia się automatycznie, gdy ustawisz cenę promocyjną. „Ostatnie sztuki” pojawia się automatycznie, gdy stan spadnie do progu poniżej - chyba że je wyłączysz.",
             "fields": [form[name] for name in ["is_new", "is_bestseller", "is_featured", "disable_low_stock_badge", "low_stock_threshold"]],
         },
         {

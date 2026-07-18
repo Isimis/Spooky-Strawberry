@@ -22,7 +22,7 @@
     <div class="mailform__meta">
         {% if recipients %}
             <div class="dashboard-field dashboard-field--full">
-                <span>Odbiorcy ({{ recipients|length }}) — zaznaczeni na liście</span>
+                <span>Odbiorcy ({{ recipients|length }}) - zaznaczeni na liście</span>
                 <div class="dashboard-recipient-chips" role="list">
                     {% for email in recipients %}<span class="dashboard-recipient-chip" role="listitem">{{ email }}</span>{% endfor %}
                 </div>
@@ -37,7 +37,7 @@
         <label class="dashboard-field">
             <span>Zacznij od szablonu</span>
             <select class="dashboard-input" data-template-picker>
-                <option value="">— pusta wiadomość —</option>
+                <option value="">- pusta wiadomość -</option>
                 {% for t in templates %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}
             </select>
         </label>

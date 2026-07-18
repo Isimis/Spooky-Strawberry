@@ -201,7 +201,7 @@ class NewsletterTests(TestCase):
         data = response.json()
         self.assertTrue(data["ok"])
         self.assertTrue(data["created"])
-        # Kod NIE może być ujawniony w potwierdzeniu — ma przyjść mailem.
+        # Kod NIE może być ujawniony w potwierdzeniu - ma przyjść mailem.
         self.assertNotIn("SPOOKY10", data["message"])
         self.assertIn("ajax@example.com", data["message"])
         self.assertEqual(self.client.session["newsletter_email"], "ajax@example.com")

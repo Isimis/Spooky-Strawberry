@@ -114,7 +114,7 @@ def send_bulk(
     """Wysyła tego samego maila do wielu odbiorców, każdemu osobno.
 
     ``context_for`` to opcjonalna funkcja ``email -> dict`` z polami do podstawienia
-    (np. imię konkretnej klientki). Zwraca ``(wyslane, bledy)`` — listy adresów.
+    (np. imię konkretnej klientki). Zwraca ``(wyslane, bledy)`` - listy adresów.
     """
     sent, failed = [], []
     for email in recipients:

@@ -16,7 +16,7 @@ urlpatterns = [
     path("konto/social/google/callback/", views.social_google_callback, name="social_google_callback"),
     path("konto/social/apple/callback/", views.social_apple_callback, name="social_apple_callback"),
     path("konto/potwierdz/<uidb64>/<token>/", views.verify_email, name="verify_email"),
-    # Reset hasła — wbudowane widoki Django z naszymi szablonami i treścią maila.
+    # Reset hasła - wbudowane widoki Django z naszymi szablonami i treścią maila.
     path(
         "konto/reset-hasla/",
         auth_views.PasswordResetView.as_view(

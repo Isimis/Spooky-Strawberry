@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}{% if timed_out %}Płatność niepotwierdzona{% else %}Przetwarzamy płatność{% endif %} — Spooky Strawberry{% endblock %}
+{% block title %}{% if timed_out %}Płatność niepotwierdzona{% else %}Przetwarzamy płatność{% endif %} - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="sec">
@@ -17,7 +17,7 @@
         <h1 class="h-lg" style="margin-bottom:8px">Nie potwierdziliśmy płatności 😕</h1>
         <p class="muted" style="max-width:460px;margin:0 auto">
             Wygląda na to, że płatność za zamówienie <b>#{{ order.order_number }}</b> nie została
-            dokończona (mogła zostać anulowana lub przerwana). Jeśli pieniądze zostały pobrane —
+            dokończona (mogła zostać anulowana lub przerwana). Jeśli pieniądze zostały pobrane -
             napisz do nas, sprawdzimy i pomożemy. Możesz też spróbować zapłacić ponownie.
         </p>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px">

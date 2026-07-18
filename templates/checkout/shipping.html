@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Dostawa i dane — Spooky Strawberry{% endblock %}
+{% block title %}Dostawa i dane - Spooky Strawberry{% endblock %}
 
 {% block extra_head %}
     {% if geowidget_token %}
@@ -109,7 +109,7 @@
 
 {% block extra_scripts %}
 <script>
-// Callback wyboru punktu — GLOBALNY, bo InPost Geowidget v5 woła funkcję z atrybutu onpoint.
+// Callback wyboru punktu - GLOBALNY, bo InPost Geowidget v5 woła funkcję z atrybutu onpoint.
 window.ssPickPoint = function (event) {
     var p = event && (event.detail || event);
     if (!p || !p.name) return;

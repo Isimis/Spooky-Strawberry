@@ -17,7 +17,7 @@
                 Klub Spooky
             </div>
             <h3>{{ nl_title|default:"Dołącz do klubu 🍓" }}</h3>
-            <p>{{ nl_text|default:"Najnowsze dropy, kody rabatowe i porady stylowe. Zero spamu, tylko soczyste treści." }}</p>
+            <p>{{ nl_text|default:"Nowości, kody rabatowe i porady stylowe. Zero spamu, tylko soczyste treści." }}</p>
             <form class="nl-form js-newsletter-form" action="{% url 'core:newsletter_subscribe' %}" method="post">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">

@@ -130,7 +130,7 @@ class PersistentCartTests(TestCase):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 2})
         self.assertTrue(SavedCart.objects.filter(user__email="buy@example.pl").exists())
 
-        # Nowa sesja: wyloguj (flush) i zaloguj ponownie — koszyk powinien wrócić.
+        # Nowa sesja: wyloguj (flush) i zaloguj ponownie - koszyk powinien wrócić.
         self.client.logout()
         self.assertNotIn("cart", self.client.session)
         self._login()

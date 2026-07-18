@@ -132,7 +132,7 @@ def get_related_products(product, limit=4):
     """Produkty do sekcji „Pasujące produkty".
 
     Najpierw produkty o wspólnej estetyce (w losowej kolejności), a potem
-    losowe dopełnienie pozostałymi produktami — tak, by sekcja zawsze była
+    losowe dopełnienie pozostałymi produktami - tak, by sekcja zawsze była
     wypełniona i za każdym razem trochę inna.
     """
     base = (
@@ -250,7 +250,7 @@ def build_variant_matrix(product, selected_variant):
 
 
 def aesthetic_list(request):
-    # Kolejność wg sort_order, by mozaika układała się jak w projekcie — wyróżnione
+    # Kolejność wg sort_order, by mozaika układała się jak w projekcie - wyróżnione
     # (is_featured = kafle „tall") rozkładają się w rytmie, a nie zbijają na początku.
     aesthetics = Aesthetic.objects.filter(is_active=True).order_by("sort_order", "name")
     return render(request, "catalog/aesthetic_list.html", {"aesthetics": aesthetics})
@@ -258,17 +258,17 @@ def aesthetic_list(request):
 
 # Klucz odpowiedzi quizu -> (slug estetyki w bazie, nazwa wyniku, opis, gradient)
 QUIZ_RESULTS = [
-    ("soft", "goth", "Soft Goth", "Mrok, ale delikatny — koronki, krzyże i czerń przełamana różem.", "#2a1622,#7a3d5a"),
+    ("soft", "goth", "Soft Goth", "Mrok, ale delikatny - koronki, krzyże i czerń przełamana różem.", "#2a1622,#7a3d5a"),
     ("coquette", "dark-coquette", "Dark Coquette", "Kokardy, koronki i romantyczny pazur. Słodko, ale z charakterem.", "#3a1d2c,#b4456f"),
     ("jirai", "jirai-kei", "Jirai Kei", "Słodko-gorzko i lalkowato. Pastel z mrocznym twistem.", "#2a1622,#d45d8a"),
     ("grunge", "grunge", "Grunge", "Surowo, buntowniczo i bez udawania. Podarte, czarne, szczere.", "#1c1018,#4a2236"),
     ("y2k", "y2k", "Y2K / Emo", "Nostalgia lat 2000, neony i emo-nuta. Trochę chaosu, dużo serca.", "#241a2e,#6e3b6a"),
-    ("witchy", "goth", "Witchy", "Magia codzienna — świece, srebro i intuicja. Mroczna elegancja.", "#1a1322,#5e2b40"),
+    ("witchy", "goth", "Witchy", "Magia codzienna - świece, srebro i intuicja. Mroczna elegancja.", "#1a1322,#5e2b40"),
 ]
 
 
 def style_quiz(request):
-    """Interaktywny quiz stylu — dopasowuje estetykę z bazy i jej produkty."""
+    """Interaktywny quiz stylu - dopasowuje estetykę z bazy i jej produkty."""
     from django.template.loader import render_to_string
     from django.urls import reverse
 

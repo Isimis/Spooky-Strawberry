@@ -415,7 +415,7 @@ class FullPurchaseFlowTests(TestCase):
     def test_paczkomat_full_flow_sandbox(self, mock_reg):
         self._sandbox(True)
         self._cart()
-        # 1) krok dostawy — paczkomat
+        # 1) krok dostawy - paczkomat
         r = self.client.post(reverse("checkout:shipping"), {
             "first_name": "Ala", "last_name": "Kot", "email": "ala@example.pl", "phone": "500600700",
             "shipping_method": self.paczkomat.id,

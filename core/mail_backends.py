@@ -3,7 +3,7 @@
 Prefiks sterowany jest ustawieniem ``MAIL_SUBJECT_PREFIX`` (czytanym z env).
 Na środowisku testowym/serwerze ustawiamy np. ``[SERWER TESTOWY] ``, dzięki
 czemu wszystkie maile (zamówienia, newsletter, konta itd.) są wyraźnie
-oznaczone — niezależnie od miejsca w kodzie, bo wszystko przechodzi przez
+oznaczone - niezależnie od miejsca w kodzie, bo wszystko przechodzi przez
 backend wysyłki.
 """
 

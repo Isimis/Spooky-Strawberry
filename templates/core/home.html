@@ -2,18 +2,18 @@
 {% load static %}
 {% load catalog_extras %}
 
-{% block title %}Spooky Strawberry — akcesoria alternatywne dla dziewczyn{% endblock %}
+{% block title %}Spooky Strawberry - akcesoria alternatywne dla dziewczyn{% endblock %}
 
 {% block content %}
 <section class="hero">
     <img class="hero-wm" src="{% static 'img/ssmodernblack.png' %}" alt="">
     <div class="hero-grid">
         <div class="hero-copy">
-            <div class="eyebrow">{{ site_settings.drop_eyebrow|default:"Najnowszy drop" }}{% if site_settings.drop_is_active and site_settings.drop_date %} · {{ site_settings.drop_date|date:"l G:i" }}{% endif %}</div>
+            <div class="eyebrow">{{ site_settings.drop_eyebrow|default:"Nowości" }}{% if site_settings.drop_is_active and site_settings.drop_date %} · {{ site_settings.drop_date|date:"l G:i" }}{% endif %}</div>
             <h1>Czerń w oczach,<br><em>róż</em> w sercu.</h1>
-            <p>Akcesoria dla dziewczyn, które wyrażają siebie. Soft goth, dark coquette i jirai kei — w jednym miejscu.</p>
+            <p>Akcesoria dla dziewczyn, które wyrażają siebie. Soft goth, dark coquette i jirai kei - w jednym miejscu.</p>
             <div class="hero-cta">
-                <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Zobacz drop</a>
+                <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Zobacz nowości</a>
                 <a class="btn btn-ghost btn-lg" href="{% url 'catalog:aesthetic_list' %}">Odkryj estetyki</a>
             </div>
             <div class="hero-tags"><span>Soft Goth</span><span>Dark Coquette</span><span>Jirai Kei</span><span>Grunge</span></div>
@@ -26,10 +26,10 @@
                 {% if hero_product and hero_product.main_image %}
                     <img src="{{ hero_product.main_image.image.url }}" alt="{{ hero_product.name }}">
                 {% else %}
-                    <img src="{% static 'img/hero.png' %}" alt="Najnowszy drop">
+                    <img src="{% static 'img/hero.png' %}" alt="Nowości">
                 {% endif %}
             </div>
-            <div class="hero-sticker">Nowy<br>drop</div>
+            <div class="hero-sticker">Świeże<br>nowości</div>
             {% if hero_mini_product %}
             <a class="hero-mini" href="{{ hero_mini_product.get_absolute_url }}">
                 {% if hero_mini_product.main_image %}<img src="{{ hero_mini_product.main_image.image.url }}" alt="">{% else %}<img src="{% static 'img/sspfp.jpg' %}" alt="">{% endif %}
@@ -50,7 +50,7 @@
 {% if drop_products %}
 <section class="sec">
     <div class="sec-head">
-        <div><div class="eyebrow">Świeżo z pudełka</div><h2 class="h-lg">{{ site_settings.drop_heading|default:"Najnowszy drop" }}</h2></div>
+        <div><div class="eyebrow">Świeżo z pudełka</div><h2 class="h-lg">{{ site_settings.drop_heading|default:"Nowości" }}</h2></div>
         <a class="link" href="{% url 'catalog:product_list' %}">Zobacz wszystko →</a>
     </div>
     <div class="pgrid">

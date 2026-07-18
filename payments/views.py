@@ -16,7 +16,7 @@ def przelewy24_webhook(request):
     except (ValueError, UnicodeDecodeError):
         return HttpResponseBadRequest("invalid payload")
 
-    # Zwracamy 200 nawet gdy nie potwierdzono — P24 nie ma wtedy nic ponawiać po naszej stronie,
+    # Zwracamy 200 nawet gdy nie potwierdzono - P24 nie ma wtedy nic ponawiać po naszej stronie,
     # a właściwym źródłem prawdy jest nasz verify. Błędny podpis/kwota = po prostu brak finalizacji.
     handle_notification(data)
     return HttpResponse("OK")

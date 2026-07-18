@@ -23,7 +23,7 @@ class AuthFlowTests(TestCase):
                 "accepts_marketing": "on",
             },
         )
-        # Nowe konto nie loguje się od razu — najpierw trzeba potwierdzić e-mail.
+        # Nowe konto nie loguje się od razu - najpierw trzeba potwierdzić e-mail.
         self.assertRedirects(response, reverse("accounts:login"))
         user = User.objects.get(email__iexact="zofia@example.pl")
         self.assertEqual(user.username, "zofia@example.pl")
@@ -139,7 +139,7 @@ class AuthFlowTests(TestCase):
             reverse("accounts:register"),
             {"email": "verify@example.pl", "password": "spookypass123"},
         )
-        # Rejestracja nie loguje — odsyła na logowanie i wysyła link aktywacyjny.
+        # Rejestracja nie loguje - odsyła na logowanie i wysyła link aktywacyjny.
         self.assertRedirects(response, reverse("accounts:login"))
         user = User.objects.get(email="verify@example.pl")
         # E-mail weryfikacyjny został wysłany; konto jeszcze niepotwierdzone.
@@ -251,7 +251,7 @@ class SocialLoginTests(TestCase):
             session = self.client.session
             session[social.STATE_SESSION_KEY] = nonce
             session.save()
-            # Po wylogowaniu klient testowy ma puste ciasteczko sesji — trzeba je
+            # Po wylogowaniu klient testowy ma puste ciasteczko sesji - trzeba je
             # ręcznie podmienić na klucz świeżo zapisanej sesji.
             self.client.cookies[dj_settings.SESSION_COOKIE_NAME] = session.session_key
         else:
@@ -359,7 +359,7 @@ class SocialLoginTests(TestCase):
     @mock.patch("accounts.social.exchange_apple_code")
     def test_apple_callback_post_creates_account_with_name(self, exchange):
         exchange.return_value = {"sub": "apple-9", "email": "jan@privaterelay.appleid.com", "email_verified": "true"}
-        # Apple wraca POST-em bez ciasteczka sesji — nonce weryfikowany z ciasteczka.
+        # Apple wraca POST-em bez ciasteczka sesji - nonce weryfikowany z ciasteczka.
         state = self._state(via="cookie")
         response = self.client.post(
             reverse("accounts:social_apple_callback"),
@@ -383,5 +383,5 @@ class SocialLoginTests(TestCase):
             reverse("accounts:social_google_callback"),
             {"code": "abc", "state": self._state(next_url="https://zlo.example/")},
         )
-        # Zewnętrzny adres w next jest odrzucany — lądujemy na koncie.
+        # Zewnętrzny adres w next jest odrzucany - lądujemy na koncie.
         self.assertRedirects(response, reverse("accounts:account"))

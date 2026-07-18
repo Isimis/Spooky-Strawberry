@@ -327,7 +327,7 @@
         }
 
         // Gładka ścieżka z monotoniczną interpolacją (Fritsch-Carlson),
-        // która NIE przestrzeliwuje — krzywa zostaje w zakresie wartości
+        // która NIE przestrzeliwuje - krzywa zostaje w zakresie wartości
         // punktów, więc przy zerach nie zjeżdża poniżej osi.
         function smoothPath(points) {
             const n = points.length;
@@ -404,7 +404,7 @@
             });
             svg.insertBefore(defs, svg.firstChild);
 
-            // Obszary (area) + gładkie krzywe — wstawiamy przed kropkami/strefami.
+            // Obszary (area) + gładkie krzywe - wstawiamy przed kropkami/strefami.
             const firstZone = zones[0] || sessDots[0];
             function areaD(points) {
                 return smoothPath(points) + ` L${points[points.length - 1][0]},${baseline} L${points[0][0]},${baseline} Z`;

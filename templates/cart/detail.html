@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Twój koszyk — Spooky Strawberry{% endblock %}
+{% block title %}Twój koszyk - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="sec">
@@ -36,7 +36,7 @@
                             <div class="opt-mini">{% if item.variant.color %}{{ item.variant.color.name }}{% endif %}{% if item.variant.color and item.variant.size %} · {% endif %}{% if item.variant.size %}{{ item.variant.size.name }}{% endif %}</div>
                         {% endif %}
                         <div class="qty-sm">
-                            <form method="post" action="{% url 'cart:update' item.variant.id %}" style="display:contents">{% csrf_token %}<input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}"><button type="submit" aria-label="Mniej">–</button></form>
+                            <form method="post" action="{% url 'cart:update' item.variant.id %}" style="display:contents">{% csrf_token %}<input type="hidden" name="quantity" value="{{ item.quantity|add:'-1' }}"><button type="submit" aria-label="Mniej">-</button></form>
                             <span>{{ item.quantity }}</span>
                             <form method="post" action="{% url 'cart:update' item.variant.id %}" style="display:contents">{% csrf_token %}<input type="hidden" name="quantity" value="{{ item.quantity|add:'1' }}"><button type="submit" aria-label="Więcej">+</button></form>
                         </div>
@@ -64,7 +64,7 @@
     <div class="confirm-wrap">
         <div class="confirm-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6.5V20a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6.5L18 2z"/><path d="M3 6.5h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
         <h2 class="h-md" style="margin-bottom:8px">Twój koszyk jest pusty</h2>
-        <p class="muted" style="max-width:380px;margin:0 auto 18px">Czas to zmienić — czarne kabaretki, chokery i kokardy czekają.</p>
+        <p class="muted" style="max-width:380px;margin:0 auto 18px">Czas to zmienić - czarne kabaretki, chokery i kokardy czekają.</p>
         <a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}">Przeglądaj katalog</a>
     </div>
     {% endif %}

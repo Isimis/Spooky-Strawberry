@@ -71,7 +71,7 @@ class HandleNotificationTests(TestCase):
         self.payment = Payment.objects.create(
             order=self.order, session_id="sess-1", amount=Decimal("50.00"), status=Payment.STATUS_PENDING,
         )
-        # Domyślnie tryb sandbox pomija magazyn — testy stanów robimy w trybie realnym.
+        # Domyślnie tryb sandbox pomija magazyn - testy stanów robimy w trybie realnym.
         settings_obj = SiteSettings.load()
         settings_obj.payments_sandbox = False
         settings_obj.save(update_fields=["payments_sandbox"])
@@ -148,7 +148,7 @@ class HandleNotificationTests(TestCase):
     @patch("payments.services.przelewy24.verify", return_value=(True, {"data": {"status": "success"}}))
     @patch("payments.services.przelewy24.verify_notification_sign", return_value=True)
     def test_late_payment_recovers_cancelled_order(self, mock_sign, mock_verify):
-        # zamówienie zdążyło wygasnąć (CANCELLED), ale płatność przyszła — musi wrócić do PLACED
+        # zamówienie zdążyło wygasnąć (CANCELLED), ale płatność przyszła - musi wrócić do PLACED
         self.order.status = Order.STATUS_CANCELLED
         self.order.save(update_fields=["status"])
         self.assertTrue(handle_notification(self._notification()))

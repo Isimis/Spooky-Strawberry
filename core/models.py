@@ -18,14 +18,14 @@ class SiteSettings(models.Model):
     low_stock_threshold = models.PositiveIntegerField(default=3)
 
     # Tryb płatności. True = Sandbox (płatności testowe, stany magazynowe NIE są ruszane).
-    # False = "Prawdziwe płatności" — dopóki nie są gotowe, w procesie zakupowym pokazujemy
+    # False = "Prawdziwe płatności" - dopóki nie są gotowe, w procesie zakupowym pokazujemy
     # dymek "wersja testowa / wkrótce" i nie finalizujemy zakupu.
     payments_sandbox = models.BooleanField(default=True)
 
-    # Sekcja "Najnowszy drop" na stronie głównej
+    # Sekcja "Nowości" na stronie głównej
     drop_is_active = models.BooleanField(default=True)
-    drop_eyebrow = models.CharField(max_length=120, blank=True, default="Najnowszy drop")
-    drop_heading = models.CharField(max_length=180, blank=True, default="Najnowszy drop")
+    drop_eyebrow = models.CharField(max_length=120, blank=True, default="Nowości")
+    drop_heading = models.CharField(max_length=180, blank=True, default="Nowości")
     drop_date = models.DateTimeField(null=True, blank=True)
     drop_products = models.ManyToManyField(
         "catalog.Product",

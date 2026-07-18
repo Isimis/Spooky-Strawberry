@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load catalog_extras %}
 
-{% block title %}Śledzenie zamówienia — Spooky Strawberry{% endblock %}
+{% block title %}Śledzenie zamówienia - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="phero" style="background:linear-gradient(160deg,#2a1622,#4a2236)">
@@ -32,7 +32,7 @@
             </p>
 
             {% if order.status == 'cancelled' %}
-                <div class="ship-note" style="background:#fff4f9">To zamówienie zostało <b>anulowane</b>{% if order.pickup_point_code or order.shipping_address_line_1 %}{% endif %}. Jeśli to pomyłka albo płatność jednak przeszła — <a href="{% url 'core:contact' %}">napisz do nas</a>.</div>
+                <div class="ship-note" style="background:#fff4f9">To zamówienie zostało <b>anulowane</b>{% if order.pickup_point_code or order.shipping_address_line_1 %}{% endif %}. Jeśli to pomyłka albo płatność jednak przeszła - <a href="{% url 'core:contact' %}">napisz do nas</a>.</div>
             {% else %}
             <div class="timeline">
                 {% for step in timeline %}

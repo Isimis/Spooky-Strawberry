@@ -47,12 +47,12 @@ DEBUG = env_bool("DEBUG", True)
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
 
-# Kanoniczna domena — jeśli ustawiona, ruch z innych hostów (np. www) jest 301
+# Kanoniczna domena - jeśli ustawiona, ruch z innych hostów (np. www) jest 301
 # przekierowywany tutaj. Puste = wyłączone (dev/testy). Na prod: spookystrawberry.pl
 CANONICAL_HOST = os.environ.get("CANONICAL_HOST", "").strip()
 
 # Pełny adres bazowy sklepu (schemat + host) do budowania bezwzględnych linków w miejscach
-# bez dostępu do `request` — np. w mailach wysyłanych z webhooka płatności. Domyślnie
+# bez dostępu do `request` - np. w mailach wysyłanych z webhooka płatności. Domyślnie
 # wyprowadzany z CANONICAL_HOST; lokalnie (bez konfiguracji) pozostaje pusty i linki są względne.
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "").strip() or (
     f"https://{CANONICAL_HOST}" if CANONICAL_HOST else ""
@@ -62,7 +62,7 @@ SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "").strip() or (
 # np. CSRF_TRUSTED_ORIGINS=https://spookystrawberry.pl,https://www.spookystrawberry.pl
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
-# nginx przekazuje informację o HTTPS w tym nagłówku — dzięki temu Django
+# nginx przekazuje informację o HTTPS w tym nagłówku - dzięki temu Django
 # wie, że żądanie jest bezpieczne (poprawne przekierowania, cookies).
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
@@ -134,12 +134,12 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:account"
 LOGOUT_REDIRECT_URL = "core:home"
 
-# Sesja przeżywa zamknięcie przeglądarki — logowanie i koszyk zostają między sesjami.
+# Sesja przeżywa zamknięcie przeglądarki - logowanie i koszyk zostają między sesjami.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 dni
 SESSION_SAVE_EVERY_REQUEST = True  # odświeża ważność przy aktywności
 
-# E-mail — skrzynka pocztowa (cyber-folks.pl).
+# E-mail - skrzynka pocztowa (cyber-folks.pl).
 # Lokalnie, bez konfiguracji w .env, maile trafiają na konsolę. Po ustawieniu
 # EMAIL_HOST + EMAIL_HOST_USER (np. w .env) automatycznie wysyłamy realnie przez SMTP.
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
@@ -182,31 +182,31 @@ MAILBOX_IMAP_FOLDER = os.environ.get("MAILBOX_IMAP_FOLDER", "INBOX")
 MAILBOX_SYNC_LIMIT = int(os.environ.get("MAILBOX_SYNC_LIMIT", "50"))
 
 # Skrzynka panelowa (IMAP). Na produkcji włączona, gdy skonfigurowano IMAP; lokalnie
-# (DEBUG=True) wyłączona — dev nie próbuje łączyć się z pocztą ani zapisywać kopii wysłanych.
+# (DEBUG=True) wyłączona - dev nie próbuje łączyć się z pocztą ani zapisywać kopii wysłanych.
 _mailbox_configured = bool(MAILBOX_IMAP_HOST and MAILBOX_IMAP_USER and MAILBOX_IMAP_PASSWORD)
 MAILBOX_ENABLED = env_bool("MAILBOX_ENABLED", _mailbox_configured and not DEBUG)
-# Zapis kopii każdego wychodzącego maila do folderu „Sent" na IMAP — dzięki temu wysłane
+# Zapis kopii każdego wychodzącego maila do folderu „Sent" na IMAP - dzięki temu wysłane
 # wiadomości są widoczne również w webmailu (poczta.cyberfolks.pl), nie tylko w panelu.
 MAILBOX_SAVE_SENT = env_bool("MAILBOX_SAVE_SENT", MAILBOX_ENABLED)
 MAILBOX_IMAP_SENT_FOLDER = os.environ.get("MAILBOX_IMAP_SENT_FOLDER", "Sent")
 
 
-# Płatności — Przelewy24. Trzymamy DWA komplety kluczy: produkcyjny i sandbox.
+# Płatności - Przelewy24. Trzymamy DWA komplety kluczy: produkcyjny i sandbox.
 # To, który jest używany, decyduje przełącznik w panelu (SiteSettings.payments_sandbox),
-# a nie zmienna środowiskowa — patrz payments/przelewy24.py.
+# a nie zmienna środowiskowa - patrz payments/przelewy24.py.
 # Produkcja (z panelu secure.przelewy24.pl):
 P24_MERCHANT_ID = os.environ.get("P24_MERCHANT_ID", "")
 P24_POS_ID = os.environ.get("P24_POS_ID", "") or P24_MERCHANT_ID
 P24_CRC = os.environ.get("P24_CRC", "")
 P24_API_KEY = os.environ.get("P24_API_KEY", "")
-# Sandbox (z panelu sandbox.przelewy24.pl) — do testów:
+# Sandbox (z panelu sandbox.przelewy24.pl) - do testów:
 P24_SANDBOX_MERCHANT_ID = os.environ.get("P24_SANDBOX_MERCHANT_ID", "")
 P24_SANDBOX_POS_ID = os.environ.get("P24_SANDBOX_POS_ID", "") or P24_SANDBOX_MERCHANT_ID
 P24_SANDBOX_CRC = os.environ.get("P24_SANDBOX_CRC", "")
 P24_SANDBOX_API_KEY = os.environ.get("P24_SANDBOX_API_KEY", "")
 
 
-# Dostawa — InPost Paczkomat (Geowidget do wyboru punktu na mapie).
+# Dostawa - InPost Paczkomat (Geowidget do wyboru punktu na mapie).
 # Token z panelu InPost (Manager Paczek / ShipX → API → Geowidget). Bez tokenu mapa się
 # nie załaduje, a checkout poprosi o wybór paczkomatu (do czasu skonfigurowania).
 INPOST_GEOWIDGET_TOKEN = os.environ.get("INPOST_GEOWIDGET_TOKEN", "")
@@ -220,13 +220,13 @@ else:
     INPOST_GEOWIDGET_CSS = "https://geowidget.inpost.pl/inpost-geowidget.css"
 
 
-# Logowanie społecznościowe — Google i Apple (accounts/social.py).
+# Logowanie społecznościowe - Google i Apple (accounts/social.py).
 # Bez skonfigurowanych kluczy przyciski na stronie logowania pozostają nieaktywne.
 # Google (console.cloud.google.com → APIs & Services → Credentials → OAuth client ID,
 # typ "Web application"; redirect URI: https://DOMENA/konto/social/google/callback/):
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
 GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "")
-# Apple (developer.apple.com — wymaga płatnego konta deweloperskiego):
+# Apple (developer.apple.com - wymaga płatnego konta deweloperskiego):
 # Identifiers → Services ID (to jest client_id) z włączonym "Sign in with Apple"
 # i return URL https://DOMENA/konto/social/apple/callback/; Keys → klucz .p8.
 APPLE_OAUTH_CLIENT_ID = os.environ.get("APPLE_OAUTH_CLIENT_ID", "")
@@ -302,7 +302,7 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-# Cel `collectstatic` na produkcji — nginx serwuje ten katalog pod /static/.
+# Cel `collectstatic` na produkcji - nginx serwuje ten katalog pod /static/.
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "media/"

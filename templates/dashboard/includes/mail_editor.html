@@ -1,9 +1,9 @@
 {% comment %}
 Wspólny edytor maili z żywym podglądem.
 Kontekst:
-  editor_subject  – początkowy temat (string)
-  editor_body     – początkowa treść HTML (string)
-  brand_name      – nazwa nadawcy w podglądzie (opcjonalnie)
+  editor_subject  - początkowy temat (string)
+  editor_body     - początkowa treść HTML (string)
+  brand_name      - nazwa nadawcy w podglądzie (opcjonalnie)
 {% endcomment %}
 <div class="mailcomposer" data-mailcomposer>
     <div class="mailcomposer__edit">
@@ -16,13 +16,22 @@ Kontekst:
         <div class="mailcomposer__tags">
             <span class="mailcomposer__tags-label">Wstaw pole</span>
             <div class="mailcomposer__tags-list">
-                <button type="button" class="mailcomposer__tag" data-mc-tag="{% verbatim %}{{ first_name }}{% endverbatim %}">imię</button>
-                <button type="button" class="mailcomposer__tag" data-mc-tag="{% verbatim %}{{ order_number }}{% endverbatim %}">nr zamówienia</button>
-                <button type="button" class="mailcomposer__tag" data-mc-tag="{% verbatim %}{{ tracking_number }}{% endverbatim %}">nr przesyłki</button>
-                <button type="button" class="mailcomposer__tag" data-mc-tag="{% verbatim %}{{ link }}{% endverbatim %}">link</button>
-                <button type="button" class="mailcomposer__tag" data-mc-tag="{% verbatim %}{{ reply }}{% endverbatim %}">odpowiedź</button>
+                {% for f in editor_fields %}
+                <button type="button" class="mailcomposer__tag" data-mc-tag="{{ f.tag }}" title="{{ f.help }}">{{ f.label }}</button>
+                {% endfor %}
             </div>
         </div>
+
+        {% if editor_fields %}
+        <details class="mailcomposer__legend" style="margin:4px 0 10px;border:1px solid #ece6ee;border-radius:12px;padding:10px 14px;background:#faf8fb;">
+            <summary style="cursor:pointer;font-weight:600;font-size:13px;color:#4a4353;">Pola dostępne w tym mailu ({{ editor_fields|length }}) - kliknij, aby zobaczyć opis</summary>
+            <ul style="margin:10px 0 2px;padding-left:0;list-style:none;font-size:13px;line-height:1.6;color:#4a4353;">
+                {% for f in editor_fields %}
+                <li style="margin:4px 0;"><code style="background:#efe7f2;border-radius:6px;padding:1px 6px;color:#7a2450;">{{ f.tag }}</code> &nbsp;{{ f.help }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+        {% endif %}
 
         <div class="mailcomposer__editor">
             <div class="mailcomposer__toolbar" role="toolbar" aria-label="Formatowanie treści">
@@ -31,7 +40,7 @@ Kontekst:
                 <span class="mailcomposer__tool-sep" aria-hidden="true"></span>
                 <button type="button" class="mailcomposer__tool" data-cmd="formatBlock" data-val="h2" title="Nagłówek">H</button>
                 <button type="button" class="mailcomposer__tool" data-cmd="formatBlock" data-val="p" title="Zwykły akapit">¶</button>
-                <button type="button" class="mailcomposer__tool" data-cmd="insertUnorderedList" title="Lista punktowana">• —</button>
+                <button type="button" class="mailcomposer__tool" data-cmd="insertUnorderedList" title="Lista punktowana">• -</button>
                 <span class="mailcomposer__tool-sep" aria-hidden="true"></span>
                 <button type="button" class="mailcomposer__tool" data-cmd="createLink" title="Wstaw link">🔗</button>
                 <button type="button" class="mailcomposer__tool" data-cmd="removeFormat" title="Wyczyść formatowanie">✕ format</button>

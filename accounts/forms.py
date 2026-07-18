@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class SpookyPasswordResetForm(PasswordResetForm):
-    """Reset hasła wysyłany przez panelowy mailer — mail ląduje w skrzynce panelu
+    """Reset hasła wysyłany przez panelowy mailer - mail ląduje w skrzynce panelu
     i (na produkcji) w folderze „Sent" IMAP, więc jest widoczny i tu, i w webmailu."""
 
     def send_mail(
@@ -95,7 +95,7 @@ class EmailLoginForm(forms.Form):
 class PersonalDataForm(forms.Form):
     first_name = forms.CharField(max_length=80, required=False)
     last_name = forms.CharField(max_length=80, required=False)
-    # Adres do wysyłki maili o zamówieniach — może być inny niż adres logowania konta.
+    # Adres do wysyłki maili o zamówieniach - może być inny niż adres logowania konta.
     email = forms.EmailField(required=False)
     phone = forms.CharField(max_length=40, required=False)
 
@@ -112,7 +112,7 @@ class ConsentsForm(forms.Form):
 
 
 class AddressForm(forms.ModelForm):
-    """Jeden domyślny adres dostawy klienta — edytowalny z poziomu konta."""
+    """Jeden domyślny adres dostawy klienta - edytowalny z poziomu konta."""
 
     class Meta:
         model = CustomerAddress

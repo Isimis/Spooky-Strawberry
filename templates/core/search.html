@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if query %}Wyniki dla „{{ query }}"{% else %}Wyszukiwanie{% endif %} — Spooky Strawberry{% endblock %}
+{% block title %}{% if query %}Wyniki dla „{{ query }}"{% else %}Wyszukiwanie{% endif %} - Spooky Strawberry{% endblock %}
 
 {% block content %}
 <section class="sec">
@@ -39,7 +39,7 @@
             {% endif %}
         {% endif %}
     {% else %}
-        <p class="muted" style="margin:14px 0 0;font-size:13.5px">Wpisz, czego szukasz — albo zacznij od popularnych haseł.</p>
+        <p class="muted" style="margin:14px 0 0;font-size:13.5px">Wpisz, czego szukasz - albo zacznij od popularnych haseł.</p>
         <div class="sugg">
             {% for s in suggestions %}<a class="chip2" href="{% url 'core:search' %}?q={{ s|urlencode }}">{{ s }}</a>{% endfor %}
         </div>

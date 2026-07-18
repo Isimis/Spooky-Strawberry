@@ -1,8 +1,8 @@
-"""Budowanie i wysyłka systemowych maili — spójny styl graficzny i treść.
+"""Budowanie i wysyłka systemowych maili - spójny styl graficzny i treść.
 
 Wygląd (nagłówek, ramka, stopka, responsywność) mieszka w szablonie bazowym
 (`base-layout`, edytowalnym w panelu). Tutaj składamy TREŚĆ każdego maila z gotowych,
-spójnych komponentów (przycisk, lista produktów, ramka szczegółów) — wszystko na
+spójnych komponentów (przycisk, lista produktów, ramka szczegółów) - wszystko na
 inline-CSS + tabelach, żeby ładowało się poprawnie na każdej poczcie (mobile i PC).
 
 Wysyłamy przez panelowy mailer (`send_message`), więc każdy mail trafia też do
@@ -52,7 +52,7 @@ def money(value):
 # --- Komponenty treści (zwracają bezpieczny HTML do wstawienia w {{ ... }}) ---
 
 def cta_button(url, label):
-    """Przycisk „bulletproof" (tabela + padding) — działa też w Outlooku."""
+    """Przycisk „bulletproof" (tabela + padding) - działa też w Outlooku."""
     return mark_safe(
         '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0;">'
         f'<tr><td align="center" bgcolor="{ACCENT}" style="border-radius:999px;">'
@@ -140,7 +140,7 @@ def delivery_text(order):
 # --- Wysyłka: renderuje szablon systemowy (subject + body) i wysyła przez mailer ---
 
 def send_system_email(system_key, *, to_email, context=None, fail_silently=True):
-    """Wysyła maila na podstawie szablonu systemowego (z bazy) — treść + temat są
+    """Wysyła maila na podstawie szablonu systemowego (z bazy) - treść + temat są
     edytowalne w panelu, a dynamiczne elementy podstawiamy przez kontekst."""
     from .mailer import send_message
     from .models import MessageTemplate
@@ -201,7 +201,7 @@ def send_newsletter_welcome(to_email, discount_code="SPOOKY10"):
         context={
             "discount_code": discount_code,
             "cta": cta_button(_abs_url(reverse("catalog:product_list")), "Zacznij zakupy"),
-            "preheader": f"Twój kod {discount_code} — -10% na pierwsze zakupy.",
+            "preheader": f"Twój kod {discount_code} - -10% na pierwsze zakupy.",
         },
     )
 
@@ -270,6 +270,6 @@ def send_admin_order_notification(order):
             "items": order_lines(order),
             "delivery": delivery_text(order),
             "cta": cta_button(panel_url, "Otwórz w panelu"),
-            "preheader": f"Nowe zamówienie {order.order_number} — {money(order.grand_total)}.",
+            "preheader": f"Nowe zamówienie {order.order_number} - {money(order.grand_total)}.",
         },
     )

@@ -13,13 +13,13 @@ class CheckoutForm(forms.Form):
         label="Sposób dostawy",
         empty_label=None,
     )
-    # Adres — wymagany tylko przy dostawie kurierem (patrz clean()).
+    # Adres - wymagany tylko przy dostawie kurierem (patrz clean()).
     address_line_1 = forms.CharField(max_length=180, required=False, label="Ulica i numer")
     address_line_2 = forms.CharField(max_length=180, required=False, label="Dodatkowe informacje")
     postal_code = forms.CharField(max_length=20, required=False, label="Kod pocztowy")
     city = forms.CharField(max_length=100, required=False, label="Miasto")
 
-    # Punkt odbioru (Paczkomat) — wypełniane z mapy Geowidget (ukryte pola).
+    # Punkt odbioru (Paczkomat) - wypełniane z mapy Geowidget (ukryte pola).
     pickup_point_code = forms.CharField(max_length=40, required=False, widget=forms.HiddenInput())
     pickup_point_name = forms.CharField(max_length=180, required=False, widget=forms.HiddenInput())
     pickup_point_address = forms.CharField(max_length=255, required=False, widget=forms.HiddenInput())
@@ -43,7 +43,7 @@ class CheckoutForm(forms.Form):
             return cleaned
 
         if method.is_pickup_point:
-            # Dostawa do punktu — wymagany wybrany paczkomat, adres nieistotny.
+            # Dostawa do punktu - wymagany wybrany paczkomat, adres nieistotny.
             if not cleaned.get("pickup_point_code"):
                 raise forms.ValidationError("Wybierz paczkomat na mapie, żeby kontynuować.")
             cleaned["address_line_1"] = ""
@@ -51,7 +51,7 @@ class CheckoutForm(forms.Form):
             cleaned["postal_code"] = ""
             cleaned["city"] = ""
         else:
-            # Dostawa kurierem — wymagany adres, punkt nieistotny.
+            # Dostawa kurierem - wymagany adres, punkt nieistotny.
             missing = [
                 self.fields[name].label
                 for name in ("address_line_1", "postal_code", "city")

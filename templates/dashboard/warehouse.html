@@ -61,7 +61,7 @@
                                 class="button button--small"
                                 data-open-entry
                                 data-action="{{ variant.add_entry_url }}"
-                                data-variant-name="{{ row.name }} — {% if variant.color or variant.size %}{{ variant.color }} {{ variant.size }}{% else %}wariant domyślny{% endif %}"
+                                data-variant-name="{{ row.name }} - {% if variant.color or variant.size %}{{ variant.color }} {{ variant.size }}{% else %}wariant domyślny{% endif %}"
                             >Dodaj przyjęcie</button>
                         </div>
 
@@ -88,19 +88,19 @@
                                                 <td>{{ entry.occurred_at|date:"Y-m-d" }}</td>
                                                 <td>{{ entry.source_label }}</td>
                                                 <td>{{ entry.signed_quantity }}</td>
-                                                <td>{% if entry.unit_price_net != None %}{{ entry.unit_price_net }}{% else %}—{% endif %}</td>
-                                                <td>{% if entry.vat_rate != None %}{{ entry.vat_rate }}%{% else %}—{% endif %}</td>
-                                                <td>{% if entry.unit_price_gross != None %}{{ entry.unit_price_gross }}{% else %}—{% endif %}</td>
-                                                <td>{% if entry.customs_amount != None %}{{ entry.customs_amount }}{% else %}—{% endif %}</td>
+                                                <td>{% if entry.unit_price_net != None %}{{ entry.unit_price_net }}{% else %}-{% endif %}</td>
+                                                <td>{% if entry.vat_rate != None %}{{ entry.vat_rate }}%{% else %}-{% endif %}</td>
+                                                <td>{% if entry.unit_price_gross != None %}{{ entry.unit_price_gross }}{% else %}-{% endif %}</td>
+                                                <td>{% if entry.customs_amount != None %}{{ entry.customs_amount }}{% else %}-{% endif %}</td>
                                                 <td>
                                                     {% if entry.invoice_url %}
                                                         <a href="{{ entry.invoice_url }}" target="_blank" rel="noopener">Otwórz</a>
-                                                    {% else %}—{% endif %}
+                                                    {% else %}-{% endif %}
                                                 </td>
                                                 <td>
                                                     {% if entry.supplier_url %}
                                                         <a href="{{ entry.supplier_url }}" target="_blank" rel="noopener">Link</a>
-                                                    {% else %}—{% endif %}
+                                                    {% else %}-{% endif %}
                                                 </td>
                                                 <td>
                                                     <form method="post" action="{{ entry.delete_url }}" onsubmit="return confirm('Usunąć ten wpis? Stan magazynowy zostanie przeliczony.');">

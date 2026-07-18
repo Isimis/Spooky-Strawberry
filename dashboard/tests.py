@@ -61,7 +61,7 @@ class DashboardAccessTests(TestCase):
     def test_user_account_generic_create_blocked(self):
         self.client.login(username="staff", password="pass")
         create = self.client.get(reverse("dashboard:model_create", args=["user-accounts"]))
-        # Generyczny formularz (z hasłem) jest zablokowany — używamy dedykowanego.
+        # Generyczny formularz (z hasłem) jest zablokowany - używamy dedykowanego.
         self.assertEqual(create.status_code, 302)
 
     def test_user_account_detail_lists_all_consents(self):

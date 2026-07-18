@@ -10,7 +10,7 @@
         {% if product %}
             <p>Edytuj najważniejsze dane produktu, warianty, zdjęcia i SEO w jednym spokojnym widoku.</p>
         {% else %}
-            <p>Uzupełnij podstawy i zapisz produkt — potem dodasz warianty, zdjęcia i dopniesz SEO.</p>
+            <p>Uzupełnij podstawy i zapisz produkt - potem dodasz warianty, zdjęcia i dopniesz SEO.</p>
         {% endif %}
     </div>
     <div class="dashboard-heading__actions">
@@ -192,7 +192,7 @@
                     </div>
                     {% if fieldset.title == "SEO" %}
                         <div class="dashboard-seo-preview" data-seo-preview
-                             data-suffix=" — Spooky Strawberry"
+                             data-suffix=" - Spooky Strawberry"
                              data-fallback-title="{% if product %}{{ product.name }}{% else %}Nazwa produktu{% endif %}"
                              data-fallback-desc="{% if product %}{{ product.seo_description|default:product.description|striptags|truncatechars:160 }}{% endif %}">
                             <span class="dashboard-seo-preview__tag">Podgląd w Google</span>

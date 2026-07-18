@@ -91,7 +91,7 @@
 
         <div class="ss-card">
             <div class="ss-card__title">Oznaczanie „ostatnie sztuki”</div>
-            <p class="ss-card__hint">To są <strong>wartości domyślne dla nowo dodawanych produktów</strong> — nie zmieniają produktów już dodanych. Każdy produkt ma własne ustawienie i własny próg w swojej karcie.</p>
+            <p class="ss-card__hint">To są <strong>wartości domyślne dla nowo dodawanych produktów</strong> - nie zmieniają produktów już dodanych. Każdy produkt ma własne ustawienie i własny próg w swojej karcie.</p>
             <div class="ss-toggle">
                 <span class="ss-label">{{ form.low_stock_default_enabled.label }}</span>
                 <label class="ss-switch">{{ form.low_stock_default_enabled }}<span class="ss-track"></span></label>
@@ -115,8 +115,8 @@
         </div>
 
         <div class="ss-card">
-            <div class="ss-card__title">Najnowszy drop (strona główna)</div>
-            <p class="ss-card__hint">Data dropu na hero oraz produkty w sekcji „Najnowszy drop”.</p>
+            <div class="ss-card__title">Nowości (strona główna)</div>
+            <p class="ss-card__hint">Data na hero oraz produkty w sekcji „Nowości”.</p>
             <div class="ss-toggle">
                 <span class="ss-label">{{ form.drop_is_active.label }}</span>
                 <label class="ss-switch">{{ form.drop_is_active }}<span class="ss-track"></span></label>
@@ -140,7 +140,7 @@
             <hr class="ss-card__sep">
             <div class="ss-picker">
                 <div class="ss-picker__bar">
-                    <span class="ss-label" style="margin:0">Produkty w dropie</span>
+                    <span class="ss-label" style="margin:0">Produkty w sekcji Nowości</span>
                     <span class="ss-count"><span id="ssDropCount">{{ drop_selected_count }}</span> wybrano</span>
                 </div>
                 <div class="ss-picker__bar">
@@ -159,7 +159,7 @@
                     {% endfor %}
                     <p class="ss-empty" id="ssNoResults" style="display:none">Brak produktów pasujących do wyszukiwania.</p>
                 </div>
-                <p class="ss-help">Wybrane produkty trafią do sekcji „Najnowszy drop” na stronie głównej. Lista posortowana od ostatnio dodanych. Jeśli nic nie wybierzesz — pokażemy automatycznie najnowsze produkty.</p>
+                <p class="ss-help">Wybrane produkty trafią do sekcji „Nowości” na stronie głównej. Lista posortowana od ostatnio dodanych. Jeśli nic nie wybierzesz - pokażemy automatycznie najnowsze produkty.</p>
             </div>
         </div>
 

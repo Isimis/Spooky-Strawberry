@@ -8,7 +8,7 @@
     <div>
         <p class="eyebrow">Szablon bazowy</p>
         <h1>Wygląd maili (wzór)</h1>
-        <p>Wspólna ramka wszystkich maili — nagłówek z logo, obramowanie i stopka. Treść każdej
+        <p>Wspólna ramka wszystkich maili - nagłówek z logo, obramowanie i stopka. Treść każdej
            wiadomości wstawiamy w miejsce znacznika <code>{% verbatim %}{{ content }}{% endverbatim %}</code>.</p>
     </div>
     <div class="dashboard-heading__actions">
@@ -24,8 +24,18 @@
         <div class="mailform__system-note">
             <span class="dashboard-status-pill dashboard-status-pill--best">Szablon bazowy</span>
             <p>Edytujesz tylko ramkę maila. Pamiętaj, by zostawić znacznik
-               <code>{% verbatim %}{{ content }}{% endverbatim %}</code> — bez niego treść nie ma się gdzie pojawić.</p>
+               <code>{% verbatim %}{{ content }}{% endverbatim %}</code>, bez niego treść nie ma się gdzie pojawić.</p>
         </div>
+        {% if editor_fields %}
+        <details class="mailcomposer__legend" style="margin:4px 0 0;border:1px solid #ece6ee;border-radius:12px;padding:10px 14px;background:#faf8fb;">
+            <summary style="cursor:pointer;font-weight:600;font-size:13px;color:#4a4353;">Pola dostępne w ramce ({{ editor_fields|length }})</summary>
+            <ul style="margin:10px 0 2px;padding-left:0;list-style:none;font-size:13px;line-height:1.6;color:#4a4353;">
+                {% for f in editor_fields %}
+                <li style="margin:4px 0;"><code style="background:#efe7f2;border-radius:6px;padding:1px 6px;color:#7a2450;">{{ f.tag }}</code> &nbsp;{{ f.help }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+        {% endif %}
     </div>
 
     <div class="mailcomposer" data-mailcomposer>

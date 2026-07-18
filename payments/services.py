@@ -79,7 +79,7 @@ def reconcile_payment(payment):
     """Dopina weryfikację na stronie powrotu, gdy webhook się spóźnia lub nie dotarł.
 
     Jeśli nie znamy jeszcze ``p24_order_id`` (webhook nie przyszedł), pytamy P24 o status
-    po naszym ``sessionId`` — dzięki temu strona powrotu jest samowystarczalna.
+    po naszym ``sessionId`` - dzięki temu strona powrotu jest samowystarczalna.
     """
     if payment.is_paid:
         return payment
@@ -117,7 +117,7 @@ def reconcile_payment(payment):
 def _finalize_paid(payment_pk, *, p24_order_id="", notification=None, verify_raw=None):
     payment = Payment.objects.select_for_update().select_related("order").get(pk=payment_pk)
     if payment.is_paid:
-        return payment  # idempotencja — drugi webhook nic nie robi
+        return payment  # idempotencja - drugi webhook nic nie robi
 
     now = timezone.now()
     payment.status = Payment.STATUS_PAID
@@ -130,7 +130,7 @@ def _finalize_paid(payment_pk, *, p24_order_id="", notification=None, verify_raw
 
     order = payment.order
     # Spóźniona płatność „odzyskuje" zamówienie, nawet jeśli zdążyło wygasnąć (CANCELLED)
-    # albo było szkicem — nie może być tak, że pieniądze wpłynęły, a zamówienie przepadło.
+    # albo było szkicem - nie może być tak, że pieniądze wpłynęły, a zamówienie przepadło.
     if order.status in {Order.STATUS_AWAITING_PAYMENT, Order.STATUS_CANCELLED, Order.STATUS_DRAFT}:
         order.status = Order.STATUS_PLACED
     if not order.placed_at:
@@ -162,14 +162,14 @@ def _create_sale_stock_entries(order):
             source=StockEntry.SOURCE_SALE,
             quantity=item.quantity,
             order_item=item,
-            note=f"Sprzedaż – {order.order_number}",
+            note=f"Sprzedaż - {order.order_number}",
         )
         recalculate_variant_stock(item.variant)
 
 
 def _send_order_emails(order):
     """Po opłaceniu: potwierdzenie dla klienta + powiadomienie dla obsługi.
-    Best-effort — żaden mail nie może wywrócić finalizacji płatności."""
+    Best-effort - żaden mail nie może wywrócić finalizacji płatności."""
     from core.emails import send_admin_order_notification, send_order_confirmation
 
     try:

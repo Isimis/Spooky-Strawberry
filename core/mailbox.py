@@ -37,7 +37,7 @@ def append_to_sent(raw_bytes):
     """Best-effort: dokłada kopię wysłanego maila do folderu „Sent" na serwerze IMAP.
 
     Dzięki temu wychodzące wiadomości są widoczne także w webmailu, nie tylko w panelu.
-    Nigdy nie rzuca wyjątkiem — wysyłka maila nie może zależeć od dostępności IMAP.
+    Nigdy nie rzuca wyjątkiem - wysyłka maila nie może zależeć od dostępności IMAP.
     """
     if not (getattr(settings, "MAILBOX_SAVE_SENT", False) and mailbox_enabled()):
         return False
@@ -47,7 +47,7 @@ def append_to_sent(raw_bytes):
         client = _connect()
         client.append(folder, r"(\Seen)", imaplib.Time2Internaldate(time.time()), raw_bytes)
         return True
-    except Exception as exc:  # noqa: BLE001 — zapis do Sent jest opcjonalny
+    except Exception as exc:  # noqa: BLE001 - zapis do Sent jest opcjonalny
         logger.warning("Nie udało się zapisać kopii maila w folderze Sent: %s", exc)
         return False
     finally:

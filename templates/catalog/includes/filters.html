@@ -58,7 +58,7 @@
     <h5>Cena</h5>
     <div class="opts">
         <a class="opt {% if max_price == '15' and not min_price %}sel{% endif %}" href="{% qs_set min_price='' max_price='15' %}">do 15 zł</a>
-        <a class="opt {% if min_price == '15' and max_price == '25' %}sel{% endif %}" href="{% qs_set min_price='15' max_price='25' %}">15–25 zł</a>
+        <a class="opt {% if min_price == '15' and max_price == '25' %}sel{% endif %}" href="{% qs_set min_price='15' max_price='25' %}">15-25 zł</a>
         <a class="opt {% if min_price == '25' and not max_price %}sel{% endif %}" href="{% qs_set min_price='25' max_price='' %}">25 zł+</a>
     </div>
 </div>

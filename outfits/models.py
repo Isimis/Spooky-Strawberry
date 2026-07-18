@@ -157,7 +157,7 @@ class OutfitImage(models.Model):
 class OutfitHotspot(models.Model):
     """Klikalny punkt („plusik") na zdjęciu stylizacji, kierujący do produktu.
 
-    Pozycja jest zapisywana w procentach (0–100) względem szerokości/wysokości
+    Pozycja jest zapisywana w procentach (0-100) względem szerokości/wysokości
     zdjęcia, dzięki czemu skaluje się poprawnie na każdym ekranie.
     """
 
@@ -177,7 +177,7 @@ class OutfitHotspot(models.Model):
         decimal_places=2,
         default=50,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text="Pozycja w poziomie od lewej krawędzi zdjęcia (0–100%).",
+        help_text="Pozycja w poziomie od lewej krawędzi zdjęcia (0-100%).",
     )
     pos_y = models.DecimalField(
         "Pozycja Y (%)",
@@ -185,7 +185,7 @@ class OutfitHotspot(models.Model):
         decimal_places=2,
         default=50,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text="Pozycja w pionie od górnej krawędzi zdjęcia (0–100%).",
+        help_text="Pozycja w pionie od górnej krawędzi zdjęcia (0-100%).",
     )
     sort_order = models.PositiveIntegerField(default=0)
 

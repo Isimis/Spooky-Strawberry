@@ -3,7 +3,7 @@ from django.db import models
 
 
 class SavedCart(models.Model):
-    """Koszyk zapisany per użytkownik — zostaje między sesjami i urządzeniami."""
+    """Koszyk zapisany per użytkownik - zostaje między sesjami i urządzeniami."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

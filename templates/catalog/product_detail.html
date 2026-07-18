@@ -2,7 +2,7 @@
 {% load static %}
 {% load catalog_extras %}
 
-{% block title %}{{ product.seo_title|default:product.name }} — Spooky Strawberry{% endblock %}
+{% block title %}{{ product.seo_title|default:product.name }} - Spooky Strawberry{% endblock %}
 {% block meta_description %}{{ product.seo_description|default:product.description|truncatechars:160 }}{% endblock %}
 
 {% block content %}
@@ -74,7 +74,7 @@
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             <div class="sticky-buy">
                 <div class="qty" data-input="#qtyInput">
-                    <button type="button" data-qty="dec">–</button><span>1</span><button type="button" data-qty="inc">+</button>
+                    <button type="button" data-qty="dec">-</button><span>1</span><button type="button" data-qty="inc">+</button>
                 </div>
                 <input type="hidden" name="quantity" id="qtyInput" value="1">
                 <button type="submit" class="btn btn-primary btn-block" {% if not selected_variant or not selected_variant.is_in_stock %}disabled{% endif %}>
@@ -91,11 +91,11 @@
 
         <div class="acc">
             {% if product.description %}
-            <div class="acc-i"><div class="acc-h">Szczegóły produktu <span class="acc-ic">–</span></div>
+            <div class="acc-i"><div class="acc-h">Szczegóły produktu <span class="acc-ic">-</span></div>
                 <div class="acc-c open">{{ product.description|formatted_text }}</div></div>
             {% endif %}
             {% if product.styling_tips %}
-            <div class="acc-i"><div class="acc-h">Jak stylizować? <span class="acc-ic">–</span></div>
+            <div class="acc-i"><div class="acc-h">Jak stylizować? <span class="acc-ic">-</span></div>
                 <div class="acc-c acc-c--tip open">{{ product.styling_tips|formatted_text }}</div></div>
             {% endif %}
             <div class="acc-i"><div class="acc-h">Dostawa i zwroty <span class="acc-ic">+</span></div>

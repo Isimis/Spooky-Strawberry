@@ -115,7 +115,7 @@ def add_outfit(request, slug):
                 added += 1
     save_cart_for_user(request)
 
-    text = "Dodano zestaw do koszyka 🍓" if added else "Nie udało się dodać zestawu — brak dostępnych wariantów."
+    text = "Dodano zestaw do koszyka 🍓" if added else "Nie udało się dodać zestawu - brak dostępnych wariantów."
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({"ok": added > 0, "message": text, "cart_count": get_cart_quantity(request)})
 
