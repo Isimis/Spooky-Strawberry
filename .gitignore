@@ -21,6 +21,8 @@ db.sqlite3-journal
 # Media/static generated files
 media/
 staticfiles/
+# Wgrane załączniki wiadomości (dane produkcyjne, nie commitujemy)
+private_message_attachments/
 
 # VS Code
 .vscode/
