@@ -6,6 +6,7 @@ from django.core.mail import EmailMessage
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from catalog.models import Aesthetic
 from orders.models import Order
 
 from .mail_backends import apply_subject_prefix
@@ -34,6 +35,25 @@ class SearchDiscoveryTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Mapa strony")
+
+
+class HomeAestheticsTests(TestCase):
+    def test_home_lists_every_active_aesthetic(self):
+        for number in range(1, 10):
+            Aesthetic.objects.create(
+                name=f"Estetyka {number}",
+                slug=f"estetyka-{number}",
+                is_active=True,
+                sort_order=number,
+            )
+        Aesthetic.objects.create(name="Ukryta", slug="ukryta", is_active=False)
+
+        response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["aesthetics"].count(), 9)
+        self.assertContains(response, "Estetyka 9")
+        self.assertNotContains(response, "Ukryta")
 
 
 class OrderStatusByTokenTests(TestCase):

@@ -90,7 +90,7 @@ def home_view(request):
     )
     aesthetics = (
         Aesthetic.objects.filter(is_active=True)
-        .order_by("sort_order", "name")[:8]
+        .order_by("sort_order", "name")
     )
     articles = (
         Article.objects.filter(status=Article.STATUS_PUBLISHED)
