@@ -5,9 +5,11 @@
 
 {% block content %}
 <div class="ds">
-    <div class="eyebrow">Spooky Strawberry</div>
-    <h1 class="h-lg" style="margin:8px 0 6px">Design System</h1>
-    <p class="lead">Spójny język wizualny marki: pastelowy róż, czerń i biel. Mroczny, ale dziewczęcy. Estetyczny, nigdy infantylny.</p>
+    <header class="ds-intro">
+        <div class="eyebrow">Spooky Strawberry</div>
+        <h1 class="h-lg">Design System</h1>
+        <p class="lead">Spójny język wizualny marki: pastelowy róż, czerń i biel. Mroczny, ale dziewczęcy. Estetyczny, nigdy infantylny.</p>
+    </header>
 
     <h2>Logo</h2>
     <p class="lead">Znak strawberry-bat. Czarny na jasnym tle, biały na ciemnym. Stosowany w navbarze, stopce i jako delikatny znak wodny.</p>
@@ -41,11 +43,11 @@
 
     <h2>Przyciski</h2>
     <div class="demo-panel ds-row" style="align-items:center">
-        <button class="btn btn-primary">Dodaj do koszyka</button>
-        <button class="btn btn-ghost">Drugorzędny</button>
-        <button class="btn btn-soft">Miękki</button>
-        <button class="btn btn-primary btn-sm">Mały</button>
-        <a style="color:var(--rose-deep);font-weight:700;text-decoration:none;align-self:center">Link tekstowy →</a>
+        <a class="btn btn-primary" href="{% url 'catalog:product_list' %}">Zobacz produkty</a>
+        <a class="btn btn-ghost" href="{% url 'catalog:aesthetic_list' %}">Odkryj estetyki</a>
+        <a class="btn btn-soft" href="#formularze">Zobacz formularz</a>
+        <a class="btn btn-primary btn-sm" href="{% url 'cart:detail' %}">Koszyk</a>
+        <a class="ds-text-link" href="{% url 'core:search' %}">Przejdź do wyszukiwania →</a>
     </div>
 
     <h2>Etykiety / badge</h2>
@@ -56,22 +58,41 @@
         <span class="badge badge-sale">-20%</span>
     </div>
 
-    {% if demo_product %}
-    <h2>Karta produktu</h2>
-    <div class="demo-panel"><div class="pgrid" style="max-width:340px">{% include "catalog/includes/product_card.html" with product=demo_product %}</div></div>
+    {% if demo_product or demo_aesthetic %}
+    <section class="ds-section">
+        <div class="ds-section__head">
+            <div>
+                <div class="eyebrow">Komponenty sklepu</div>
+                <h2>Karty</h2>
+                <p class="lead">Te same komponenty są używane w katalogu, na stronie głównej i na podstronach estetyk.</p>
+            </div>
+        </div>
+        <div class="ds-card-showcase">
+            {% if demo_product %}
+            <article class="ds-component-card">
+                <div class="ds-component-card__head"><h3>Karta produktu</h3><span>Katalog</span></div>
+                <div class="ds-card-preview ds-card-preview--product">{% include "catalog/includes/product_card.html" with product=demo_product %}</div>
+            </article>
+            {% endif %}
+            {% if demo_aesthetic %}
+            <article class="ds-component-card">
+                <div class="ds-component-card__head"><h3>Karta estetyki</h3><span>Inspiracje</span></div>
+                <div class="ds-card-preview ds-card-preview--aesthetic">{% include "catalog/includes/aesthetic_card.html" with aesthetic=demo_aesthetic mosaic=False %}</div>
+            </article>
+            {% endif %}
+        </div>
+    </section>
     {% endif %}
 
-    {% if demo_aesthetic %}
-    <h2>Karta estetyki</h2>
-    <div class="demo-panel"><div class="coll-grid" style="max-width:340px">{% include "catalog/includes/aesthetic_card.html" with aesthetic=demo_aesthetic mosaic=False %}</div></div>
-    {% endif %}
-
-    <h2>Formularze i filtry</h2>
-    <div class="demo-panel" style="max-width:360px">
-        <div class="field"><label>E-mail</label><input class="input" placeholder="twoj@email.pl"></div>
-        <div class="field"><label>Rozmiar</label><div class="var-opts"><button class="vopt">S</button><button class="vopt sel">M</button><button class="vopt">L</button></div></div>
-        <div class="opts"><span class="opt sel">Wybrany filtr</span><span class="opt">Filtr</span></div>
-    </div>
+    <section class="ds-section" id="formularze">
+        <h2>Formularze i filtry</h2>
+        <form action="{% url 'core:search' %}" method="get" class="demo-panel ds-form-demo">
+            <div class="field"><label for="ds-search">Szukaj w sklepie</label><input id="ds-search" class="input" name="q" placeholder="np. choker, kokarda, goth"></div>
+            <div class="field"><label>Rozmiar</label><div class="var-opts" data-demo-size><button type="button" class="vopt">S</button><button type="button" class="vopt sel">M</button><button type="button" class="vopt">L</button></div></div>
+            <div class="opts" data-demo-filter><button type="button" class="opt sel">Wybrany filtr</button><button type="button" class="opt">Filtr</button></div>
+            <button type="submit" class="btn btn-primary btn-sm">Szukaj</button>
+        </form>
+    </section>
 
     <h2>Spacing i radius</h2>
     <div class="tok-grid">
@@ -88,4 +109,25 @@
     <h2>Zasady zdjęć</h2>
     <p class="lead">Produkty na jednolitym, jasnym tle (blush→biel). Lifestyle/stylizacje w mrocznym, ciepłym świetle. Format kart produktu 1:1, stylizacje 3:4, estetyki 16:10. Spójny, lekko zamglony klimat - nigdy ostre, zimne studio.</p>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll("[data-demo-size]").forEach(function (group) {
+    group.querySelectorAll(".vopt").forEach(function (button) {
+        button.addEventListener("click", function () {
+            group.querySelectorAll(".vopt").forEach(function (item) { item.classList.remove("sel"); });
+            button.classList.add("sel");
+        });
+    });
+});
+document.querySelectorAll("[data-demo-filter]").forEach(function (group) {
+    group.querySelectorAll(".opt").forEach(function (button) {
+        button.addEventListener("click", function () {
+            group.querySelectorAll(".opt").forEach(function (item) { item.classList.remove("sel"); });
+            button.classList.add("sel");
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -369,10 +369,18 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .coll-hero .bcrumb a{color:#C9A9BC}
 
 /* ---------- DESIGN SYSTEM ---------- */
-.ds{background:var(--cream);padding:30px 22px 50px;color:var(--ink)}
+.ds{max-width:1360px;margin:0 auto;background:var(--cream);padding:30px 22px 50px;color:var(--ink)}
+.ds-intro{max-width:680px;padding:6px 0 12px}
+.ds-intro .h-lg{margin:8px 0 6px}
 .ds h2{font-size:24px;margin:34px 0 4px}
+.ds h3{font-family:var(--f-display);font-size:20px;margin:0;color:var(--ink)}
 .ds .lead{color:var(--muted);font-size:14px;margin-bottom:18px;max-width:560px}
 .ds-row{display:flex;flex-wrap:wrap;gap:12px}
+.ds-text-link{align-self:center;color:var(--rose-deep);font-size:14px;font-weight:700;text-decoration:none}
+.ds-text-link:hover{text-decoration:underline}
+.ds-section{margin-top:42px}
+.ds-section h2{margin-top:0}
+.ds-section__head{margin-bottom:16px}
 .swcard{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);width:104px}
 .swcard .sw{height:64px}
 .swcard .lbl{padding:8px 9px;font-size:11px}
@@ -385,6 +393,17 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .tok .box{background:var(--rose);border-radius:6px;margin-bottom:8px}
 .tok code{font-size:11px;color:var(--muted)}
 .demo-panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;margin-top:8px}
+.ds-card-showcase{display:grid;gap:16px}
+.ds-component-card{display:grid;gap:16px;border:1px solid var(--line);border-radius:var(--r-xl);padding:18px;background:linear-gradient(145deg,#fff,#fff8fb)}
+.ds-component-card__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.ds-component-card__head span{color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.12em;text-transform:uppercase}
+.ds-card-preview{width:min(100%,340px)}
+.ds-card-preview .pcard,.ds-card-preview .coll{width:100%}
+.ds-card-preview--aesthetic .coll{min-height:240px}
+.ds-form-demo{max-width:420px;display:grid;gap:14px}
+.ds-form-demo .field{margin:0}
+.ds-form-demo .opt{font-family:var(--f-body)}
+.ds-form-demo .btn{justify-self:start}
 
 /* ---------- KROKI / KOSZYK / CHECKOUT ---------- */
 .steps{display:flex;align-items:center;gap:6px;margin:0 0 20px;flex-wrap:wrap}
@@ -749,6 +768,8 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
   .look-split{display:grid;grid-template-columns:5fr 4fr;gap:44px;padding:32px 48px 0;align-items:start}
   .look-hero{margin-bottom:0}
   .ds{padding:40px 48px 60px}
+  .ds-card-showcase{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .ds-component-card{padding:22px}
   .hdr-in,.hero-grid,.trust-in,.sec,.cat-top,.filterbar,.chips,.catalog-split,.pdp-split,.look-split,.phero,.coll-hero,.about-hero,.ft,.ds{padding-left:var(--g);padding-right:var(--g)}
   .nl{max-width:920px;margin-left:auto;margin-right:auto}
   .cart-split{grid-template-columns:1.7fr 1fr;gap:34px;align-items:start}
