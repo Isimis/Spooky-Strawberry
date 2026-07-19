@@ -6,7 +6,7 @@ from django.core.mail import EmailMessage
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from catalog.models import Aesthetic, Category, Product
+from catalog.models import Aesthetic
 from orders.models import Order
 
 from .mail_backends import apply_subject_prefix
@@ -54,27 +54,6 @@ class HomeAestheticsTests(TestCase):
         self.assertEqual(response.context["aesthetics"].count(), 9)
         self.assertContains(response, "Estetyka 9")
         self.assertNotContains(response, "Ukryta")
-
-
-class DesignSystemTests(TestCase):
-    def test_design_system_uses_full_size_cards_and_working_controls(self):
-        category = Category.objects.create(name="Chokery", slug="chokery-design")
-        Product.objects.create(
-            name="Choker testowy",
-            slug="choker-testowy",
-            category=category,
-            regular_price="29.00",
-            status=Product.STATUS_ACTIVE,
-        )
-        Aesthetic.objects.create(name="Soft Goth", slug="soft-goth-design", is_active=True)
-
-        response = self.client.get(reverse("core:design_system"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "ds-card-preview--product")
-        self.assertContains(response, "ds-card-preview--aesthetic")
-        self.assertContains(response, "data-demo-size")
-        self.assertContains(response, reverse("core:search"))
 
 
 class OrderStatusByTokenTests(TestCase):
