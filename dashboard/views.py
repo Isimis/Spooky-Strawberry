@@ -2218,7 +2218,7 @@ def build_newsletter_detail_context(subscriber):
 
 
 def build_order_summary():
-    orders = Order.objects.all()
+    orders = Order.objects.filter(is_test=False)
     active_orders = orders.exclude(status__in=[Order.STATUS_DRAFT, Order.STATUS_CANCELLED])
     open_statuses = [Order.STATUS_PLACED, Order.STATUS_CONFIRMED, Order.STATUS_PACKED]
     now = timezone.now()
@@ -2232,7 +2232,7 @@ def build_order_summary():
 
 
 def build_order_status_rows():
-    orders = Order.objects.all()
+    orders = Order.objects.filter(is_test=False)
     rows = []
     max_count = 1
     counts = {}

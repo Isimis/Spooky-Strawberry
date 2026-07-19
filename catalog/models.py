@@ -122,10 +122,6 @@ class Color(models.Model):
 
     def save(self, *args, **kwargs):
         self.name = normalize_dashes(self.name)
-        self.description = normalize_dashes(self.description)
-        self.styling_tips = normalize_dashes(self.styling_tips)
-        self.seo_title = normalize_dashes(self.seo_title)
-        self.seo_description = normalize_dashes(self.seo_description)
         if not self.slug:
             self.slug = unique_slug_for(self, self.name)
         super().save(*args, **kwargs)

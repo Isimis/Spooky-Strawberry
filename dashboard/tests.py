@@ -1150,6 +1150,38 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(response.context["order_summary"]["open_count"], 1)
         self.assertEqual(response.context["rows"][0]["quantity_count"], 2)
 
+    def test_order_summary_and_statuses_exclude_test_orders(self):
+        self.create_order(
+            "SS-TEST-OPEN",
+            "test-open@example.com",
+            status=Order.STATUS_PLACED,
+            grand_total="59.00",
+            is_test=True,
+        )
+        self.create_order(
+            "SS-TEST-CANCELLED",
+            "test-cancelled@example.com",
+            status=Order.STATUS_CANCELLED,
+            grand_total="29.00",
+            is_test=True,
+        )
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.get(reverse("dashboard:model_list", args=["orders"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "SS-TEST-OPEN")
+        self.assertEqual(response.context["order_summary"], {
+            "total_count": 0,
+            "open_count": 0,
+            "new_30_count": 0,
+            "cancelled_count": 0,
+            "revenue_total": 0,
+        })
+        status_counts = {row["value"]: row["count"] for row in response.context["order_status_rows"]}
+        self.assertEqual(status_counts[Order.STATUS_PLACED], 0)
+        self.assertEqual(status_counts[Order.STATUS_CANCELLED], 0)
+
     def test_order_workspace_shows_items_and_updates_status(self):
         product = self.create_product("Workspace Order Choker", "workspace-order-choker")
         shipping_method = ShippingMethod.objects.create(name="InPost", code="inpost", price="12.99")
@@ -1525,7 +1557,15 @@ class DashboardAccessTests(TestCase):
             status=Product.STATUS_ACTIVE,
         )
 
-    def create_order(self, order_number, email, status=Order.STATUS_PLACED, grand_total="29.00", shipping_method=None):
+    def create_order(
+        self,
+        order_number,
+        email,
+        status=Order.STATUS_PLACED,
+        grand_total="29.00",
+        shipping_method=None,
+        is_test=False,
+    ):
         return Order.objects.create(
             order_number=order_number,
             email=email,
@@ -1536,6 +1576,7 @@ class DashboardAccessTests(TestCase):
             shipping_postal_code="00-000",
             shipping_city="Warszawa",
             shipping_country="Polska",
+            is_test=is_test,
             status=status,
             shipping_method=shipping_method,
             subtotal=grand_total,
