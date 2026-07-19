@@ -4,6 +4,38 @@
 {% block meta_description %}{{ seo_description }}{% endblock %}
 
 {% block content %}
+{% if aesthetic %}
+{# Lekka karta hero wspólna dla wszystkich estetyk. #}
+<style>
+.chero2-wrap{background:var(--cream);padding:26px var(--g,18px) 6px}
+.chero2{width:100%;margin:0 auto;display:grid;grid-template-columns:1fr;gap:0;background:var(--white,#fff);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+.chero2 .chero2-copy{padding:30px 24px}
+.chero2 .bcrumb{margin-bottom:10px;font-size:12.5px}
+.chero2 .bcrumb a{color:var(--rose-deep);text-decoration:none}
+.chero2 .bcrumb span{color:var(--muted)}
+.chero2 .eyebrow{color:var(--rose-deep)}
+.chero2 h1{color:var(--ink);font-family:var(--f-display);font-size:34px;line-height:1.05;margin:10px 0 12px}
+.chero2 .chero2-lead{color:var(--ink-soft);max-width:430px;line-height:1.55;font-size:15px}
+.chero2 .chero2-img{min-height:220px;background-size:cover;background-position:center}
+@media(min-width:860px){
+  .chero2{grid-template-columns:1.05fr .95fr;align-items:stretch}
+  .chero2 .chero2-copy{padding:46px 42px;display:flex;flex-direction:column;justify-content:center}
+  .chero2 .chero2-img{min-height:330px;border-top-left-radius:var(--r-md);border-bottom-left-radius:var(--r-md)}
+}
+</style>
+<section class="chero2-wrap">
+    <div class="chero2">
+        <div class="chero2-copy">
+            <div class="bcrumb"><a href="{% url 'catalog:aesthetic_list' %}">Estetyki</a> <span>/ {{ aesthetic.name }}</span></div>
+            <div class="eyebrow">Estetyka · {{ product_count }} {% if product_count == 1 %}produkt{% else %}produktów{% endif %}</div>
+            <h1>{{ aesthetic.name }}</h1>
+            {% if aesthetic.description %}<p class="chero2-lead">{{ aesthetic.description }}</p>{% elif aesthetic.tagline %}<p class="chero2-lead">{{ aesthetic.tagline }}</p>{% endif %}
+            <div style="margin-top:22px"><a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}?aesthetic={{ aesthetic.slug }}">Przeglądaj produkty</a></div>
+        </div>
+        {% if aesthetic.image %}<div class="chero2-img" style="background-image:url('{{ aesthetic.image.url }}')"></div>{% endif %}
+    </div>
+</section>
+{% else %}
 <section class="coll-hero">
     <div class="chero-grid">
         <div class="chero-copy">
@@ -16,6 +48,7 @@
         <div class="chero-img" style="{% if aesthetic.image %}background-image:linear-gradient(90deg,rgba(28,16,24,0.82),rgba(28,16,24,0.12) 46%,rgba(28,16,24,0) 72%),url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
     </div>
 </section>
+{% endif %}
 
 {% if products %}
 <section class="sec">
