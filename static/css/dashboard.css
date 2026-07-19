@@ -2328,6 +2328,40 @@ select.dashboard-input,
     background: #d49caf !important;
 }
 
+.dashboard-message-attachments {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dashboard-message-attachments li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--admin-line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--admin-soft-2);
+}
+
+.dashboard-message-attachments div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.dashboard-message-attachments strong,
+.dashboard-message-attachments small {
+    overflow-wrap: anywhere;
+}
+
+.dashboard-message-attachments small {
+    color: var(--admin-muted);
+}
+
 .dashboard-order-detail-summary article {
     min-height: 104px;
 }

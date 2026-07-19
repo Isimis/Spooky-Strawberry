@@ -16,7 +16,7 @@
     </div>
 </section>
 
-<form id="message-form" method="post" class="mailform">
+<form id="message-form" method="post" enctype="multipart/form-data" class="mailform">
     {% csrf_token %}
 
     <div class="mailform__meta">
@@ -40,6 +40,11 @@
                 <option value="">- pusta wiadomość -</option>
                 {% for t in templates %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}
             </select>
+        </label>
+        <label class="dashboard-field">
+            <span>Załączniki</span>
+            <input class="dashboard-input" type="file" name="attachments" multiple>
+            <small class="dashboard-muted">Możesz dodać kilka plików, maksymalnie 20 MB każdy.</small>
         </label>
     </div>
 

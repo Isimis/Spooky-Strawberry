@@ -1,15 +1,20 @@
 import html
+import hashlib
 import imaplib
 import logging
+import os
 import time
 from email import policy
 from email.parser import BytesParser
 from email.utils import getaddresses, parsedate_to_datetime
 
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.db import transaction
+from django.utils.text import get_valid_filename
 from django.utils import timezone
 
-from .models import Message
+from .models import Message, MessageAttachment
 
 logger = logging.getLogger(__name__)
 
@@ -127,22 +132,66 @@ def _external_id(uid, message):
     return f"imap:{settings.MAILBOX_IMAP_USER}:{settings.MAILBOX_IMAP_FOLDER}:{uid}"
 
 
+def _attachment_parts(message):
+    """Zwraca binarną zawartość każdego rzeczywistego załącznika wiadomości."""
+    index = 0
+    for part in message.walk():
+        if part.is_multipart() or part.get_content_type() in {"message/rfc822", "message/delivery-status"}:
+            continue
+
+        disposition = part.get_content_disposition()
+        raw_filename = part.get_filename()
+        if disposition not in {"attachment", "inline"} and not raw_filename:
+            continue
+
+        payload = part.get_payload(decode=True)
+        if payload is None:
+            continue
+
+        index += 1
+        basename = os.path.basename((raw_filename or "").replace("\\", "/"))
+        filename = get_valid_filename(basename) or f"zalacznik-{index}"
+        yield filename, part.get_content_type() or "application/octet-stream", payload
+
+
+def _store_attachments(message_record, parsed_message):
+    """Zapisuje załączniki i bezpiecznie pomija te już zapisane przy ponownej synchronizacji."""
+    for filename, content_type, payload in _attachment_parts(parsed_message):
+        checksum = hashlib.sha256(payload).hexdigest()
+        if MessageAttachment.objects.filter(message=message_record, checksum=checksum).exists():
+            continue
+        attachment = MessageAttachment(
+            message=message_record,
+            filename=filename[:255],
+            content_type=content_type[:120],
+            size=len(payload),
+            checksum=checksum,
+        )
+        attachment.file.save(filename, ContentFile(payload), save=False)
+        attachment.save()
+
+
 def import_email_message(uid, raw_bytes):
     message = BytesParser(policy=policy.default).parsebytes(raw_bytes)
     external_id = _external_id(uid, message)
-    if Message.objects.filter(external_id=external_id).exists():
+    existing = Message.objects.filter(external_id=external_id).first()
+    if existing:
+        _store_attachments(existing, message)
         return None
 
-    return Message.objects.create(
-        direction=Message.DIRECTION_INBOUND,
-        status=Message.STATUS_RECEIVED,
-        subject=(message.get("Subject") or "").strip()[:200],
-        body_html=_message_body(message),
-        from_email=_decode_addresses(message.get("From"))[:254],
-        to_email=_decode_addresses(message.get("To"))[:254],
-        external_id=external_id,
-        received_at=_received_at(message),
-    )
+    with transaction.atomic():
+        imported = Message.objects.create(
+            direction=Message.DIRECTION_INBOUND,
+            status=Message.STATUS_RECEIVED,
+            subject=(message.get("Subject") or "").strip()[:200],
+            body_html=_message_body(message),
+            from_email=_decode_addresses(message.get("From"))[:254],
+            to_email=_decode_addresses(message.get("To"))[:254],
+            external_id=external_id,
+            received_at=_received_at(message),
+        )
+        _store_attachments(imported, message)
+    return imported
 
 
 def sync_mailbox(limit=None):

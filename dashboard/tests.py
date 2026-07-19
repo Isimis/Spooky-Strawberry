@@ -9,7 +9,7 @@ from unittest.mock import patch
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
-from core.models import NewsletterSubscriber
+from core.models import Message, NewsletterSubscriber
 from dashboard.forms import OrderDashboardForm
 from dashboard.models import DataQualityIssue
 from dashboard.registry import get_model_config, get_sections
@@ -139,6 +139,35 @@ class DashboardAccessTests(TestCase):
 
         detail = self.client.get(reverse("dashboard:message_detail", args=[message.pk]))
         self.assertContains(detail, "Cześć")
+
+    def test_message_compose_sends_and_records_attachments(self):
+        from tempfile import TemporaryDirectory
+        from django.test import override_settings
+
+        self.client.login(username="staff", password="pass")
+        attachment = SimpleUploadedFile("instrukcja.pdf", b"pdf-content", content_type="application/pdf")
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            response = self.client.post(
+                reverse("dashboard:message_compose"),
+                {
+                    "to_email": "klient@example.pl",
+                    "subject": "Dokument",
+                    "body_html": "<p>W załączniku.</p>",
+                    "attachments": attachment,
+                },
+            )
+            message = Message.objects.get(to_email="klient@example.pl")
+            stored = message.attachments.get()
+            download = self.client.get(reverse("dashboard:message_attachment_download", args=[stored.pk]))
+
+            self.assertRedirects(response, reverse("dashboard:message_detail", args=[message.pk]))
+            self.assertEqual(stored.filename, "instrukcja.pdf")
+            stored.file.open("rb")
+            self.assertEqual(stored.file.read(), b"pdf-content")
+            stored.file.close()
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(b"".join(download.streaming_content), b"pdf-content")
 
     def test_unread_inbound_message_shows_in_topbar_and_marks_read(self):
         from core.models import Message

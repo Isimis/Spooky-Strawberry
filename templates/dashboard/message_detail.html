@@ -41,6 +41,29 @@
                 <div class="dashboard-rich-area" style="border:1px solid var(--admin-line);border-radius:10px">{{ message.body_html|safe }}</div>
             </article>
         {% endif %}
+        <article class="dashboard-card">
+            <div class="dashboard-card__head">
+                <div>
+                    <h2>Załączniki</h2>
+                    <p>Pliki dołączone do tej wiadomości.</p>
+                </div>
+            </div>
+            {% if message.attachments.all %}
+                <ul class="dashboard-message-attachments">
+                    {% for attachment in message.attachments.all %}
+                        <li>
+                            <div>
+                                <strong>{{ attachment.filename }}</strong>
+                                <small>{{ attachment.size|filesizeformat }}{% if attachment.content_type %} · {{ attachment.content_type }}{% endif %}</small>
+                            </div>
+                            <a href="{% url 'dashboard:message_attachment_download' attachment.pk %}" class="button button--secondary">Pobierz</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="dashboard-muted">Brak załączników.</p>
+            {% endif %}
+        </article>
     </div>
     <aside class="dashboard-newsletter-side">
         <article class="dashboard-card">

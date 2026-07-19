@@ -14,17 +14,18 @@ from django.db.models import Case, Count, DecimalField, F, IntegerField, OuterRe
 from django.db.models import Max
 from django.db.models.functions import Coalesce, TruncDate
 from django.db.models.deletion import ProtectedError
-from django.http import Http404
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import get_valid_filename
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
 
 from analytics.models import AnalyticsEvent, AnalyticsSession
 from blog.models import Article, BlogCategory
 from catalog.models import Aesthetic, Category, Color, Product, ProductImage, ProductVariant, Size
-from core.models import Message, MessageTemplate, NewsletterSubscriber, SiteSettings
+from core.models import Message, MessageAttachment, MessageTemplate, NewsletterSubscriber, SiteSettings
 from core.mailbox import MailboxConfigurationError, sync_mailbox
 from core.mailer import BASE_LAYOUT_KEY, send_message
 from dashboard.models import DataQualityIssue
@@ -363,6 +364,25 @@ def build_message_summary():
     }
 
 
+def get_uploaded_message_attachments(request):
+    """Przygotowuje pliki raz, aby ten sam załącznik mógł trafić do wielu odbiorców."""
+    max_size = 20 * 1024 * 1024
+    attachments = []
+    for uploaded in request.FILES.getlist("attachments"):
+        if uploaded.size > max_size:
+            raise ValueError(f"Plik „{uploaded.name}” jest większy niż 20 MB.")
+        raw_name = (uploaded.name or "załącznik").replace("\\", "/").rsplit("/", 1)[-1]
+        filename = get_valid_filename(raw_name) or "załącznik"
+        attachments.append(
+            {
+                "filename": filename,
+                "content": uploaded.read(),
+                "content_type": uploaded.content_type or "application/octet-stream",
+            }
+        )
+    return attachments
+
+
 @staff_required
 @require_http_methods(["GET", "POST"])
 def message_compose(request):
@@ -378,6 +398,11 @@ def message_compose(request):
         body_html = request.POST.get("body_html", "")
         template_id = request.POST.get("template") or None
         template = MessageTemplate.objects.filter(pk=template_id).first() if template_id else None
+        try:
+            attachments = get_uploaded_message_attachments(request)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect("dashboard:message_compose")
 
         single = request.POST.get("to_email", "").strip()
         targets = recipients if recipients else ([single] if single else [])
@@ -398,6 +423,7 @@ def message_compose(request):
                     to_email=email,
                     context=context,
                     template=template,
+                    attachments=attachments,
                 )
                 sent.append(email)
             except Exception:
@@ -534,7 +560,7 @@ def base_layout_edit(request):
 
 @staff_required
 def message_detail(request, pk):
-    message = get_object_or_404(Message.objects.select_related("template"), pk=pk)
+    message = get_object_or_404(Message.objects.select_related("template").prefetch_related("attachments"), pk=pk)
     if message.direction == Message.DIRECTION_INBOUND and message.read_at is None:
         message.read_at = timezone.now()
         message.save(update_fields=["read_at"])
@@ -546,6 +572,19 @@ def message_detail(request, pk):
             "message": message,
             "sections": get_sections(),
         },
+    )
+
+
+@staff_required
+def message_attachment_download(request, pk):
+    attachment = get_object_or_404(MessageAttachment.objects.select_related("message"), pk=pk)
+    if not attachment.file:
+        raise Http404("Brak pliku załącznika.")
+    return FileResponse(
+        attachment.file.open("rb"),
+        as_attachment=True,
+        filename=attachment.filename,
+        content_type=attachment.content_type or "application/octet-stream",
     )
 
 

@@ -234,3 +234,24 @@ class Message(models.Model):
 
     def __str__(self):
         return self.subject or f"Wiadomość #{self.pk}"
+
+
+class MessageAttachment(models.Model):
+    """Plik dołączony do wiadomości zsynchronizowanej lub wysłanej z panelu."""
+
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="attachments")
+    file = models.FileField(upload_to="message_attachments/%Y/%m/%d/")
+    filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=120, blank=True)
+    size = models.PositiveBigIntegerField(default=0)
+    checksum = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["message", "checksum"], name="message_attachment_checksum_unique"),
+        ]
+
+    def __str__(self):
+        return self.filename

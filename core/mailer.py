@@ -5,14 +5,17 @@ w którym znacznik ``{{ content }}`` jest zastępowany właściwą treścią. Po
 np. ``{{ first_name }}`` czy ``{{ order_number }}``, podstawiamy z przekazanego kontekstu.
 """
 
+import hashlib
+
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.mail import EmailMultiAlternatives
 from django.template import Context, Template
 from django.utils import timezone
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 
-from .models import Message, MessageTemplate
+from .models import Message, MessageAttachment, MessageTemplate
 
 # system_key szablonu bazowego (wzorka). Owija treść każdego maila.
 BASE_LAYOUT_KEY = "base-layout"
@@ -57,6 +60,7 @@ def send_message(
     context=None,
     from_email=None,
     template=None,
+    attachments=None,
     record=True,
     fail_silently=False,
 ):
@@ -65,6 +69,7 @@ def send_message(
     Zwraca utworzony obiekt ``Message`` (lub None, gdy ``record=False``).
     """
     context = context or {}
+    attachments = list(attachments or [])
     rendered_subject = render_text(subject, context)
     html = render_email_html(body_html, context)
     sender = from_email or settings.DEFAULT_FROM_EMAIL
@@ -76,6 +81,12 @@ def send_message(
         to=[to_email],
     )
     email.attach_alternative(html, "text/html")
+    for attachment in attachments:
+        email.attach(
+            attachment["filename"],
+            attachment["content"],
+            attachment.get("content_type") or "application/octet-stream",
+        )
     email.send(fail_silently=fail_silently)
 
     # Kopia do folderu „Sent" na IMAP → mail widoczny także w webmailu (nie tylko w panelu).
@@ -90,7 +101,7 @@ def send_message(
     if not record:
         return None
 
-    return Message.objects.create(
+    message = Message.objects.create(
         direction=Message.DIRECTION_OUTBOUND,
         status=Message.STATUS_SENT,
         subject=rendered_subject,
@@ -100,6 +111,18 @@ def send_message(
         template=template,
         sent_at=timezone.now(),
     )
+    for attachment in attachments:
+        content = attachment["content"]
+        stored_attachment = MessageAttachment(
+            message=message,
+            filename=attachment["filename"][:255],
+            content_type=(attachment.get("content_type") or "application/octet-stream")[:120],
+            size=len(content),
+            checksum=hashlib.sha256(content).hexdigest(),
+        )
+        stored_attachment.file.save(attachment["filename"], ContentFile(content), save=False)
+        stored_attachment.save()
+    return message
 
 
 def send_bulk(

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMessage
@@ -288,6 +289,43 @@ class MailboxImportTests(TestCase):
         self.assertEqual(message.external_id, "message-id:<return-1@example.pl>")
         self.assertIsNone(message.read_at)
         self.assertIn("zglosic zwrot", message.body_html)
+
+    @override_settings(MAILBOX_IMAP_USER="kontakt@spookystrawberry.pl", MAILBOX_IMAP_FOLDER="INBOX")
+    def test_existing_message_gets_attachment_during_a_later_sync(self):
+        raw_without_attachment = (
+            "From: Sklep <kontakt@spookystrawberry.pl>\r\n"
+            "To: kontakt@spookystrawberry.pl\r\n"
+            "Subject: Backup\r\n"
+            "Message-ID: <backup-1@example.pl>\r\n"
+            "Content-Type: text/plain; charset=utf-8\r\n\r\n"
+            "Wiadomosc z backupem.\r\n"
+        ).encode("utf-8")
+        raw_with_attachment = (
+            "From: Sklep <kontakt@spookystrawberry.pl>\r\n"
+            "To: kontakt@spookystrawberry.pl\r\n"
+            "Subject: Backup\r\n"
+            "Message-ID: <backup-1@example.pl>\r\n"
+            "MIME-Version: 1.0\r\n"
+            "Content-Type: multipart/mixed; boundary=backup\r\n\r\n"
+            "--backup\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n"
+            "Wiadomosc z backupem.\r\n"
+            "--backup\r\nContent-Type: application/octet-stream; name=backup.dump.enc\r\n"
+            "Content-Disposition: attachment; filename=backup.dump.enc\r\n"
+            "Content-Transfer-Encoding: base64\r\n\r\n"
+            "dGVzdC1iYWNrdXAK\r\n--backup--\r\n"
+        ).encode("utf-8")
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            first = import_email_message("102", raw_without_attachment)
+            second = import_email_message("102", raw_with_attachment)
+            attachment = first.attachments.get()
+
+            self.assertIsNotNone(first)
+            self.assertIsNone(second)
+            self.assertEqual(attachment.filename, "backup.dump.enc")
+            attachment.file.open("rb")
+            self.assertEqual(attachment.file.read(), b"test-backup\n")
+            attachment.file.close()
 
 
 class MailBackendTests(TestCase):
