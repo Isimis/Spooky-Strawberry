@@ -393,13 +393,13 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .tok .box{background:var(--rose);border-radius:6px;margin-bottom:8px}
 .tok code{font-size:11px;color:var(--muted)}
 .demo-panel{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;margin-top:8px}
-.ds-card-showcase{display:grid;gap:16px}
+.ds-card-showcase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,260px));justify-content:start;gap:16px}
 .ds-component-card{display:grid;gap:16px;border:1px solid var(--line);border-radius:var(--r-xl);padding:18px;background:linear-gradient(145deg,#fff,#fff8fb)}
 .ds-component-card__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .ds-component-card__head span{color:var(--muted);font-size:11px;font-weight:750;letter-spacing:.12em;text-transform:uppercase}
-.ds-card-preview{width:min(100%,340px)}
+.ds-card-preview{width:100%}
 .ds-card-preview .pcard,.ds-card-preview .coll{width:100%}
-.ds-card-preview--aesthetic .coll{min-height:240px}
+.ds-card-preview--aesthetic .coll{min-height:190px}
 .ds-form-demo{max-width:420px;display:grid;gap:14px}
 .ds-form-demo .field{margin:0}
 .ds-form-demo .opt{font-family:var(--f-body)}
@@ -768,7 +768,7 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
   .look-split{display:grid;grid-template-columns:5fr 4fr;gap:44px;padding:32px 48px 0;align-items:start}
   .look-hero{margin-bottom:0}
   .ds{padding:40px 48px 60px}
-  .ds-card-showcase{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .ds-card-showcase{gap:20px}
   .ds-component-card{padding:22px}
   .hdr-in,.hero-grid,.trust-in,.sec,.cat-top,.filterbar,.chips,.catalog-split,.pdp-split,.look-split,.phero,.coll-hero,.about-hero,.ft,.ds{padding-left:var(--g);padding-right:var(--g)}
   .nl{max-width:920px;margin-left:auto;margin-right:auto}

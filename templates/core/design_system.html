@@ -21,13 +21,13 @@
     <h2>Kolory</h2>
     <p class="lead">Baza: kremowa biel i atramentowa czerń. Akcent: malinowy róż dla CTA. Maliny używamy oszczędnie - do promocji i „ostatnich sztuk”.</p>
     <div class="ds-row">
-        <div class="swcard"><div class="sw" style="background:var(--ink)"></div><div class="lbl"><b>Ink</b><code>#1A1118</code></div></div>
-        <div class="swcard"><div class="sw" style="background:var(--cream);border-bottom:1px solid var(--line)"></div><div class="lbl"><b>Cream</b><code>#FFFCFD</code></div></div>
-        <div class="swcard"><div class="sw" style="background:var(--blush)"></div><div class="lbl"><b>Blush</b><code>#FBE9F0</code></div></div>
-        <div class="swcard"><div class="sw" style="background:var(--rose)"></div><div class="lbl"><b>Rose</b><code>#E89AB9</code></div></div>
-        <div class="swcard"><div class="sw" style="background:var(--rose-deep)"></div><div class="lbl"><b>Rose Deep</b><code>#D45D8A</code></div></div>
-        <div class="swcard"><div class="sw" style="background:var(--berry)"></div><div class="lbl"><b>Berry</b><code>#C0354F</code></div></div>
-        <div class="swcard"><div class="sw" style="background:var(--muted)"></div><div class="lbl"><b>Muted</b><code>#8C7E87</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--ink)"></div><div class="lbl"><b>Ink</b><code data-color-token="--ink">#1A1118</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--cream);border-bottom:1px solid var(--line)"></div><div class="lbl"><b>Cream</b><code data-color-token="--cream">#FFFCFD</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--blush)"></div><div class="lbl"><b>Blush</b><code data-color-token="--blush">#FBE9F0</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--rose)"></div><div class="lbl"><b>Rose</b><code data-color-token="--rose">#E89AB9</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--rose-deep)"></div><div class="lbl"><b>Rose Deep</b><code data-color-token="--rose-deep">#D45D8A</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--berry)"></div><div class="lbl"><b>Berry</b><code data-color-token="--berry">#C0354F</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--muted)"></div><div class="lbl"><b>Muted</b><code data-color-token="--muted">#8C7E87</code></div></div>
     </div>
 
     <h2>Typografia</h2>
@@ -128,6 +128,10 @@ document.querySelectorAll("[data-demo-filter]").forEach(function (group) {
             button.classList.add("sel");
         });
     });
+});
+document.querySelectorAll("[data-color-token]").forEach(function (element) {
+    var value = getComputedStyle(document.documentElement).getPropertyValue(element.dataset.colorToken).trim();
+    if (value) element.textContent = value.toUpperCase();
 });
 </script>
 {% endblock %}
