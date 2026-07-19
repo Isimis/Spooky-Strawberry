@@ -13,7 +13,7 @@
             {% if aesthetic.description %}<p style="color:#EAD7E2;max-width:420px">{{ aesthetic.description }}</p>{% elif aesthetic.tagline %}<p style="color:#EAD7E2;max-width:420px">{{ aesthetic.tagline }}</p>{% endif %}
             <div style="margin-top:20px"><a class="btn btn-primary btn-lg" href="{% url 'catalog:product_list' %}?aesthetic={{ aesthetic.slug }}">Przeglądaj produkty</a></div>
         </div>
-        <div class="chero-img" style="{% if aesthetic.image %}background-image:linear-gradient(160deg,#2a1622aa,#7a3d5aaa),url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
+        <div class="chero-img" style="{% if aesthetic.image %}background-image:linear-gradient(90deg,rgba(28,16,24,0.82),rgba(28,16,24,0.12) 46%,rgba(28,16,24,0) 72%),url('{{ aesthetic.image.url }}'){% else %}background-image:linear-gradient(160deg,{{ aesthetic.card_gradient|default:'#2a1622,#7a3d5a' }}){% endif %}"></div>
     </div>
 </section>
 
