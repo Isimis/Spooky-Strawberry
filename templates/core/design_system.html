@@ -20,10 +20,13 @@
     <p class="lead">Baza: kremowa biel i atramentowa czerń. Akcent: malinowy róż dla CTA. Maliny używamy oszczędnie - do promocji i „ostatnich sztuk”.</p>
     <div class="ds-row">
         <div class="swcard"><div class="sw" style="background:var(--ink)"></div><div class="lbl"><b>Ink</b><code>#1A1118</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--ink-soft)"></div><div class="lbl"><b>Ink Soft</b><code>#473B44</code></div></div>
         <div class="swcard"><div class="sw" style="background:var(--cream);border-bottom:1px solid var(--line)"></div><div class="lbl"><b>Cream</b><code>#FFFCFD</code></div></div>
         <div class="swcard"><div class="sw" style="background:var(--blush)"></div><div class="lbl"><b>Blush</b><code>#FBE9F0</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--blush-2)"></div><div class="lbl"><b>Blush 2</b><code>#F6D8E5</code></div></div>
         <div class="swcard"><div class="sw" style="background:var(--rose)"></div><div class="lbl"><b>Rose</b><code>#E89AB9</code></div></div>
         <div class="swcard"><div class="sw" style="background:var(--rose-deep)"></div><div class="lbl"><b>Rose Deep</b><code>#D45D8A</code></div></div>
+        <div class="swcard"><div class="sw" style="background:var(--rose-press)"></div><div class="lbl"><b>Rose Press</b><code>#B4456F</code></div></div>
         <div class="swcard"><div class="sw" style="background:var(--berry)"></div><div class="lbl"><b>Berry</b><code>#C0354F</code></div></div>
         <div class="swcard"><div class="sw" style="background:var(--muted)"></div><div class="lbl"><b>Muted</b><code>#8C7E87</code></div></div>
     </div>
@@ -41,11 +44,12 @@
 
     <h2>Przyciski</h2>
     <div class="demo-panel ds-row" style="align-items:center">
+        <button class="btn btn-primary btn-lg">Duży CTA</button>
         <button class="btn btn-primary">Dodaj do koszyka</button>
         <button class="btn btn-ghost">Drugorzędny</button>
         <button class="btn btn-soft">Miękki</button>
         <button class="btn btn-primary btn-sm">Mały</button>
-        <a style="color:var(--rose-deep);font-weight:700;text-decoration:none;align-self:center">Link tekstowy →</a>
+        <a href="#" style="color:var(--rose-deep);font-weight:700;text-decoration:none;align-self:center">Link tekstowy →</a>
     </div>
 
     <h2>Etykiety / badge</h2>
@@ -58,12 +62,12 @@
 
     {% if demo_product %}
     <h2>Karta produktu</h2>
-    <div class="demo-panel"><div class="pgrid" style="max-width:340px">{% include "catalog/includes/product_card.html" with product=demo_product %}</div></div>
+    <div class="demo-panel"><div class="pgrid" style="max-width:300px;grid-template-columns:1fr">{% include "catalog/includes/product_card.html" with product=demo_product %}</div></div>
     {% endif %}
 
     {% if demo_aesthetic %}
     <h2>Karta estetyki</h2>
-    <div class="demo-panel"><div class="coll-grid" style="max-width:340px">{% include "catalog/includes/aesthetic_card.html" with aesthetic=demo_aesthetic mosaic=False %}</div></div>
+    <div class="demo-panel"><div class="coll-grid" style="max-width:340px;grid-template-columns:1fr">{% include "catalog/includes/aesthetic_card.html" with aesthetic=demo_aesthetic mosaic=False %}</div></div>
     {% endif %}
 
     <h2>Formularze i filtry</h2>
