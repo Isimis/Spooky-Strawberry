@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 
+from .storage import PrivateMessageAttachmentStorage
 from .text import normalize_dashes
 
 
@@ -240,7 +241,7 @@ class MessageAttachment(models.Model):
     """Plik dołączony do wiadomości zsynchronizowanej lub wysłanej z panelu."""
 
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="attachments")
-    file = models.FileField(upload_to="message_attachments/%Y/%m/%d/")
+    file = models.FileField(storage=PrivateMessageAttachmentStorage(), upload_to="message_attachments/%Y/%m/%d/")
     filename = models.CharField(max_length=255)
     content_type = models.CharField(max_length=120, blank=True)
     size = models.PositiveBigIntegerField(default=0)

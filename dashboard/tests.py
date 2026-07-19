@@ -147,7 +147,10 @@ class DashboardAccessTests(TestCase):
         self.client.login(username="staff", password="pass")
         attachment = SimpleUploadedFile("instrukcja.pdf", b"pdf-content", content_type="application/pdf")
 
-        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+        with TemporaryDirectory() as media_root, override_settings(
+            MEDIA_ROOT=media_root,
+            MESSAGE_ATTACHMENT_ROOT=media_root,
+        ):
             response = self.client.post(
                 reverse("dashboard:message_compose"),
                 {

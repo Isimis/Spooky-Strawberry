@@ -315,7 +315,10 @@ class MailboxImportTests(TestCase):
             "dGVzdC1iYWNrdXAK\r\n--backup--\r\n"
         ).encode("utf-8")
 
-        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+        with TemporaryDirectory() as media_root, override_settings(
+            MEDIA_ROOT=media_root,
+            MESSAGE_ATTACHMENT_ROOT=media_root,
+        ):
             first = import_email_message("102", raw_without_attachment)
             second = import_email_message("102", raw_with_attachment)
             attachment = first.attachments.get()
