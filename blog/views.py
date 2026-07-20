@@ -17,11 +17,18 @@ def article_list(request):
     if selected_category:
         articles = articles.filter(category__slug=selected_category)
 
+    # Wyróżniony wpis ma pierwszeństwo w dużej karcie. Jeżeli żaden nie jest
+    # zaznaczony, pokazujemy najnowszy, aby strona zawsze miała główny artykuł.
+    featured_article = articles.filter(is_featured=True).first() or articles.first()
+    if featured_article:
+        articles = articles.exclude(pk=featured_article.pk)
+
     return render(
         request,
         "blog/list.html",
         {
             "articles": articles,
+            "featured_article": featured_article,
             "categories": BlogCategory.objects.filter(is_active=True).order_by("sort_order", "name"),
             "selected_category": selected_category,
             "seo_title": "Lifestyle alternatywny: poradniki i inspiracje | Spooky Strawberry",

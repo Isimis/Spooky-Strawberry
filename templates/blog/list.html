@@ -22,27 +22,26 @@
     </div>
 </div>
 
-{% if articles %}
+{% if featured_article %}
 <section class="sec" style="padding-top:18px">
-    {% with featured=articles.0 %}
-    <a class="art art-feat" href="{{ featured.get_absolute_url }}">
-        <div class="aimg" style="{% if featured.cover_image %}background-image:url('{{ featured.cover_image.url }}'){% else %}background:linear-gradient(160deg,#2a1622,#7a3d5a){% endif %}"></div>
+    <a class="art art-feat" href="{{ featured_article.get_absolute_url }}">
+        <div class="aimg" style="{% if featured_article.cover_image %}background-image:url('{{ featured_article.cover_image.url }}'){% else %}background:linear-gradient(160deg,#2a1622,#7a3d5a){% endif %}"></div>
         <div class="ainfo">
-            <div class="acat">{% if featured.category %}{{ featured.category.name }}{% else %}Lifestyle{% endif %}</div>
-            <h2 class="h-md" style="font-size:24px;margin:2px 0 6px">{{ featured.title }}</h2>
-            {% if featured.intro %}<p class="muted" style="font-size:14px">{{ featured.intro }}</p>{% endif %}
+            <div class="acat">{% if featured_article.category %}{{ featured_article.category.name }}{% else %}Lifestyle{% endif %}</div>
+            <h2 class="h-md" style="font-size:24px;margin:2px 0 6px">{{ featured_article.title }}</h2>
+            {% if featured_article.intro %}<p class="muted" style="font-size:14px">{{ featured_article.intro }}</p>{% endif %}
             <span class="link" style="margin-top:12px;display:inline-block">Czytaj artykuł →</span>
         </div>
     </a>
-    {% endwith %}
 </section>
 
-<section class="sec" style="padding-top:6px">
+{% if articles %}<section class="sec" style="padding-top:6px">
     <div class="sec-head"><div><h2 class="h-md">Najnowsze wpisy</h2></div></div>
     <div class="art-grid">
-        {% for article in articles|slice:"1:" %}{% include "blog/includes/article_card.html" %}{% endfor %}
+        {% for article in articles %}{% include "blog/includes/article_card.html" %}{% endfor %}
     </div>
 </section>
+{% endif %}
 {% else %}
 <section class="sec"><p class="muted">Wkrótce pojawią się pierwsze wpisy.</p></section>
 {% endif %}

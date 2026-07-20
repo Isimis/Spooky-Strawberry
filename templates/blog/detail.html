@@ -5,7 +5,7 @@
 {% block meta_description %}{{ article.seo_description|default:article.intro|truncatechars:160 }}{% endblock %}
 
 {% block content %}
-<section class="sec" style="padding-bottom:0">
+<section class="sec" style="padding-bottom:20px">
     <div class="article">
         <div class="bcrumb"><a href="{% url 'blog:list' %}">Lifestyle</a> / {% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</div>
         <div class="eyebrow">{% if article.category %}{{ article.category.name }}{% else %}Poradnik{% endif %}</div>
