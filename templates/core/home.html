@@ -62,7 +62,7 @@
 
 {% if outfits %}
 <section class="sec" style="background:var(--blush)">
-    <div class="sec-head"><div><div class="eyebrow">Gotowe na Ciebie</div><h2 class="h-lg">Stylizacje do skopiowania</h2></div>
+    <div class="sec-head"><div><div class="eyebrow">Gotowe na Ciebie</div><h2 class="h-lg">Gotowe stylizacje</h2></div>
         <a class="link" href="{% url 'outfits:list' %}">Zobacz wszystkie →</a></div>
     <div class="looks-art">
         {% for outfit in outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
