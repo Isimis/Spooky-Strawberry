@@ -36,6 +36,15 @@ class SiteSettings(models.Model):
         related_name="drop_settings",
     )
 
+    # Produkt prezentowany w głównej grafice na stronie startowej.
+    hero_product = models.ForeignKey(
+        "catalog.Product",
+        on_delete=models.SET_NULL,
+        related_name="hero_settings",
+        null=True,
+        blank=True,
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

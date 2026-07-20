@@ -1,6 +1,8 @@
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 
+from analytics.models import AnalyticsEvent
+from analytics.services import track_event
 from core.seo import article_schema, breadcrumb_schema, collection_page_schema, organization_schema, plain_text, title_with_store_name
 
 from .models import Article, BlogCategory
@@ -59,6 +61,7 @@ def article_detail(request, slug):
         .distinct()
         .order_by("-published_at", "-created_at")[:3]
     )
+    track_event(request, AnalyticsEvent.EVENT_ARTICLE_VIEW, article=article)
     word_count = len((article.body or "").split())
     reading_minutes = max(1, round(word_count / 200)) if word_count else 1
     return render(

@@ -118,7 +118,7 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .hero-tags span{font-size:11.5px;font-weight:600;color:var(--rose-press);background:rgba(255,255,255,.7);border:1px solid var(--blush-2);padding:6px 12px;border-radius:999px}
 .hero-art{position:relative;min-height:360px;display:flex;justify-content:center;align-items:center;margin-top:16px}
 .hero-halo{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(232,154,185,.55),transparent 68%);filter:blur(6px);z-index:0}
-.hero-frame{position:relative;width:264px;aspect-ratio:3/4;border-radius:150px 150px 24px 24px;overflow:hidden;background:linear-gradient(160deg,#2a1622,#7a3d5a);box-shadow:0 30px 60px rgba(26,17,24,.3);z-index:1}
+.hero-frame{position:relative;display:block;width:264px;aspect-ratio:3/4;border-radius:150px 150px 24px 24px;overflow:hidden;background:linear-gradient(160deg,#2a1622,#7a3d5a);box-shadow:0 30px 60px rgba(26,17,24,.3);z-index:1;text-decoration:none}
 .hero-frame img{width:100%;height:100%;object-fit:cover}
 .hero-sticker{position:absolute;top:2px;right:6px;width:88px;height:88px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transform:rotate(-13deg);z-index:3;line-height:1.5;padding:8px}
 .hero-mini{position:absolute;left:2px;bottom:26px;width:148px;background:#fff;border-radius:16px;padding:9px;box-shadow:0 18px 36px rgba(26,17,24,.2);z-index:3;display:flex;gap:9px;align-items:center;text-decoration:none}

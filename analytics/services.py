@@ -78,8 +78,10 @@ def get_or_create_analytics_session(request):
     return session
 
 
-def track_event(request, event_type, product=None, variant=None, metadata=None):
+def track_event(request, event_type, product=None, variant=None, article=None, metadata=None):
     if request.path.startswith(("/static/", "/media/", "/admin/", "/django-admin/")):
+        return None
+    if getattr(getattr(request, "user", None), "is_staff", False):
         return None
     if not has_analytics_consent(request):
         return None
@@ -94,5 +96,6 @@ def track_event(request, event_type, product=None, variant=None, metadata=None):
         path=request.get_full_path()[:500],
         product=product,
         variant=variant,
+        article=article,
         metadata=metadata or {},
     )

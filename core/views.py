@@ -73,15 +73,29 @@ def home_view(request):
             .order_by("sort_order", "-created_at")[:4]
         )
 
-    hero_product = drop_products[0] if drop_products else None
-    hero_mini_product = (
-        Product.objects.filter(status=Product.STATUS_ACTIVE, is_featured=True)
-        .prefetch_related("images")
-        .order_by("sort_order", "-created_at")
-        .first()
-    )
-    if hero_mini_product is None and len(drop_products) > 1:
-        hero_mini_product = drop_products[1]
+    hero_product = None
+    if settings_obj.hero_product_id:
+        hero_product = (
+            Product.objects.filter(pk=settings_obj.hero_product_id, status=Product.STATUS_ACTIVE)
+            .prefetch_related("images")
+            .first()
+        )
+    if hero_product is None:
+        hero_product = drop_products[0] if drop_products else None
+
+    # Gdy produkt hero został wybrany ręcznie w ustawieniach, ta sama pozycja
+    # jest widoczna na małej karcie i prowadzi do własnej strony produktu.
+    if settings_obj.hero_product_id and hero_product:
+        hero_mini_product = hero_product
+    else:
+        hero_mini_product = (
+            Product.objects.filter(status=Product.STATUS_ACTIVE, is_featured=True)
+            .prefetch_related("images")
+            .order_by("sort_order", "-created_at")
+            .first()
+        )
+        if hero_mini_product is None and len(drop_products) > 1:
+            hero_mini_product = drop_products[1]
 
     outfits = (
         Outfit.objects.filter(status=Outfit.STATUS_ACTIVE)

@@ -953,7 +953,7 @@ class DashboardAccessTests(TestCase):
 
     def test_article_list_uses_custom_layout(self):
         category = BlogCategory.objects.create(name="Stylizacje", slug="stylizacje")
-        Article.objects.create(
+        article = Article.objects.create(
             title="Jak nosić chokery",
             slug="jak-nosic-chokery",
             category=category,
@@ -962,6 +962,13 @@ class DashboardAccessTests(TestCase):
             cover_image="articles/chokery.webp",
             status=Article.STATUS_PUBLISHED,
             is_featured=True,
+        )
+        analytics_session = AnalyticsSession.objects.create(session_key="article-view-test")
+        AnalyticsEvent.objects.create(
+            session=analytics_session,
+            event_type=AnalyticsEvent.EVENT_ARTICLE_VIEW,
+            path=article.get_absolute_url(),
+            article=article,
         )
         self.client.login(username="staff", password="pass")
 
@@ -973,6 +980,8 @@ class DashboardAccessTests(TestCase):
         self.assertContains(response, "Opublikowane")
         self.assertContains(response, "Z okładką")
         self.assertContains(response, "Krótki poradnik o dodatkach.")
+        self.assertContains(response, "Wyświetlenia")
+        self.assertEqual(response.context["rows"][0]["view_count"], 1)
 
     def test_staff_user_can_create_article_workspace(self):
         category = BlogCategory.objects.create(name="SEO", slug="seo")

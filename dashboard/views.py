@@ -726,8 +726,14 @@ def model_list(request, model_slug):
         queryset = queryset.prefetch_related("images", "items__product", "items__variant", "aesthetics")
         queryset = apply_outfit_admin_filters(request, queryset, active_filters)
     elif config.model is Article:
-        queryset = queryset.select_related("category").prefetch_related("aesthetics", "products", "outfits")
+        queryset = queryset.select_related("category").prefetch_related("aesthetics", "products", "outfits").annotate(
+            article_view_count=Count(
+                "analytics_events",
+                filter=Q(analytics_events__event_type=AnalyticsEvent.EVENT_ARTICLE_VIEW),
+            )
+        )
         queryset = apply_article_admin_filters(request, queryset, active_filters)
+        queryset = queryset.order_by("-published_at", "-created_at")
     elif config.model is NewsletterSubscriber:
         queryset = apply_newsletter_admin_filters(request, queryset, active_filters)
     elif config.model is Order:
@@ -1951,6 +1957,7 @@ def get_analytics_event_type_choices():
         (AnalyticsEvent.EVENT_FILTER_APPLIED, "Użycie filtra"),
         (AnalyticsEvent.EVENT_ADD_TO_CART, "Dodanie do koszyka"),
         (AnalyticsEvent.EVENT_CART_VIEW, "Wyświetlenie koszyka"),
+        (AnalyticsEvent.EVENT_ARTICLE_VIEW, "Wyświetlenie artykułu"),
     ]
 
 
@@ -1966,6 +1973,7 @@ def get_analytics_event_type_class(event_type):
         AnalyticsEvent.EVENT_FILTER_APPLIED: "filter",
         AnalyticsEvent.EVENT_ADD_TO_CART: "cart",
         AnalyticsEvent.EVENT_CART_VIEW: "cart-view",
+        AnalyticsEvent.EVENT_ARTICLE_VIEW: "article-view",
     }.get(event_type, "other")
 
 
@@ -2143,6 +2151,7 @@ def build_article_row(article):
         "aesthetics": list(article.aesthetics.all()[:3]),
         "product_count": article.products.count(),
         "outfit_count": article.outfits.count(),
+        "view_count": getattr(article, "article_view_count", 0),
         "has_cover": bool(cover_url),
     }
 

@@ -1035,6 +1035,7 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             "drop_heading",
             "drop_date",
             "drop_products",
+            "hero_product",
         ]
         labels = {
             "announcement_is_active": "Pokaż pasek zapowiedzi",
@@ -1047,6 +1048,7 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             "drop_heading": "Nagłówek sekcji „Nowości”",
             "drop_date": "Data i godzina nowości",
             "drop_products": "Produkty w sekcji Nowości",
+            "hero_product": "Produkt w dużej grafice strony głównej",
         }
         help_texts = {
             "announcement_text": "Tekst na czarnym pasku nad nagłówkiem. Możesz użyć emoji.",
@@ -1056,6 +1058,7 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
             "drop_eyebrow": "Tekst widoczny nad hasłem na stronie głównej, np. „Nowości”.",
             "drop_date": "Wyświetlana na hero, np. „piątek 20:00”. Zostaw puste, by nie pokazywać godziny.",
             "drop_products": "Produkty pokazywane w sekcji „Nowości”. Jeśli nic nie wybierzesz, pokażemy najnowsze produkty.",
+            "hero_product": "Jego zdjęcie pokażemy w dużej grafice i w małej karcie do kliknięcia na stronie głównej.",
         }
         widgets = {
             "announcement_text": forms.TextInput(),
@@ -1070,6 +1073,10 @@ class SiteSettingsDashboardForm(DashboardFormMixin, forms.ModelForm):
         self.fields["drop_products"].queryset = Product.objects.filter(
             status=Product.STATUS_ACTIVE
         ).order_by("sort_order", "name")
+        self.fields["hero_product"].queryset = Product.objects.filter(
+            status=Product.STATUS_ACTIVE
+        ).order_by("sort_order", "name")
+        self.fields["hero_product"].empty_label = "Automatycznie wybierz produkt"
         self.fields["payments_sandbox"].help_text = (
             "WŁĄCZONE = Sandbox (testy): płatności na kluczach testowych P24, zakupy NIE "
             "zmieniają stanów magazynowych, a w koszyku/checkoutcie widnieje „wersja testowa”. "

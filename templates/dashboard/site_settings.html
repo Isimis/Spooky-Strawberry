@@ -138,6 +138,16 @@
             </div>
 
             <hr class="ss-card__sep">
+            <div class="ss-row">
+                <div class="ss-card__title" style="font-size:17px">Duża grafika strony głównej</div>
+                <p class="ss-card__hint">Duże zdjęcie obok hasła na stronie głównej oraz mała karta pod nim.</p>
+                <label class="ss-label" for="{{ form.hero_product.id_for_label }}">{{ form.hero_product.label }}</label>
+                {{ form.hero_product }}
+                {% if form.hero_product.help_text %}<p class="ss-help">{{ form.hero_product.help_text }}</p>{% endif %}
+                {{ form.hero_product.errors }}
+            </div>
+
+            <hr class="ss-card__sep">
             <div class="ss-picker">
                 <div class="ss-picker__bar">
                     <span class="ss-label" style="margin:0">Produkty w sekcji Nowości</span>

@@ -85,6 +85,7 @@
                 <th>Produkty</th>
                 <th>Stylizacje</th>
                 <th>Wyróżniony</th>
+                <th>Wyświetlenia</th>
                 <th>Aktualizacja</th>
                 <th class="dashboard-col-actions">Akcje</th>
             </tr>
@@ -106,6 +107,7 @@
                     <td>{{ row.product_count }}</td>
                     <td>{{ row.outfit_count }}</td>
                     <td>{% if row.is_featured %}Tak{% else %}<span class="dashboard-muted">Nie</span>{% endif %}</td>
+                    <td>{{ row.view_count }}</td>
                     <td><span class="dashboard-muted">{{ row.updated_at|date:"d.m.Y" }}</span></td>
                     <td>
                         <div class="dashboard-row-actions">

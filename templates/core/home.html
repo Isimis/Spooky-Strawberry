@@ -23,13 +23,13 @@
             <div class="hero-halo"></div>
             <svg class="hero-spark" style="top:12%;left:14%;width:26px;height:26px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.5L20 10l-6.2 1.5L12 18l-1.8-6.5L4 10l6.2-1.5z"/></svg>
             <svg class="hero-spark" style="bottom:8%;right:12%;width:18px;height:18px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.5L20 10l-6.2 1.5L12 18l-1.8-6.5L4 10l6.2-1.5z"/></svg>
-            <div class="hero-frame">
+            {% if hero_product %}<a class="hero-frame" href="{{ hero_product.get_absolute_url }}" aria-label="Zobacz produkt: {{ hero_product.name }}">
                 {% if hero_product and hero_product.main_image %}
                     <img src="{{ hero_product.main_image.image.url }}" alt="{{ hero_product.name }}">
                 {% else %}
                     <img src="{% static 'img/hero.png' %}" alt="Nowości">
                 {% endif %}
-            </div>
+            </a>{% else %}<div class="hero-frame"><img src="{% static 'img/hero.png' %}" alt="Nowości"></div>{% endif %}
             <div class="hero-sticker">Świeże<br>nowości</div>
             {% if hero_mini_product %}
             <a class="hero-mini" href="{{ hero_mini_product.get_absolute_url }}">

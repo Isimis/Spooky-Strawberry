@@ -6,12 +6,12 @@ from django.core.mail import EmailMessage
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from catalog.models import Aesthetic
+from catalog.models import Aesthetic, Category, Product
 from orders.models import Order
 
 from .mail_backends import apply_subject_prefix
 from .mailbox import MailboxConfigurationError, import_email_message, sync_mailbox
-from .models import Message, NewsletterSubscriber
+from .models import Message, NewsletterSubscriber, SiteSettings
 
 
 class SearchDiscoveryTests(TestCase):
@@ -54,6 +54,27 @@ class HomeAestheticsTests(TestCase):
         self.assertEqual(response.context["aesthetics"].count(), 9)
         self.assertContains(response, "Estetyka 9")
         self.assertNotContains(response, "Ukryta")
+
+
+class HomeHeroProductTests(TestCase):
+    def test_selected_hero_product_controls_image_and_product_link(self):
+        category = Category.objects.create(name="Test", slug="hero-test")
+        product = Product.objects.create(
+            name="Produkt hero",
+            slug="produkt-hero",
+            category=category,
+            regular_price=Decimal("29.00"),
+            status=Product.STATUS_ACTIVE,
+        )
+        settings_obj = SiteSettings.load()
+        settings_obj.hero_product = product
+        settings_obj.save(update_fields=["hero_product", "updated_at"])
+
+        response = self.client.get(reverse("core:home"))
+
+        self.assertEqual(response.context["hero_product"], product)
+        self.assertEqual(response.context["hero_mini_product"], product)
+        self.assertContains(response, product.get_absolute_url())
 
 
 class OrderStatusByTokenTests(TestCase):

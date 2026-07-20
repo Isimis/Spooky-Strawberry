@@ -27,6 +27,7 @@ class AnalyticsEvent(models.Model):
     EVENT_FILTER_APPLIED = "filter_applied"
     EVENT_ADD_TO_CART = "add_to_cart"
     EVENT_CART_VIEW = "cart_view"
+    EVENT_ARTICLE_VIEW = "article_view"
 
     EVENT_CHOICES = [
         (EVENT_PAGE_VIEW, "Page view"),
@@ -35,6 +36,7 @@ class AnalyticsEvent(models.Model):
         (EVENT_FILTER_APPLIED, "Filter applied"),
         (EVENT_ADD_TO_CART, "Add to cart"),
         (EVENT_CART_VIEW, "Cart view"),
+        (EVENT_ARTICLE_VIEW, "Article view"),
     ]
 
     session = models.ForeignKey(
@@ -53,6 +55,13 @@ class AnalyticsEvent(models.Model):
     )
     variant = models.ForeignKey(
         "catalog.ProductVariant",
+        on_delete=models.SET_NULL,
+        related_name="analytics_events",
+        null=True,
+        blank=True,
+    )
+    article = models.ForeignKey(
+        "blog.Article",
         on_delete=models.SET_NULL,
         related_name="analytics_events",
         null=True,
