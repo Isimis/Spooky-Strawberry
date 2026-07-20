@@ -1275,7 +1275,16 @@ def outfit_workspace(request, pk):
             and image_formset.is_valid()
             and hotspot_formset.is_valid()
         ):
-            if rejected_image_names:
+            has_products = any(
+                form.cleaned_data.get("product") and not form.cleaned_data.get("DELETE", False)
+                for form in item_formset.forms
+            )
+            if outfit_form.cleaned_data["status"] == Outfit.STATUS_ACTIVE and not has_products:
+                messages.error(
+                    request,
+                    "Aktywna stylizacja musi mieć przynajmniej jeden produkt w zestawie.",
+                )
+            elif rejected_image_names:
                 messages.error(
                     request,
                     "Nie dodano części zdjęć. Dozwolone formaty: WEBP, JPG, JPEG i PNG. "
@@ -1297,7 +1306,8 @@ def outfit_workspace(request, pk):
                     sync_outfit_main_image(outfit)
                 messages.success(request, "Stylizacja zapisana razem z produktami i zdjęciami.")
                 return redirect("dashboard:outfit_workspace", pk=outfit.pk)
-        messages.error(request, "Nie udało się zapisać stylizacji. Sprawdź błędy w formularzu.")
+        else:
+            messages.error(request, "Nie udało się zapisać stylizacji. Sprawdź błędy w formularzu.")
 
     return render(
         request,

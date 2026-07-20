@@ -869,6 +869,43 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(outfit.bundle_price, Decimal("39.00"))
         self.assertTrue(OutfitItem.objects.filter(outfit=outfit, product=product, quantity=2).exists())
 
+    def test_active_outfit_cannot_be_saved_without_products(self):
+        outfit = Outfit.objects.create(name="Empty Outfit", slug="empty-outfit", status=Outfit.STATUS_DRAFT)
+        self.client.login(username="staff", password="pass")
+
+        response = self.client.post(
+            reverse("dashboard:outfit_workspace", args=[outfit.id]),
+            {
+                "deleted_item_ids": "",
+                "deleted_image_ids": "",
+                "outfit-name": "Empty Outfit",
+                "outfit-short_description": "Krótki opis.",
+                "outfit-mood_description": "Opis klimatu.",
+                "outfit-styling_tips": "Noś z chokerem.",
+                "outfit-bundle_price": "39.00",
+                "outfit-status": Outfit.STATUS_ACTIVE,
+                "outfit-seo_title": "",
+                "outfit-seo_description": "",
+                "items-TOTAL_FORMS": "0",
+                "items-INITIAL_FORMS": "0",
+                "items-MIN_NUM_FORMS": "0",
+                "items-MAX_NUM_FORMS": "1000",
+                "images-TOTAL_FORMS": "0",
+                "images-INITIAL_FORMS": "0",
+                "images-MIN_NUM_FORMS": "0",
+                "images-MAX_NUM_FORMS": "1000",
+                "hotspots-TOTAL_FORMS": "0",
+                "hotspots-INITIAL_FORMS": "0",
+                "hotspots-MIN_NUM_FORMS": "0",
+                "hotspots-MAX_NUM_FORMS": "1000",
+            },
+        )
+
+        outfit.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Aktywna stylizacja musi mieć przynajmniej jeden produkt")
+        self.assertEqual(outfit.status, Outfit.STATUS_DRAFT)
+
     def test_outfit_workspace_saves_hotspot(self):
         outfit = Outfit.objects.create(name="Hotspot Outfit", slug="hotspot-outfit", status=Outfit.STATUS_ACTIVE)
         product = self.create_product("Hotspot Choker", "hotspot-choker")
