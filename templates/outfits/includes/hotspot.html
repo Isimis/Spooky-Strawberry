@@ -6,7 +6,7 @@ Hotspot („plusik") na zdjęciu stylizacji.
 - klik w podgląd → przejście do karty produktu.
 Wymaga w kontekście: product, pos_x, pos_y (procenty, środek punktu).
 {% endcomment %}
-<div class="dot-wrap" style="left:{{ pos_x|unlocalize }}%;top:{{ pos_y|unlocalize }}%">
+<div class="dot-wrap{% if pos_y|add:0 < 42 %} dot-wrap--open-down{% endif %}" style="left:{{ pos_x|unlocalize }}%;top:{{ pos_y|unlocalize }}%">
     <form method="post" action="{% url 'cart:add' %}" class="js-cart-add dot-form">
         {% csrf_token %}
         <input type="hidden" name="variant_id" value="{% if product.default_variant %}{{ product.default_variant.id }}{% endif %}">
