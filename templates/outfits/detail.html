@@ -30,8 +30,8 @@
         <div class="bcrumb" style="margin:0 0 6px"><a href="{% url 'core:home' %}">Start</a> / <a href="{% url 'outfits:list' %}">Stylizacje</a> / {{ outfit.name }}</div>
         <div class="eyebrow">{% for a in outfit.aesthetics.all %}{{ a.name }}{% if not forloop.last %} · {% endif %}{% endfor %} · {{ outfit.items.count }} {% if outfit.items.count == 1 %}element{% else %}elementy{% endif %}</div>
         <h1 class="h-md" style="font-size:28px;margin:6px 0 10px">{{ outfit.name }}</h1>
-        {% if outfit.short_description %}<p class="serif-it muted" style="font-size:15px;margin-bottom:6px">„{{ outfit.short_description }}”</p>{% endif %}
-        {% if outfit.mood_description and outfit.mood_description != outfit.short_description %}<div class="serif-it muted" style="font-size:15px;margin-bottom:6px">{{ outfit.mood_description|formatted_text }}</div>{% endif %}
+        {% if outfit.short_description %}<p class="look-intro">„{{ outfit.short_description }}”</p>{% endif %}
+        {% if outfit.mood_description and outfit.mood_description != outfit.short_description %}<div class="look-description">{{ outfit.mood_description|formatted_text }}</div>{% endif %}
         {% if outfit.styling_tips %}<div style="font-size:14px;color:var(--ink-soft);margin-bottom:6px">{{ outfit.styling_tips|formatted_text }}</div>{% endif %}
 
         <h2 class="h-md" style="font-size:16px;margin:14px 0 2px">Produkty w zestawie</h2>

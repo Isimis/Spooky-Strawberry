@@ -181,20 +181,20 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .art-feat .ainfo{padding:15px 0 0}
 
 /* ---------- NEWSLETTER ---------- */
-.nl{position:relative;overflow:hidden;background:linear-gradient(155deg,#1d1220,#3a1e2e);border-radius:28px;padding:40px 24px;text-align:center;border:1px solid rgba(232,154,185,.18)}
+.nl{position:relative;overflow:hidden;background:linear-gradient(155deg,#1d1220,#3a1e2e);border-radius:28px;padding:32px 24px;text-align:center;border:1px solid rgba(232,154,185,.18)}
 .nl-deco{position:absolute;inset:0;z-index:0;background:radial-gradient(circle at 85% 12%,rgba(232,154,185,.28),transparent 42%),radial-gradient(circle at 8% 92%,rgba(212,93,138,.2),transparent 40%)}
 .nl-berry{position:absolute;right:-12px;bottom:-16px;width:150px;opacity:.07;z-index:0}
 .nl>*{position:relative;z-index:1}
-.nl-chip{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rose);border:1px solid rgba(232,154,185,.35);padding:6px 13px;border-radius:999px;margin-bottom:14px}
+.nl-chip{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rose);border:1px solid rgba(232,154,185,.35);padding:6px 13px;border-radius:999px;margin-bottom:11px}
 .nl-chip svg{width:13px;height:13px}
 .nl h3{color:#fff;font-size:26px;margin-bottom:8px}
 .nl p{color:#E9D4E0;font-size:13.5px;max-width:400px;margin:0 auto}
-.nl-form{display:flex;gap:6px;max-width:430px;margin:18px auto 0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:var(--r-pill);padding:6px}
+.nl-form{display:flex;gap:6px;max-width:430px;margin:15px auto 0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:var(--r-pill);padding:6px}
 .nl-form input{flex:1;background:none;border:none;color:#fff;padding:11px 16px;font-size:14px;font-family:var(--f-body);min-width:0}
 .nl-form input::placeholder{color:#C9B2C0}
 .nl-form input:focus{outline:none}
 .nl-form button{flex:none}
-.nl .fine{font-size:11px;color:#C9B2C0;margin-top:13px}
+.nl .fine{font-size:11px;color:#C9B2C0;margin-top:10px}
 
 /* ---------- FOOTER ---------- */
 .ft{background:var(--ink);color:#E7D7E0;padding:34px 18px 26px}
@@ -322,6 +322,9 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .look-hero .dot-card b{font-size:12.5px;color:var(--ink);font-weight:700;line-height:1.22}
 .look-hero .dot-card .dc-cat{font-size:11px;color:var(--muted)}
 .look-hero .dot-card .dc-price{font-size:12.5px;font-weight:700;color:var(--rose-press)}
+.look-intro{font-family:var(--f-display);font-style:italic;font-weight:500;color:#70576a;font-size:15px;line-height:1.55;margin:0 0 8px}
+.look-description{color:var(--ink-soft);font-size:14px;line-height:1.62;margin:0 0 8px}
+.look-description p{margin:0 0 7px}
 .lk-rows{margin:6px 0 4px}
 .lk-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
 .lk-row img{width:56px;height:56px;border-radius:12px;object-fit:cover;background:var(--blush);flex:none}
