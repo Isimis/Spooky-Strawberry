@@ -4,23 +4,17 @@
 {% block meta_description %}{{ seo_description }}{% endblock %}
 
 {% block content %}
-<section class="phero">
-    <div class="aes-words">
-        <span style="top:14%;left:6%;font-size:30px;transform:rotate(-8deg)">soft goth</span>
-        <span style="top:60%;left:10%;font-size:24px;transform:rotate(6deg)">witchy</span>
-        <span style="top:30%;right:8%;font-size:34px;transform:rotate(7deg)">coquette</span>
-        <span style="bottom:14%;right:14%;font-size:26px;transform:rotate(-5deg)">y2k</span>
-        <span style="top:6%;right:34%;font-size:20px;transform:rotate(-3deg)">jirai kei</span>
-    </div>
-    <div class="ph-in">
+<section class="aesthetic-list-hero">
+    <div class="aesthetic-list-hero-content">
         <div class="eyebrow">Twój styl, Twoje zasady</div>
         <h1>Znajdź swój klimat</h1>
+        <div class="aesthetic-list-hero-rule" aria-hidden="true"><span></span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 13.3 8.3 17c-1.1 1.1-2.9 1.1-4 0s-1.1-2.9 0-4L8 9.3l4 4ZM12 13.3 15.7 17c1.1 1.1 2.9 1.1 4 0s1.1-2.9 0-4L16 9.3l-4 4ZM12 10.6 8.3 7c-1.1-1.1-2.9-1.1-4 0s-1.1 2.9 0 4L8 14.3l4-3.7ZM12 10.6 15.7 7c1.1-1.1 2.9-1.1 4 0s1.1 2.9 0 4L16 14.3l-4-3.7Z"/></svg><span></span></div>
         <p>Nie wybieramy za Ciebie. Wejdź w estetykę, którą czujesz najbardziej - a my pokażemy, jak ją nosić.</p>
     </div>
+    <div class="aesthetic-list-hero-stars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 </section>
-
 <section class="sec">
-    <div class="coll-mosaic">
+    <div class="coll-mosaic" id="lista-estetyk">
         {% for aesthetic in aesthetics %}{% include "catalog/includes/aesthetic_card.html" with aesthetic=aesthetic mosaic=True %}
         {% empty %}<p class="muted">Wkrótce dodamy estetyki.</p>{% endfor %}
     </div>
