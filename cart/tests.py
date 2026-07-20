@@ -86,7 +86,7 @@ class SessionCartTests(TestCase):
         response = self.client.get(reverse("cart:detail"))
 
         self.assertEqual(response.context["discount_total"], Decimal("5.80"))
-        self.assertEqual(response.context["grand_total"], Decimal("63.19"))
+        self.assertEqual(response.context["grand_total"], Decimal("71.19"))
         self.assertContains(response, "Rabat")
 
     def test_invalid_discount_is_not_saved_in_cart(self):
@@ -105,7 +105,7 @@ class CartShippingEstimateTests(TestCase):
             defaults={
                 "name": "Paczkomat",
                 "description": "Dostawa do paczkomatu InPost w 1-2 dni robocze.",
-                "price": Decimal("10.99"),
+                "price": Decimal("18.99"),
                 "free_from_amount": FREE_SHIPPING_THRESHOLD,
                 "is_active": True,
                 "sort_order": 10,
@@ -115,7 +115,7 @@ class CartShippingEstimateTests(TestCase):
     def test_cart_below_free_shipping_threshold_uses_paczkomat_price(self):
         shipping_cost, free_from, remaining = get_shipping_estimate(Decimal("99.99"))
 
-        self.assertEqual(shipping_cost, Decimal("10.99"))
+        self.assertEqual(shipping_cost, Decimal("18.99"))
         self.assertEqual(free_from, Decimal("100.00"))
         self.assertEqual(remaining, Decimal("0.01"))
 

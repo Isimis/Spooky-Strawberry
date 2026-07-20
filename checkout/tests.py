@@ -19,7 +19,7 @@ class CheckoutSaveAddressTests(TestCase):
         self.kurier = ShippingMethod.objects.create(
             code="kurier-addr",
             name="Kurier",
-            price=Decimal("13.99"),
+            price=Decimal("18.99"),
             is_active=True,
             sort_order=20,
         )
@@ -125,7 +125,7 @@ class CheckoutConfirmationTests(TestCase):
             defaults={
                 "name": "Paczkomat",
                 "description": "Dostawa do paczkomatu InPost w 1-2 dni robocze.",
-                "price": Decimal("10.99"),
+                "price": Decimal("18.99"),
                 "free_from_amount": FREE_SHIPPING_THRESHOLD,
                 "is_active": True,
                 "sort_order": 10,
@@ -136,7 +136,7 @@ class CheckoutConfirmationTests(TestCase):
             defaults={
                 "name": "Kurier",
                 "description": "Dostawa kurierem pod wskazany adres w 1-2 dni robocze.",
-                "price": Decimal("13.99"),
+                "price": Decimal("18.99"),
                 "free_from_amount": FREE_SHIPPING_THRESHOLD,
                 "is_active": True,
                 "sort_order": 20,
@@ -169,8 +169,8 @@ class CheckoutConfirmationTests(TestCase):
             shipping_method=self.shipping_method,
             status=Order.STATUS_PLACED,
             subtotal=Decimal("29.00"),
-            shipping_total=Decimal("10.99"),
-            grand_total=Decimal("39.99"),
+            shipping_total=Decimal("18.99"),
+            grand_total=Decimal("47.99"),
         )
         return order
 
@@ -226,9 +226,8 @@ class CheckoutConfirmationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Paczkomat")
-        self.assertContains(response, "10,99")
+        self.assertContains(response, "18,99", count=3)
         self.assertContains(response, "Kurier")
-        self.assertContains(response, "13,99")
 
     @patch("checkout.views.start_payment", return_value="https://sandbox.przelewy24.pl/trnRequest/tok123")
     def test_payment_creates_awaiting_order_and_redirects_to_gateway(self, mock_start):
@@ -265,8 +264,8 @@ class CheckoutConfirmationTests(TestCase):
 
         self.assertEqual(order.discount_code, code)
         self.assertEqual(order.discount_total, Decimal("5.80"))
-        self.assertEqual(order.shipping_total, Decimal("10.99"))
-        self.assertEqual(order.grand_total, Decimal("63.19"))
+        self.assertEqual(order.shipping_total, Decimal("18.99"))
+        self.assertEqual(order.grand_total, Decimal("71.19"))
 
     @patch("checkout.views.start_payment")
     def test_payment_requires_terms_acceptance(self, mock_start):
@@ -361,10 +360,10 @@ class ShippingFormTests(TestCase):
     def setUp(self):
         from decimal import Decimal as D
         self.paczkomat, _ = ShippingMethod.objects.update_or_create(
-            code="paczkomat", defaults={"name": "Paczkomat", "price": D("10.99"), "is_active": True, "is_pickup_point": True}
+            code="paczkomat", defaults={"name": "Paczkomat", "price": D("18.99"), "is_active": True, "is_pickup_point": True}
         )
         self.kurier, _ = ShippingMethod.objects.update_or_create(
-            code="kurier", defaults={"name": "Kurier", "price": D("13.99"), "is_active": True, "is_pickup_point": False}
+            code="kurier", defaults={"name": "Kurier", "price": D("18.99"), "is_active": True, "is_pickup_point": False}
         )
 
     def _base(self, method):
@@ -400,10 +399,10 @@ class FullPurchaseFlowTests(TestCase):
         from decimal import Decimal as D
         from core.models import SiteSettings
         self.paczkomat, _ = ShippingMethod.objects.update_or_create(
-            code="paczkomat", defaults={"name": "Paczkomat", "price": D("10.99"), "is_active": True, "is_pickup_point": True, "sort_order": 10}
+            code="paczkomat", defaults={"name": "Paczkomat", "price": D("18.99"), "is_active": True, "is_pickup_point": True, "sort_order": 10}
         )
         self.kurier, _ = ShippingMethod.objects.update_or_create(
-            code="kurier", defaults={"name": "Kurier", "price": D("13.99"), "is_active": True, "is_pickup_point": False, "sort_order": 20}
+            code="kurier", defaults={"name": "Kurier", "price": D("18.99"), "is_active": True, "is_pickup_point": False, "sort_order": 20}
         )
         cat = Category.objects.create(name="Test", slug="flow-test")
         self.product = Product.objects.create(name="Choker Flow", slug="choker-flow", category=cat, regular_price=D("29.00"), status=Product.STATUS_ACTIVE)

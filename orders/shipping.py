@@ -7,14 +7,14 @@ SHIPPING_METHOD_DEFINITIONS = (
         "code": "paczkomat",
         "name": "Paczkomat",
         "description": "Nadanie do Paczkomatu InPost w ciągu maksymalnie 48 godzin w dni robocze.",
-        "price": Decimal("10.99"),
+        "price": Decimal("18.99"),
         "sort_order": 10,
     },
     {
         "code": "kurier",
         "name": "Kurier",
         "description": "Nadanie przesyłki kurierskiej w ciągu maksymalnie 48 godzin w dni robocze.",
-        "price": Decimal("13.99"),
+        "price": Decimal("18.99"),
         "sort_order": 20,
     },
 )

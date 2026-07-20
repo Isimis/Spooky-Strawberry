@@ -16,10 +16,12 @@ class Command(BaseCommand):
         settings_obj.save(update_fields=["announcement_is_active", "announcement_text", "updated_at"])
 
         paczkomat_count = ShippingMethod.objects.filter(code__in=["paczkomat", "inpost", "paczkomaty"]).update(
+            price=Decimal("18.99"),
             free_from_amount=Decimal("100.00"),
             description="Nadanie do Paczkomatu InPost w ciągu maksymalnie 48 godzin w dni robocze.",
         )
         kurier_count = ShippingMethod.objects.filter(code="kurier").update(
+            price=Decimal("18.99"),
             free_from_amount=Decimal("100.00"),
             description="Nadanie przesyłki kurierskiej w ciągu maksymalnie 48 godzin w dni robocze.",
         )
