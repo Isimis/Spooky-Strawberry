@@ -322,7 +322,7 @@ h1,h2,h3,h4{font-family:var(--f-display);font-weight:500;line-height:1.12;letter
 .look-hero .dot-card b{font-size:12.5px;color:var(--ink);font-weight:700;line-height:1.22}
 .look-hero .dot-card .dc-cat{font-size:11px;color:var(--muted)}
 .look-hero .dot-card .dc-price{font-size:12.5px;font-weight:700;color:var(--rose-press)}
-.look-intro{font-family:var(--f-display);font-style:italic;font-weight:500;color:#70576a;font-size:15px;line-height:1.55;margin:0 0 8px}
+.look-intro{font-family:var(--f-body);font-style:normal;font-weight:500;color:#70576a;font-size:15px;line-height:1.55;margin:0 0 8px}
 .look-description{color:var(--ink-soft);font-size:14px;line-height:1.62;margin:0 0 8px}
 .look-description p{margin:0 0 7px}
 .lk-rows{margin:6px 0 4px}
