@@ -64,7 +64,6 @@
 <section class="sec" style="background:var(--blush)">
     <div class="sec-head"><div><div class="eyebrow">Gotowe na Ciebie</div><h2 class="h-lg">Stylizacje do skopiowania</h2></div>
         <a class="link" href="{% url 'outfits:list' %}">Zobacz wszystkie →</a></div>
-    <p class="muted" style="margin:-10px 0 18px;max-width:460px">Najnowsza stylizacja na dużym kafelku, reszta dookoła. Kliknij, by zobaczyć cały zestaw.</p>
     <div class="looks-art">
         {% for outfit in outfits %}{% include "outfits/includes/outfit_card.html" with outfit=outfit feat=forloop.first %}{% endfor %}
     </div>
