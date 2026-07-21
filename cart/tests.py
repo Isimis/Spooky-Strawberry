@@ -1,10 +1,11 @@
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
 from catalog.models import Category, Product, ProductVariant
-from orders.models import DiscountCode, ShippingMethod
+from orders.models import DiscountCode, Order, ShippingMethod
 from orders.shipping import FREE_SHIPPING_THRESHOLD
 
 from .views import get_shipping_estimate
@@ -112,6 +113,33 @@ class SessionCartTests(TestCase):
 
         self.client.post(reverse("cart:discount_apply"), {"code": "min100"})
 
+        self.assertNotIn("cart_discount_code", self.client.session)
+
+    def test_stale_invalid_discount_is_removed_from_cart_session(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 1})
+        code = DiscountCode.objects.create(code="SPOOKY10", value=Decimal("10.00"), first_order_only=True)
+        user = get_user_model().objects.create_user(
+            username="klientka@example.pl",
+            email="klientka@example.pl",
+            password="pass",
+        )
+        self.client.force_login(user)
+        Order.objects.create(
+            user=user,
+            email="klientka@example.pl",
+            first_name="Maja",
+            last_name="Nowak",
+            status=Order.STATUS_PLACED,
+            subtotal=Decimal("29.00"),
+            grand_total=Decimal("29.00"),
+        )
+        session = self.client.session
+        session["cart_discount_code"] = code.code
+        session.save()
+
+        response = self.client.get(reverse("cart:detail"))
+
+        self.assertEqual(response.context["discount_code_value"], "")
         self.assertNotIn("cart_discount_code", self.client.session)
 
 

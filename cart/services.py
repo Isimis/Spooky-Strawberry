@@ -197,6 +197,12 @@ def get_cart_summary(request, *, user=None, email=""):
     discount_result = (
         evaluate_discount(raw_code, subtotal=subtotal, user=user, email=email) if raw_code else None
     )
+    if discount_result and not discount_result.is_valid:
+        # Kod zapisany w starszej sesji może przestać działać, np. po wykorzystaniu
+        # promocji „tylko na pierwsze zamówienie”. Nie podstawiamy go wtedy ponownie.
+        request.session.pop(CART_DISCOUNT_SESSION_KEY, None)
+        request.session.modified = True
+        raw_code = ""
     discount_code = discount_result.discount_code if discount_result and discount_result.is_valid else None
     discount_total = discount_result.discount_total if discount_code else Decimal("0.00")
     product_discount_total = discount_result.product_discount_total if discount_code else Decimal("0.00")
