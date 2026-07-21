@@ -46,6 +46,46 @@ def _cart_summary(request, email=""):
     return get_cart_summary(request, user=request.user, email=email)
 
 
+def _checkout_totals(request, summary, shipping_before_discount, email=""):
+    """Rozlicza kod po poznaniu wybranej metody dostawy."""
+    if not summary["discount_code"]:
+        return {
+            "discount_total": Decimal("0.00"),
+            "product_discount_total": Decimal("0.00"),
+            "shipping_discount_total": Decimal("0.00"),
+            "shipping_total": shipping_before_discount,
+            "grand_total": summary["subtotal"] + shipping_before_discount,
+            "error": "",
+        }
+
+    result = evaluate_discount(
+        summary["discount_code"],
+        subtotal=summary["subtotal"],
+        shipping_cost=shipping_before_discount,
+        user=request.user,
+        email=email,
+    )
+    if not result.is_valid:
+        return {
+            "discount_total": Decimal("0.00"),
+            "product_discount_total": Decimal("0.00"),
+            "shipping_discount_total": Decimal("0.00"),
+            "shipping_total": shipping_before_discount,
+            "grand_total": summary["subtotal"] + shipping_before_discount,
+            "error": result.error,
+        }
+
+    shipping_total = max(Decimal("0.00"), shipping_before_discount - result.shipping_discount_total)
+    return {
+        "discount_total": result.discount_total,
+        "product_discount_total": result.product_discount_total,
+        "shipping_discount_total": result.shipping_discount_total,
+        "shipping_total": shipping_total,
+        "grand_total": summary["subtotal"] - result.product_discount_total + shipping_total,
+        "error": "",
+    }
+
+
 def _account_checkout_initial(user):
     """Dane początkowe checkoutu z konta zalogowanego klienta (dane + zapisany adres)."""
     if not user.is_authenticated:
@@ -180,7 +220,13 @@ def shipping(request):
     selected_method_id = saved.get("shipping_method") or (methods[0].id if methods else None)
     selected_method = next((m for m in methods if m.id == selected_method_id), methods[0] if methods else None)
     selected_method_id = selected_method.id if selected_method else None
-    shipping_cost = _shipping_cost_for(selected_method, summary["discounted_subtotal"])
+    shipping_before_discount = _shipping_cost_for(selected_method, summary["discounted_subtotal"])
+    totals = _checkout_totals(
+        request,
+        summary,
+        shipping_before_discount,
+        request.POST.get("email") or saved.get("email", ""),
+    )
 
     return render(
         request,
@@ -190,11 +236,11 @@ def shipping(request):
             "items": summary["items"],
             "subtotal": summary["subtotal"],
             "discount_code": summary["discount_code"],
-            "discount_total": summary["discount_total"],
+            "discount_total": totals["discount_total"],
             "shipping_methods": methods,
             "selected_method_id": selected_method_id,
-            "shipping_cost": shipping_cost,
-            "grand_total": summary["discounted_subtotal"] + shipping_cost,
+            "shipping_cost": totals["shipping_total"],
+            "grand_total": totals["grand_total"],
             "geowidget_token": settings.INPOST_GEOWIDGET_TOKEN,
             "geowidget_js": settings.INPOST_GEOWIDGET_JS,
             "geowidget_css": settings.INPOST_GEOWIDGET_CSS,
@@ -225,7 +271,11 @@ def payment(request):
         return redirect("cart:detail")
 
     method = ShippingMethod.objects.filter(id=checkout_data.get("shipping_method"), is_active=True).first()
-    shipping_cost = _shipping_cost_for(method, summary["discounted_subtotal"])
+    shipping_before_discount = _shipping_cost_for(method, summary["discounted_subtotal"])
+    totals = _checkout_totals(request, summary, shipping_before_discount, checkout_data.get("email", ""))
+    if totals["error"]:
+        messages.error(request, f"Kod rabatowy nie może zostać użyty: {totals['error']}")
+        return redirect("cart:detail")
 
     accepted_terms = request.POST.get("accept_terms") == "1"
 
@@ -237,7 +287,14 @@ def payment(request):
             # Metodę (BLIK/karta/przelew) klient wybiera już na stronie Przelewy24.
             payment_method = request.POST.get("payment_method", "p24")
             try:
-                order = _get_or_create_pending_order(request, summary, checkout_data, method, shipping_cost, payment_method)
+                order = _get_or_create_pending_order(
+                    request,
+                    summary,
+                    checkout_data,
+                    method,
+                    shipping_before_discount,
+                    payment_method,
+                )
             except DiscountCodeUnavailable as exc:
                 messages.error(request, f"Kod rabatowy nie może zostać użyty: {exc}")
                 return redirect("cart:detail")
@@ -261,10 +318,10 @@ def payment(request):
             "items": summary["items"],
             "subtotal": summary["subtotal"],
             "discount_code": summary["discount_code"],
-            "discount_total": summary["discount_total"],
+            "discount_total": totals["discount_total"],
             "shipping_method": method,
-            "shipping_cost": shipping_cost,
-            "grand_total": summary["discounted_subtotal"] + shipping_cost,
+            "shipping_cost": totals["shipping_total"],
+            "grand_total": totals["grand_total"],
             "payment_methods": PAYMENT_METHODS,
             "accept_terms": accepted_terms,
         },
@@ -272,7 +329,7 @@ def payment(request):
 
 
 @transaction.atomic
-def _get_or_create_pending_order(request, summary, data, method, shipping_cost, payment_method):
+def _get_or_create_pending_order(request, summary, data, method, shipping_before_discount, payment_method):
     """Zwraca zamówienie do opłacenia.
 
     Jeśli w sesji jest już zamówienie „oczekujące na płatność" (poprzednia, nieudana próba),
@@ -291,6 +348,8 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
 
     discount_code = None
     discount_total = Decimal("0.00")
+    product_discount_total = Decimal("0.00")
+    shipping_discount_total = Decimal("0.00")
     if summary["discount_code"]:
         # Ostateczna kontrola dzieje się w transakcji, bo kod mógł zostać wyłączony
         # albo osiągnąć limit między wyświetleniem checkoutu a kliknięciem płatności.
@@ -298,12 +357,17 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
         result = evaluate_discount(
             discount_code,
             subtotal=subtotal,
+            shipping_cost=shipping_before_discount,
             user=request.user,
             email=data["email"],
         )
         if not result.is_valid:
             raise DiscountCodeUnavailable(result.error)
         discount_total = result.discount_total
+        product_discount_total = result.product_discount_total
+        shipping_discount_total = result.shipping_discount_total
+
+    shipping_total = max(Decimal("0.00"), shipping_before_discount - shipping_discount_total)
 
     fields = dict(
         email=data["email"],
@@ -322,8 +386,8 @@ def _get_or_create_pending_order(request, summary, data, method, shipping_cost, 
         status=Order.STATUS_AWAITING_PAYMENT,
         subtotal=subtotal,
         discount_total=discount_total,
-        shipping_total=shipping_cost,
-        grand_total=subtotal - discount_total + shipping_cost,
+        shipping_total=shipping_total,
+        grand_total=subtotal - product_discount_total + shipping_total,
         customer_note=f"Płatność: {PAYMENT_LABELS.get(payment_method, payment_method)}",
         source_session_key=request.session.session_key or "",
         is_test=is_test,

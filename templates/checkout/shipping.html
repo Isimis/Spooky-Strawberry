@@ -96,7 +96,7 @@
                     <h3>Twoje zamówienie</h3>
                     {% include "checkout/includes/mini_items.html" %}
                     <div class="sum-row"><span>Produkty</span><span>{{ subtotal|money }}</span></div>
-                    {% if discount_code %}<div class="sum-row"><span>Rabat · {{ discount_code.code }}</span><span>-{{ discount_total|money }}</span></div>{% endif %}
+                    {% if discount_code %}<div class="sum-row"><span>Rabat na {{ discount_code.get_applies_to_display|lower }} · {{ discount_code.code }}</span><span>-{{ discount_total|money }}</span></div>{% endif %}
                     <div class="sum-row"><span>Dostawa</span><span>{% if shipping_cost > 0 %}{{ shipping_cost|money }}{% else %}gratis{% endif %}</span></div>
                     <div class="sum-row tot"><span>Razem</span><span class="big">{{ grand_total|money }}</span></div>
                     <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:14px">Przejdź do płatności</button>

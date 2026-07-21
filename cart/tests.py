@@ -89,6 +89,23 @@ class SessionCartTests(TestCase):
         self.assertEqual(response.context["grand_total"], Decimal("71.19"))
         self.assertContains(response, "Rabat")
 
+    def test_shipping_discount_code_makes_cart_delivery_free(self):
+        self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 1})
+        DiscountCode.objects.create(
+            code="DOSTAWAGRATIS",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            applies_to=DiscountCode.APPLIES_TO_SHIPPING,
+            value=Decimal("100.00"),
+        )
+
+        self.client.post(reverse("cart:discount_apply"), {"code": "dostawagratis"})
+        response = self.client.get(reverse("cart:detail"))
+
+        self.assertEqual(response.context["discount_total"], Decimal("18.99"))
+        self.assertEqual(response.context["shipping_cost"], Decimal("0.00"))
+        self.assertEqual(response.context["grand_total"], Decimal("29.00"))
+        self.assertContains(response, "Rabat na dostawa")
+
     def test_invalid_discount_is_not_saved_in_cart(self):
         self.client.post(reverse("cart:add"), {"variant_id": self.variant.id, "quantity": 1})
         DiscountCode.objects.create(code="MIN100", value=Decimal("10.00"), minimum_order_amount=Decimal("100.00"))

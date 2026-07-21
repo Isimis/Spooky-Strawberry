@@ -65,6 +65,13 @@
                     {{ form.discount_type.errors }}
                 </label>
 
+                <label class="dashboard-field" data-field-name="{{ form.applies_to.name }}">
+                    <span>{{ form.applies_to.label }}</span>
+                    {{ form.applies_to }}
+                    {% if form.applies_to.help_text %}<small>{{ form.applies_to.help_text }}</small>{% endif %}
+                    {{ form.applies_to.errors }}
+                </label>
+
                 <label class="dashboard-field" data-field-name="{{ form.value.name }}">
                     <span>{{ form.value.label }}</span>
                     {{ form.value }}
@@ -169,7 +176,7 @@
             <div class="dashboard-commerce-preview-box">
                 <span class="dashboard-status-pill dashboard-status-pill--{{ discount_detail.status_class }}">{{ discount_detail.status_label }}</span>
                 <strong>{{ discount_detail.code }}</strong>
-                <p>{{ discount_detail.value_label }} rabatu · {{ discount_detail.minimum_order_label }} · {{ discount_detail.date_label }}</p>
+                <p>{{ discount_detail.value_label }} rabatu na: {{ discount_detail.scope_label }} · {{ discount_detail.minimum_order_label }} · {{ discount_detail.date_label }}</p>
             </div>
         </article>
 
@@ -188,6 +195,10 @@
                 <div>
                     <dt>Minimum</dt>
                     <dd>{{ discount_detail.minimum_order_label }}</dd>
+                </div>
+                <div>
+                    <dt>Dotyczy</dt>
+                    <dd>{{ discount_detail.scope_label }}</dd>
                 </div>
                 <div>
                     <dt>Użycia</dt>

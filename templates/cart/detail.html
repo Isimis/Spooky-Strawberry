@@ -62,7 +62,7 @@
                 </form>
                 <div class="sum-row"><span>Wartość produktów</span><span>{{ subtotal|money }}</span></div>
                 {% if discount_code %}
-                <div class="sum-row"><span>Rabat · {{ discount_code.code }}</span><span>-{{ discount_total|money }}</span></div>
+                <div class="sum-row"><span>Rabat na {{ discount_code.get_applies_to_display|lower }} · {{ discount_code.code }}</span><span>-{{ discount_total|money }}</span></div>
                 <form method="post" action="{% url 'cart:discount_remove' %}" style="margin:-4px 0 8px;text-align:right">{% csrf_token %}<button type="submit" class="link" style="border:0;background:none;cursor:pointer;font-size:12px">Usuń kod</button></form>
                 {% elif discount_error %}
                 <div class="ship-note" style="margin:8px 0;background:#fff4f9;font-size:12px">{{ discount_error }}</div>

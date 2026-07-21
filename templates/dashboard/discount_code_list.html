@@ -77,6 +77,7 @@
                         <th>Kod</th>
                         <th>Status</th>
                         <th>Wartość</th>
+                        <th>Dotyczy</th>
                         <th>Minimum</th>
                         <th>Użycia</th>
                         <th>Zamówienia</th>
@@ -96,6 +97,7 @@
                             </td>
                             <td><span class="dashboard-status-pill dashboard-status-pill--{{ row.status_class }}">{{ row.status_label }}</span></td>
                             <td><span class="dashboard-cell-strong">{{ row.value_label }}</span></td>
+                            <td>{{ row.scope_label }}</td>
                             <td>{{ row.minimum_order_label }}</td>
                             <td>{{ row.usage_label }}</td>
                             <td>{{ row.order_count }}</td>

@@ -66,8 +66,9 @@ def order_lines(order):
     discount = ""
     if Decimal(order.discount_total) > 0:
         code = f" · {order.discount_code.code}" if order.discount_code_id else ""
+        scope = f" na {order.discount_code.get_applies_to_display().lower()}" if order.discount_code_id else ""
         discount = (
-            f'<tr><td style="font-family:{FONT};font-size:13px;color:{MUTED};">Rabat{code}</td>'
+            f'<tr><td style="font-family:{FONT};font-size:13px;color:{MUTED};">Rabat{scope}{code}</td>'
             f'<td align="right" style="font-family:{FONT};font-size:13px;color:{INK};">-{money(order.discount_total)}</td></tr>'
         )
     totals = (

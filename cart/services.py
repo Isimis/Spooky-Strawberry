@@ -199,14 +199,18 @@ def get_cart_summary(request, *, user=None, email=""):
     )
     discount_code = discount_result.discount_code if discount_result and discount_result.is_valid else None
     discount_total = discount_result.discount_total if discount_code else Decimal("0.00")
+    product_discount_total = discount_result.product_discount_total if discount_code else Decimal("0.00")
+    shipping_discount_total = discount_result.shipping_discount_total if discount_code else Decimal("0.00")
     return {
         "items": items,
         "subtotal": subtotal,
         "discount_code": discount_code,
         "discount_code_value": raw_code,
         "discount_total": discount_total,
+        "product_discount_total": product_discount_total,
+        "shipping_discount_total": shipping_discount_total,
         "discount_error": discount_result.error if discount_result and not discount_result.is_valid else "",
-        "discounted_subtotal": subtotal - discount_total,
+        "discounted_subtotal": subtotal - product_discount_total,
         "quantity": quantity,
         "adjustments": adjustments,
     }

@@ -106,3 +106,35 @@ class DiscountFirstOrderTests(TestCase):
         self._order("ala@example.pl", status=Order.STATUS_AWAITING_PAYMENT)
         result = evaluate_discount(code, subtotal=Decimal("50"), email="ala@example.pl")
         self.assertTrue(result.is_valid)
+
+
+class DiscountScopeTests(TestCase):
+    def test_shipping_code_can_make_delivery_free(self):
+        code = DiscountCode.objects.create(
+            code="DOSTAWAGRATIS",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            applies_to=DiscountCode.APPLIES_TO_SHIPPING,
+            value=Decimal("100"),
+        )
+
+        result = evaluate_discount(code, subtotal=Decimal("58"), shipping_cost=Decimal("18.99"))
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.product_discount_total, Decimal("0.00"))
+        self.assertEqual(result.shipping_discount_total, Decimal("18.99"))
+        self.assertEqual(result.discount_total, Decimal("18.99"))
+
+    def test_order_code_reduces_products_and_delivery(self):
+        code = DiscountCode.objects.create(
+            code="CALOSC10",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            applies_to=DiscountCode.APPLIES_TO_ORDER,
+            value=Decimal("10"),
+        )
+
+        result = evaluate_discount(code, subtotal=Decimal("58"), shipping_cost=Decimal("18.99"))
+
+        self.assertTrue(result.is_valid)
+        self.assertEqual(result.product_discount_total, Decimal("5.80"))
+        self.assertEqual(result.shipping_discount_total, Decimal("1.90"))
+        self.assertEqual(result.discount_total, Decimal("7.70"))

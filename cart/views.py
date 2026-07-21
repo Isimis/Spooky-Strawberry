@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -6,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from analytics.services import track_event
 from catalog.models import Product, ProductVariant
+from orders.discounts import evaluate_discount
 from orders.shipping import get_shipping_estimate as get_default_shipping_estimate
 
 from .services import (
@@ -35,7 +38,21 @@ def cart_detail(request):
             "subtotal": str(summary["subtotal"]),
         },
     )
-    shipping_cost, free_from, remaining = get_shipping_estimate(summary["discounted_subtotal"])
+    shipping_before_discount, free_from, remaining = get_shipping_estimate(summary["discounted_subtotal"])
+    if summary["discount_code"]:
+        discount_result = evaluate_discount(
+            summary["discount_code"],
+            subtotal=summary["subtotal"],
+            shipping_cost=shipping_before_discount,
+            user=request.user,
+            email=getattr(request.user, "email", ""),
+        )
+        if discount_result.is_valid:
+            summary["discount_total"] = discount_result.discount_total
+            summary["product_discount_total"] = discount_result.product_discount_total
+            summary["shipping_discount_total"] = discount_result.shipping_discount_total
+            summary["discounted_subtotal"] = summary["subtotal"] - discount_result.product_discount_total
+    shipping_cost = max(Decimal("0.00"), shipping_before_discount - summary["shipping_discount_total"])
 
     in_cart_ids = [item["product"].id for item in summary["items"] if item.get("product")]
     recommendations = list(
@@ -48,6 +65,7 @@ def cart_detail(request):
     summary.update(
         {
             "shipping_cost": shipping_cost,
+            "shipping_cost_before_discount": shipping_before_discount,
             "free_from": free_from,
             "free_remaining": remaining,
             "grand_total": summary["discounted_subtotal"] + shipping_cost,

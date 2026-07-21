@@ -1994,6 +1994,10 @@ def get_discount_type_label(discount_type):
     }.get(discount_type, discount_type)
 
 
+def get_discount_scope_label(discount_code):
+    return discount_code.get_applies_to_display()
+
+
 def get_discount_status(discount_code):
     now = timezone.now()
     if not discount_code.is_active:
@@ -2398,6 +2402,7 @@ def build_discount_code_row(discount_code):
         "delete_url": reverse("dashboard:model_delete", args=["discount-codes", discount_code.pk]),
         "code": discount_code.code,
         "discount_type_label": get_discount_type_label(discount_code.discount_type),
+        "scope_label": get_discount_scope_label(discount_code),
         "value_label": format_discount_value(discount_code),
         "minimum_order_label": (
             format_admin_money(discount_code.minimum_order_amount)
@@ -2420,6 +2425,7 @@ def build_discount_code_detail_context(discount_code):
             "status_label": "Nowy kod",
             "status_class": "draft",
             "value_label": "po zapisie",
+            "scope_label": "Produkty",
             "usage_label": "0 / bez limitu",
             "date_label": "bez terminu",
             "minimum_order_label": "opcjonalnie",
@@ -2432,6 +2438,7 @@ def build_discount_code_detail_context(discount_code):
         "status_label": status_label,
         "status_class": status_class,
         "value_label": format_discount_value(discount_code),
+        "scope_label": get_discount_scope_label(discount_code),
         "usage_label": get_discount_usage_label(discount_code),
         "date_label": get_discount_date_label(discount_code),
         "minimum_order_label": (

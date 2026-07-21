@@ -1490,6 +1490,7 @@ class DashboardAccessTests(TestCase):
             {
                 "code": "spooky15",
                 "discount_type": DiscountCode.TYPE_FIXED,
+                "applies_to": DiscountCode.APPLIES_TO_SHIPPING,
                 "value": "15.00",
                 "minimum_order_amount": "60.00",
                 "max_uses": "10",
@@ -1514,6 +1515,7 @@ class DashboardAccessTests(TestCase):
         self.assertEqual(post_response.status_code, 302)
         self.assertEqual(discount_code.code, "SPOOKY15")
         self.assertEqual(discount_code.discount_type, DiscountCode.TYPE_FIXED)
+        self.assertEqual(discount_code.applies_to, DiscountCode.APPLIES_TO_SHIPPING)
 
     def test_quality_refresh_creates_product_issue(self):
         product = self.create_product("Incomplete Product", "incomplete-product")

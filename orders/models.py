@@ -45,13 +45,28 @@ class DiscountCode(models.Model):
     TYPE_PERCENT = "percent"
     TYPE_FIXED = "fixed"
 
+    APPLIES_TO_PRODUCTS = "products"
+    APPLIES_TO_SHIPPING = "shipping"
+    APPLIES_TO_ORDER = "order"
+
     TYPE_CHOICES = [
         (TYPE_PERCENT, "Percent"),
         (TYPE_FIXED, "Fixed amount"),
     ]
 
+    APPLIES_TO_CHOICES = [
+        (APPLIES_TO_PRODUCTS, "Produkty"),
+        (APPLIES_TO_SHIPPING, "Dostawa"),
+        (APPLIES_TO_ORDER, "Zamówienie"),
+    ]
+
     code = models.CharField(max_length=40, unique=True)
     discount_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default=TYPE_PERCENT)
+    applies_to = models.CharField(
+        max_length=20,
+        choices=APPLIES_TO_CHOICES,
+        default=APPLIES_TO_PRODUCTS,
+    )
     value = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     is_active = models.BooleanField(default=True)
     starts_at = models.DateTimeField(null=True, blank=True)

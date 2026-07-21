@@ -455,6 +455,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
         fields = [
             "code",
             "discount_type",
+            "applies_to",
             "value",
             "minimum_order_amount",
             "max_uses",
@@ -468,6 +469,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
         labels = {
             "code": "Kod rabatowy",
             "discount_type": "Typ rabatu",
+            "applies_to": "Dotyczy",
             "value": "Wartość rabatu",
             "minimum_order_amount": "Minimalna wartość zamówienia",
             "max_uses": "Limit użyć",
@@ -481,6 +483,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
         help_texts = {
             "code": "Kod wpisywany przez klientkę. Zapisuje się wielkimi literami.",
             "discount_type": "Procent obniża koszyk procentowo, kwota odejmuje stałą wartość.",
+            "applies_to": "Produkty obniża tylko produkty, dostawa tylko koszt dostawy, a zamówienie obniża oba te elementy. Darmowa dostawa: wybierz Dostawa, Procent i 100.",
             "value": "Dla procentu wpisz np. 10, dla kwoty np. 15.00.",
             "minimum_order_amount": "Zostaw puste, jeśli kod działa od każdej kwoty koszyka.",
             "max_uses": "Opcjonalny limit całkowitej liczby użyć kodu.",
@@ -508,6 +511,7 @@ class DiscountCodeDashboardForm(DashboardFormMixin, forms.ModelForm):
             (DiscountCode.TYPE_PERCENT, "Procent"),
             (DiscountCode.TYPE_FIXED, "Kwota"),
         ]
+        self.fields["applies_to"].choices = DiscountCode.APPLIES_TO_CHOICES
         if self.instance and self.instance.starts_at:
             self.initial["starts_at"] = self.instance.starts_at.strftime("%Y-%m-%dT%H:%M")
         if self.instance and self.instance.ends_at:

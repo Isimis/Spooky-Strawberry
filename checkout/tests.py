@@ -267,6 +267,28 @@ class CheckoutConfirmationTests(TestCase):
         self.assertEqual(order.shipping_total, Decimal("18.99"))
         self.assertEqual(order.grand_total, Decimal("71.19"))
 
+    @patch("checkout.views.start_payment", return_value="https://sandbox.przelewy24.pl/trnRequest/free-shipping")
+    def test_payment_saves_free_shipping_discount_on_order(self, mock_start):
+        self._put_product_in_cart()
+        self._put_checkout_data_in_session()
+        code = DiscountCode.objects.create(
+            code="DOSTAWAGRATIS",
+            discount_type=DiscountCode.TYPE_PERCENT,
+            applies_to=DiscountCode.APPLIES_TO_SHIPPING,
+            value=Decimal("100.00"),
+        )
+        session = self.client.session
+        session["cart_discount_code"] = code.code
+        session.save()
+
+        self.client.post(reverse("checkout:payment"), {"payment_method": "blik", "accept_terms": "1"})
+        order = Order.objects.get()
+
+        self.assertEqual(order.discount_code, code)
+        self.assertEqual(order.discount_total, Decimal("18.99"))
+        self.assertEqual(order.shipping_total, Decimal("0.00"))
+        self.assertEqual(order.grand_total, Decimal("29.00"))
+
     @patch("checkout.views.start_payment")
     def test_payment_requires_terms_acceptance(self, mock_start):
         self._put_product_in_cart()
